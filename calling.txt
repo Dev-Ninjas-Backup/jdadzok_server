@@ -1,0 +1,306 @@
+# One-to-One Video Calling Implementation Summary
+
+## Overview
+This implementation provides a complete one-to-one video/audio calling system with WebRTC signaling through Socket.IO.
+
+## Key Features Fixed
+
+### 1. **Proper Call Flow Management**
+- ✅ Caller initiates call to specific recipient
+- ✅ Recipient can accept or decline
+- ✅ Caller can cancel before answer
+- ✅ Both parties tracked in call room
+- ✅ Call status properly managed (CALLING → ACTIVE → ENDED)
+
+### 2. **User Busy Detection**
+- ✅ Prevents multiple simultaneous calls per user
+- ✅ Checks if recipient is already in a call
+- ✅ Returns appropriate status messages
+
+### 3. **Recipient Tracking**
+- ✅ Added `recipientUserId` to Calling model
+- ✅ Both host and recipient are tracked
+- ✅ Proper authorization checks
+
+### 4. **WebRTC Signaling**
+- ✅ Offer/Answer exchange
+- ✅ ICE candidate relay
+- ✅ Peer-to-peer connection establishment
+- ✅ Media track handling
+
+### 5. **Media Control**
+- ✅ Toggle video on/off
+- ✅ Toggle audio on/off
+- ✅ Real-time updates to other participant
+
+## Architecture
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│   Caller    │         │   Backend    │         │  Recipient  │
+│  (User A)   │         │  Socket.IO   │         │  (User B)   │
+└─────────────┘         └──────────────┘         └─────────────┘
+       │                        │                        │
+       │  1. POST /calls/start  │                        │
+       ├───────────────────────>│                        │
+       │                        │  2. incomingCall       │
+       │                        ├───────────────────────>│
+       │                        │                        │
+       │                        │  3. acceptCall         │
+       │  4. callAccepted       │<───────────────────────┤
+       │<───────────────────────┤                        │
+       │                        │                        │
+       │  5. joinCall           │                        │
+       ├───────────────────────>│                        │
+       │                        │  6. joinCall           │
+       │                        │<───────────────────────┤
+       │                        │                        │
+       │  7. offer (WebRTC SDP) │                        │
+       ├───────────────────────>│──────────────────────>│
+       │                        │                        │
+       │                        │  8. answer (WebRTC SDP)│
+       │<───────────────────────│<───────────────────────┤
+       │                        │                        │
+       │  9. ICE candidates     │                        │
+       │<──────────────────────>│<──────────────────────>│
+       │                        │                        │
+       │    Direct P2P Connection (WebRTC)               │
+       │<═══════════════════════════════════════════════>│
+```
+
+## Call States
+
+```
+CALLING   → Initial state when call is started (ringing)
+ACTIVE    → Both parties have joined the call
+ENDED     → Call completed normally
+CANCELLED → Caller cancelled before answer
+MISSED    → Recipient didn't answer (offline)
+DECLINED  → Recipient declined the call
+```
+
+## Socket Events
+
+### Client → Server
+
+| Event | Description | Data |
+|-------|-------------|------|
+| `authenticate` | Authenticate with JWT | `{ token: string }` |
+| `acceptCall` | Accept incoming call | `{ callId: string }` |
+| `declineCall` | Decline incoming call | `{ callId: string }` |
+| `cancelCall` | Cancel outgoing call | `{ callId: string }` |
+| `joinCall` | Join call room | `{ callId, userName, hasVideo, hasAudio }` |
+| `leaveCall` | Leave call | `{ callId: string }` |
+| `toggleVideo` | Toggle video | `{ callId, enabled }` |
+| `toggleAudio` | Toggle audio | `{ callId, enabled }` |
+| `offer` | Send WebRTC offer | `{ targetSocketId, signal }` |
+| `answer` | Send WebRTC answer | `{ targetSocketId, signal }` |
+| `iceCandidate` | Send ICE candidate | `{ targetSocketId, candidate }` |
+
+### Server → Client
+
+| Event | Description | Data |
+|-------|-------------|------|
+| `authenticated` | Auth successful | `{ socketId, userId }` |
+| `incomingCall` | New incoming call | `{ callId, caller: { userId, name, avatarUrl }, timestamp }` |
+| `callAccepted` | Call was accepted | `{ callId, acceptedBy }` |
+| `callDeclined` | Call was declined | `{ callId, declinedBy }` |
+| `callCancelled` | Call was cancelled | `{ callId, cancelledBy }` |
+| `joinedCall` | Successfully joined | `{ callId, userId, socketId, participants }` |
+| `userJoined` | Another user joined | `{ socketId, userId, userName, hasVideo, hasAudio }` |
+| `participantLeft` | User left call | `{ socketId, userId }` |
+| `participantVideoToggled` | Video toggled | `{ socketId, enabled }` |
+| `participantAudioToggled` | Audio toggled | `{ socketId, enabled }` |
+| `offer` | Received WebRTC offer | `{ offer, senderId }` |
+| `answer` | Received WebRTC answer | `{ answer, senderId }` |
+| `iceCandidate` | Received ICE candidate | `{ candidate, senderId }` |
+
+## API Endpoints
+
+### REST API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/calls/start` | Start a call to a user |
+| POST | `/calls/accept` | Accept an incoming call |
+| POST | `/calls/decline` | Decline an incoming call |
+| POST | `/calls/cancel` | Cancel an outgoing call |
+| GET | `/calls/:id` | Get call details |
+| GET | `/calls/:id/room` | Get active participants |
+| GET | `/calls/user/history` | Get call history |
+| GET | `/calls/user/current` | Get current active call |
+| DELETE | `/calls/:id` | End a call |
+
+## Database Schema Changes
+
+### Required Migration
+
+```prisma
+model Calling {
+  id              String     @id @default(uuid())
+  hostUserId      String
+  recipientUserId String?    // ← NEW FIELD
+  status          CallStatus @default(CALLING)
+  title           String?
+  isPrivate       Boolean    @default(false)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  host         User              @relation("HostedCalls", fields: [hostUserId], references: [id])
+  recipient    User?             @relation("ReceivedCalls", fields: [recipientUserId], references: [id])
+  participants CallParticipant[]
+
+  @@index([hostUserId])
+  @@index([recipientUserId])
+  @@map("calls")
+}
+```
+
+## Testing Flow
+
+### 1. Basic Call Flow
+```bash
+# User A starts call to User B
+POST /calls/start
+Body: { "recipientUserId": "user-b-id" }
+
+# User B receives incomingCall event via WebSocket
+
+# User B accepts
+Socket: acceptCall { callId: "..." }
+
+# Both join the call
+Socket: joinCall { callId, userName, hasVideo: true, hasAudio: true }
+
+# WebRTC connection established
+Socket: offer → answer → iceCandidate exchanges
+
+# End call
+Socket: leaveCall { callId }
+```
+
+### 2. Decline Flow
+```bash
+# User A starts call
+POST /calls/start
+
+# User B declines
+Socket: declineCall { callId: "..." }
+
+# User A receives callDeclined event
+```
+
+### 3. Cancel Flow
+```bash
+# User A starts call
+POST /calls/start
+
+# User A cancels before answer
+Socket: cancelCall { callId: "..." }
+
+# User B receives callCancelled event
+```
+
+## Environment Variables
+
+```env
+JWT_SECRET=your-jwt-secret
+REDIS_HOST=localhost
+REDIS_PORT=6379
+DATABASE_URL=your-database-url
+```
+
+## Important Notes
+
+### 1. **Cache Management**
+- Call rooms stored in Redis with 24h TTL
+- User-to-call mapping tracked
+- Prevents multiple simultaneous calls
+
+### 2. **WebRTC Configuration**
+- Uses STUN servers for NAT traversal
+- May need TURN servers for restrictive networks
+- ICE candidates relayed through Socket.IO
+
+### 3. **Error Handling**
+- Graceful handling of disconnections
+- Automatic cleanup when participants leave
+- Call ends when last participant leaves
+
+### 4. **Security**
+- JWT authentication required
+- Authorization checks for call access
+- Socket authentication with 10s timeout
+
+### 5. **Scalability Considerations**
+- Redis for distributed state management
+- Sticky sessions recommended for WebSocket
+- Consider dedicated media servers for production
+
+## Next Steps
+
+1. **Apply Prisma Migration**
+   ```bash
+   npx prisma migrate dev --name add_recipient_to_calls
+   ```
+
+2. **Update CallService** - Replace with fixed version
+
+3. **Update CallGateway** - Replace with fixed version
+
+4. **Update CallController** - Replace with fixed version
+
+5. **Update DTOs** - Add new DTO classes
+
+6. **Test the Flow**
+   - Start call between two users
+   - Verify accept/decline/cancel
+   - Test WebRTC connection
+   - Test media toggles
+
+7. **Frontend Integration**
+   - Implement Socket.IO client
+   - Setup WebRTC peer connections
+   - Handle all socket events
+   - Add UI for call controls
+
+## Common Issues & Solutions
+
+### Issue: Calls not connecting
+- **Solution**: Check STUN/TURN server configuration
+- Verify firewall rules allow WebRTC traffic
+- Check browser permissions for media devices
+
+### Issue: User appears busy when not in call
+- **Solution**: Clear Redis cache or add cleanup job
+- Implement heartbeat mechanism
+- Add call timeout logic
+
+### Issue: Socket authentication failing
+- **Solution**: Verify JWT token is valid
+- Check token format (Bearer token)
+- Ensure JWT_SECRET matches
+
+### Issue: ICE candidates not exchanging
+- **Solution**: Verify socket connection is stable
+- Check targetSocketId is correct
+- Ensure both peers are in the same call room
+
+## Production Checklist
+
+- [ ] Setup Redis cluster for high availability
+- [ ] Configure TURN servers for NAT traversal
+- [ ] Implement call timeout (e.g., 60s ring time)
+- [ ] Add call recording functionality (if needed)
+- [ ] Setup monitoring and logging
+- [ ] Implement rate limiting
+- [ ] Add call quality metrics
+- [ ] Setup WebRTC media servers (Janus/Mediasoup) for group calls
+- [ ] Implement push notifications for incoming calls
+- [ ] Add reconnection logic for network issues
+
+
+ActionEvent NamePayload (copy-paste)Accept CallacceptCall{ "event": "acceptCall", "data": { "callId": "{{current_call_id}}" } }Decline CalldeclineCall{ "event": "declineCall", "data": { "callId": "{{current_call_id}}" } }
+ Cancel CallcancelCall{ "event": "cancelCall", "data": { "callId": "{{current_call_id}}" } }Join Call (minimal)joinCall{ "event": "joinCall", "data": { "callId": "{{current_call_id}}", "hasVideo": true, "hasAudio": true } }Toggle Video OfftoggleVideo{ "event": "toggleVideo", "data": { "callId": "{{current_call_id}}", "enabled": false } }Toggle Audio OfftoggleAudio{ "event": "toggleAudio", "data": { "callId": "{{current_call_id}}", "enabled": false } }Leave CallleaveCall{ "event": "leaveCall", "data": { "callId": "{{current_call_id}}" } }

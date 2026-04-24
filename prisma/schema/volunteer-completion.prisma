@@ -1,0 +1,12 @@
+model VolunteerCompletion {
+  id               String               @id @default(uuid())
+  applicationId    String               @unique
+  application      VolunteerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  ngoConfirmed     Boolean              @default(false)
+  confirmationNote String?              @db.Text
+  confirmedById    String?
+  confirmedBy      User?                @relation(fields: [confirmedById], references: [id])
+  confirmedAt      DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}

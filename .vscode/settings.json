@@ -1,0 +1,21 @@
+{
+    "editor.formatOnSave": true,
+    "prettier.singleQuote": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "cSpell.words": ["offday", "payrate"],
+    "[prisma]": {
+        "editor.defaultFormatter": "Prisma.prisma"
+    },
+    "prisma-smart-formatter.typescript.defaultFormatter": "vscode.typescript-language-features",
+    "prisma-smart-formatter.prisma.defaultFormatter": "Prisma.prisma"
+}

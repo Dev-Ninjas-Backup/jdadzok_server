@@ -1,0 +1,12 @@
+model PlatformInformation {
+    id           String  @id @default(uuid())
+    platformName String?
+    supportEmail String?
+    platformUrl  String?
+}
+
+model MaintenanceModel {
+    id                    String @id @default(uuid())
+    maxEventsPerCommunity Int?
+    MaxPostPerDay         Int?
+}

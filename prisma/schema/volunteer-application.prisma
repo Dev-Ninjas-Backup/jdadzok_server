@@ -1,0 +1,21 @@
+model VolunteerApplication {
+  id          String @id @default(uuid())
+  volunteerId String
+  volunteer   User   @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   VolunteerProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  status         ApplicationStatus @default(PENDING)
+  workedHours    Int               @default(0) // Limited to 352
+  completionNote String? // NGO optional note
+  confirmedById  String? // NGO who confirmed
+  confirmedBy    User?             @relation("ConfirmedByNgo", fields: [confirmedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  VolunteerCompletion VolunteerCompletion[]
+
+  VolunteerHour VolunteerHour[]
+}

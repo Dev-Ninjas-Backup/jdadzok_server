@@ -1,0 +1,31 @@
+model Report {
+  id String @id @default(uuid())
+
+  // User making the report
+  reporterId String
+  reporter   User   @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  // What is being reported
+  targetId   String // ID of reported entity
+  targetType ReportTargetType // Type of entity being reported
+
+  // Report details
+  reason      String       @db.Text // Why it's being reported
+  description String?      @db.Text // Additional details
+  status      ReportStatus @default(PENDING)
+
+  // Admin who processed the report
+  reviewedById String?
+  reviewedBy   User?   @relation("ReportReviewer", fields: [reviewedById], references: [id])
+
+  // Admin notes
+  adminNotes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reporterId])
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
+}

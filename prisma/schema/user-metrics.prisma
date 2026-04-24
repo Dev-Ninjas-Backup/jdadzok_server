@@ -1,0 +1,32 @@
+model UserMetrics {
+  id String @id @default(uuid())
+
+  // User these metrics belong to
+  userId String @unique
+  user   User   @relation("UserMetrics", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Engagement metrics
+  totalPosts     Int @default(0)
+  totalComments  Int @default(0)
+  totalLikes     Int @default(0)
+  totalShares    Int @default(0)
+  totalFollowers Int @default(0)
+  totalFollowing Int @default(0)
+
+  // Revenue metrics
+  totalEarnings        Float @default(0.0)
+  currentMonthEarnings Float @default(0.0)
+
+  // Volunteer metrics
+  volunteerHours    Int @default(0)
+  completedProjects Int @default(0)
+
+  // Activity score for cap level calculation
+  activityScore Float @default(0.0)
+
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_metrics")
+}

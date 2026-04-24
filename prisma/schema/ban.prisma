@@ -1,0 +1,24 @@
+model Ban {
+  id String @id @default(uuid())
+
+  // User being banned
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ban details
+  reason    String    @db.Text // Reason for ban
+  expiresAt DateTime? // When ban expires (null = permanent)
+  isActive  Boolean   @default(true) // Can be manually deactivated
+
+  // Admin who issued the ban
+  issuedById String?
+  issuedBy   User?   @relation("BanIssuer", fields: [issuedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("bans")
+}

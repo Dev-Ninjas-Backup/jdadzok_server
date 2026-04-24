@@ -1,0 +1,12 @@
+model Revenue {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String?
+  adId      String?
+  amount    Float
+  type      String // "view" | "click"
+  createdAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id])
+  ad   Product? @relation(fields: [adId], references: [id])
+}

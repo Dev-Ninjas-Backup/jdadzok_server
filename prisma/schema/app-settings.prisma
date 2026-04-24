@@ -1,0 +1,14 @@
+// optional
+model AppSettings {
+  id String @id @default(uuid())
+
+  key   String @unique // Setting key (e.g., "min_volunteer_hours_for_black_cap")
+  value String @db.Text // Setting value (JSON string for complex values)
+
+  description String? @db.Text // What this setting controls
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}

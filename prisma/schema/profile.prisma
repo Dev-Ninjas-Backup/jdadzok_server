@@ -1,0 +1,33 @@
+model Profile {
+  id String @id @default(uuid())
+
+  // Link to user
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile information
+  name                 String
+  username             String    @unique
+  title                String?
+  bio                  String?   @db.Text // User bio/description
+  avatarUrl            String? // Profile picture URL
+  coverUrl             String? // Cover photo URL
+  location             String?
+  balance              Float     @default(0.0)
+  isToggleNotification Boolean   @default(true)
+  // personal information
+  dateOfBirth          DateTime?
+  gender               Gender    @default(MALE)
+  experience           String?
+
+  // Social metrics (denormalized for performance)
+  followersCount Int @default(0)
+  followingCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+  @@index([name])
+  @@map("profiles")
+}

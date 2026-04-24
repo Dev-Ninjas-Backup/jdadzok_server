@@ -1,0 +1,14 @@
+model Withdraw {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float
+  status       WithdrawStatus @default(PENDING)
+  provider     String?
+  stripeTxnId  String?
+  attempts     Int            @default(0)
+  errorMessage String?
+  scheduledFor DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+}

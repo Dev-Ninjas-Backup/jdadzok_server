@@ -1,0 +1,42 @@
+model Community {
+  id String @id @default(uuid())
+
+  // Community ownership
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Community details
+  foundationDate DateTime
+  communityType  CommunityType
+
+  // Community metrics (denormalized for performance)
+  likes                Int               @default(0)
+  isVerified           Boolean           @default(false)
+  capLevel             CapLevel          @default(NONE) // Communities can also have cap levels
+  isToggleNotification Boolean           @default(false)
+  // ---- RELATIONSHIPS ----
+  profile              CommunityProfile? // Community profile info
+  about                CommunityAbout? // Extended community info
+
+  // Community posts
+  posts Post[] @relation("CommunityPosts")
+
+  // Community memberships
+  memberships CommunitiesMembership[]
+
+  // Community social interactions
+  likers User[] @relation("CommunityLikers")
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  CommunityFollower CommunityFollower[]
+
+  // followingCommunities CommunityFollow[] @relation("CommunityFollowing")
+  // followersCommunities CommunityFollow[] @relation("CommunityFollowers")
+
+  @@index([ownerId])
+  @@index([communityType])
+  @@index([capLevel])
+  @@index([isVerified])
+  @@map("communities")
+}

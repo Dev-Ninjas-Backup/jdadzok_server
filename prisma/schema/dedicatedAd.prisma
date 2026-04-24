@@ -1,0 +1,9 @@
+model DedicatedAd {
+  id        String   @id @default(uuid())
+  postId    String
+  adId      String
+  post      Post     @relation(fields: [postId], references: [id])
+  ad        Product  @relation(fields: [adId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

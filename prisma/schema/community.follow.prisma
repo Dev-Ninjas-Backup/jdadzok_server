@@ -1,0 +1,26 @@
+// model CommunityFollow {
+//   id String @id @default(uuid())
+
+//   follower   Community @relation("CommunityFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+//   followerId String
+
+//   following   Community @relation("CommunityFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+//   followingId String
+
+//   createdAt DateTime @default(now())
+
+//   @@unique([followerId, followingId])
+//   @@map("community_to_community_follows")
+// }
+// model CommunityFollow {
+//     id String @id @default(uuid())
+
+//     user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//     userId      String
+//     community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+//     communityId String
+//     createdAt   DateTime  @default(now())
+
+//    // prevent duplicates
+//     @@map("community_follows")
+// }

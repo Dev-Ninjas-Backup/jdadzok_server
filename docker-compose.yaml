@@ -1,0 +1,94 @@
+services:
+    app:
+        profiles:
+            - prod
+        platform: linux/amd64
+        build:
+            context: .
+        image: ${DOCKER_USERNAME}/${PACKAGE_NAME}:latest
+        container_name: ${PACKAGE_NAME}
+        ports:
+            - ${PORT}:${PORT}
+        env_file:
+            - .env
+        command: >
+            sh -c "
+              echo '🏁 Waiting for DB...';
+              sleep 5;
+              npx prisma migrate deploy;
+              echo '🚀 Starting app...';
+              npm run start:docker
+              "
+        depends_on:
+            - db
+        restart: unless-stopped
+        # Enhanced health check for better zero-downtime deployment
+        healthcheck:
+            disable: true
+        volumes:
+            - files-data:/app/uploads
+        networks:
+          - jdadzok_server
+
+    db:
+        image: postgres:17
+        restart: always
+        profiles:
+            - dev
+            - prod
+        ports:
+            - "${PG_PORT}:5432"
+        environment:
+            POSTGRES_USER: ${PG_USERNAME}
+            POSTGRES_PASSWORD: ${PG_PASSWORD}
+            POSTGRES_DB: ${PG_DATABASE}
+        volumes:
+            - pg:/var/lib/postgresql/data
+
+    redis:
+        image: redis:7-alpine # Use Alpine version for smaller size
+        container_name: redis
+        restart: always
+        profiles:
+            - dev
+            - prod
+        ports:
+            - "${REDIS_PORT}:6379"
+        volumes:
+            - redis:/data
+        # Add health check for Redis
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+            start_period: 5s
+        networks:
+          - jdadzok_server
+
+
+
+    caddy:
+        image: caddy:latest
+        container_name: httpserver
+        profiles:
+            - prod
+        ports:
+          - "80:80"
+          - "443:443"
+        volumes:
+          - ./Caddyfile:/etc/caddy/Caddyfile
+          - ./public/dist:/usr/share/caddy
+          - caddy_data:/data
+          - caddy_config:/config
+        restart: unless-stopped
+
+volumes:
+    caddy_data:
+    caddy_config:
+    redis:
+    pg:
+    files-data:
+networks:
+    jdadzok_server:
+      driver: bridge

@@ -1,0 +1,14 @@
+model Location {
+  id          String  @id @default(uuid())
+  name        String // Location name (e.g., "Lagos, Nigeria")
+  coordinates String? // GPS coordinates (lat,lng)
+
+  // Posts checked in at this location
+  postMetadata PostMetadata[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@map("locations")
+}

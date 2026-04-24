@@ -1,0 +1,22 @@
+model PostCategory {
+  id String @id @default(uuid())
+
+  name        String  @unique // e.g., "Entertainment & Pop Culture"
+  slug        String  @unique // e.g., "entertainment-pop-culture"
+  description String? @db.Text
+  icon        String? // Icon identifier
+  color       String? // Theme color for category
+  order       Int     @default(0) // Display order
+
+  // Posts in this category
+  posts          Post[]          @relation("PostCategory")
+  // Trending topics in this category
+  trendingTopics TrendingTopic[] @relation("TrendingTopics")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([order])
+  @@map("post_category")
+}

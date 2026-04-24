@@ -1,0 +1,22 @@
+model PostMetadata {
+  id String @id @default(uuid())
+
+  // Emotional context
+  feelings Feelings @default(HAPPY)
+
+  // Location check-in
+  checkInId String?
+  checkIn   Location? @relation(fields: [checkInId], references: [id], onDelete: SetNull)
+
+  // GIF attachment
+  gifId String?
+  gif   Gif?    @relation(fields: [gifId], references: [id], onDelete: SetNull)
+
+  // Link back to posts using this metadata
+  posts Post[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("post_metadata")
+}

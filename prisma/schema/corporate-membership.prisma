@@ -1,0 +1,31 @@
+model CorporateMembership {
+  id String @id @default(uuid())
+
+  // Company information
+  companyName  String
+  contactEmail String @unique
+
+  // Membership tier (Silver, Gold, Platinum)
+  tier MembershipTier @default(SILVER) // "SILVER", "GOLD", "PLATINUM"
+
+  // Membership details
+  isActive  Boolean   @default(true)
+  startDate DateTime  @default(now())
+  endDate   DateTime? // When membership expires
+
+  // Benefits tracking
+  dailyAdsUsed     Int @default(0)
+  sponsorshipsUsed Int @default(0)
+
+  // Contact person
+  contactPersonId String?
+  contactPerson   User?   @relation("CorporateContact", fields: [contactPersonId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier])
+  @@index([isActive])
+  @@index([contactEmail])
+  @@map("corporate_memberships")
+}

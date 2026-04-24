@@ -1,0 +1,243 @@
+ Real-Time Notification System - Frontend Documentation
+📖 Table of Contents
+
+Overview
+WebSocket Connection
+All Notification Event Types
+Notification Payload Structure
+User Notification Preferences
+Testing & Troubleshooting
+Best Practices
+
+
+🎯 Overview
+This real-time notification system uses WebSocket (Socket.IO) to deliver instant notifications to users. When specific events occur in the system (like new posts, comments, communities, etc.), connected users receive notifications immediately without refreshing the page.
+Key Features:
+
+Real-time delivery (instant notifications)
+User-specific notification preferences (toggle on/off for each type)
+Multiple notification categories
+Automatic reconnection
+Secure JWT authentication
+
+
+🔌 WebSocket Connection
+Connection Details
+PropertyValueProtocolSocket.IONamespace/js/notificationAuthenticationJWT Token (Bearer)URL FormatYOUR_BACKEND_URL/js/notification
+How to Connect
+You need to provide your JWT authentication token when connecting to the WebSocket server. The token can be passed in two ways:
+
+Auth object: { auth: { token: 'YOUR_JWT_TOKEN' } }
+Authorization header: { extraHeaders: { Authorization: 'Bearer YOUR_JWT_TOKEN' } }
+
+Connection Events
+EventDescriptionWhen it firesconnectSuccessfully connectedOn successful WebSocket connectionconnect_errorConnection failedWhen authentication fails or network errordisconnectConnection lostWhen WebSocket disconnects
+
+📨 All Notification Event Types
+1. 🏘️ Community Notifications
+Event Name: community.create
+Description: Triggered when a new community is created
+When you receive it:
+
+You have the community notification toggle enabled
+A new community is created by any user
+
+Payload Example:
+json{
+  "type": "community.create",
+  "title": "New Community Created",
+  "message": "A new community 'Tech Enthusiasts' has been created",
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "meta": {
+    "communityId": "comm-uuid-123",
+    "performedBy": "user-uuid-456",
+    "foundationDate": "2024-01-15T10:30:00.000Z"
+  }
+}
+Use Cases:
+
+Show notification badge
+Display toast message
+Update community list
+Play notification sound
+
+
+2. 🏢 NGO Notifications
+Event Name: ngo.create
+Description: Triggered when a new NGO is registered/created
+When you receive it:
+
+You have the ngo notification toggle enabled
+A new NGO is created in the system
+
+Payload Example:
+json{
+  "type": "ngo.create",
+  "title": "New NGO Registered",
+  "message": "NGO 'Green Earth Foundation' has been registered",
+  "createdAt": "2024-01-15T11:00:00.000Z",
+  "meta": {
+    "ngoId": "ngo-uuid-789",
+    "ownerBy": "user-uuid-101"
+  }
+}
+Use Cases:
+
+Notify admins about new NGO registrations
+Update NGO directory
+Send welcome message to NGO owner
+Trigger approval workflow
+
+
+3. 📝 Post Notifications
+Event Name: post.create
+Description: Triggered when someone you follow creates a new post
+When you receive it:
+
+You have the post notification toggle enabled
+A user you follow creates a new post
+
+Payload Example:
+json{
+  "type": "post.create",
+  "title": "New Post from John Doe",
+  "message": "John Doe shared: 'Check out my latest project!'",
+  "createdAt": "2024-01-15T12:00:00.000Z",
+  "meta": {
+    "postId": "post-uuid-202",
+    "performedBy": "user-uuid-303",
+    "publishedAt": "2024-01-15T12:00:00.000Z"
+  }
+}
+Use Cases:
+
+Show in notification feed
+Update timeline/feed
+Send push notification
+Email digest
+
+
+
+
+
+4. 🎯 CapLevel Notifications
+Event Name: caplevel.create
+Description: Triggered when your CapLevel (capability level) is changed by an admin
+When you receive it:
+
+You have the capLevel notification toggle enabled
+An admin updates your CapLevel status
+
+Payload Example:
+json{
+  "type": "caplevel.create",
+  "title": "CapLevel Updated: GREEN → RED",
+  "message": "Your CapLevel has been changed from GREEN to RED",
+  "createdAt": "2024-01-15T14:00:00.000Z",
+  "meta": {
+    "postId": "user-uuid-707",
+    "performedBy": "admin-uuid-808",
+    "publishedAt": "2024-01-15T14:00:00.000Z"
+  }
+}
+CapLevel Values:
+
+NONE
+GREEN
+YELLOW
+RED
+BLACK
+OSTRICH_FEATHER
+
+Use Cases:
+
+Alert user of status change
+Update user profile badge
+Trigger permission changes
+Show capability restrictions
+
+
+5. 🎨 Custom Notifications
+Event Name: custom.create
+Description: Triggered for custom/manual notifications sent by admins
+When you receive it:
+
+You have the Custom notification toggle enabled
+An admin sends a custom notification to you
+
+Payload Example:
+json{
+  "type": "custom.create",
+  "title": "System Maintenance Notice",
+  "message": "The system will undergo maintenance on Jan 20 from 2 AM to 4 AM",
+  "createdAt": "2024-01-15T15:00:00.000Z",
+  "meta": {
+    "title": "System Maintenance Notice",
+    "message": "The system will undergo maintenance on Jan 20 from 2 AM to 4 AM"
+  }
+}
+Use Cases:
+
+System announcements
+Important updates
+Promotional messages
+Emergency alerts
+Policy changes
+
+
+📦 Notification Payload Structure
+Standard Structure
+Every notification follows this consistent structure:
+typescript{
+  type: string;           // Event type (e.g., "post.create")
+  title: string;          // Notification title/heading
+  message: string;        // Detailed notification message
+  createdAt: Date;        // ISO 8601 timestamp
+  meta: object;           // Event-specific metadata
+}
+Meta Object Examples
+Different event types have different metadata:
+Event TypeMeta PropertiesCommunitycommunityId, performedBy, foundationDateNGOngoId, ownerByPostpostId, performedBy, publishedAtCommentcommentId, postId, performedBy, publishedAtCapLevelpostId, performedBy, publishedAtMessagemessageId, fromUserId, toUserId, sentAtUser RegistrationuserId, registeredAtCustomtitle, message
+
+⚙️ User Notification Preferences
+Notification Toggles
+Users can enable/disable specific notification types. These preferences are stored in the database and checked automatically by the backend before sending notifications.
+Toggle NameDefaultDescriptionemailtrueEmail notificationsuserUpdatestrueGeneral user activity updatescommunicationtrueCommunication/conversation notificationscommunitytrueCommunity-related notificationscommenttrueComment notificationsposttrueNew post notificationsmessagetrueDirect message notificationsngotrueNGO-related notificationsCustomtrueCustom admin notificationscapLeveltrueCapLevel change notificationsuserRegistrationtrueNew user registration (admin only)
+How Toggles Work
+
+Backend Filters: When you connect, the backend loads your notification preferences
+Automatic Filtering: Before sending any notification, backend checks if you have that toggle enabled
+No Frontend Check Needed: You don't need to filter on frontend - you only receive notifications you've opted into
+
+Example Scenarios
+Scenario 1: User has post toggle = false
+
+User follows someone
+That person creates a post
+Result: User receives NO notification (filtered by backend)
+
+Scenario 2: User has community toggle = true
+
+New community is created
+Result: User receives notification immediately
+
+
+🧪 Testing & Troubleshooting
+Testing Connection
+Ping/Pong Test:
+
+Send: ping event
+Receive: pong event
+Confirms: Socket is connected and working
+
+Common Issues
+IssuePossible CauseSolutionNot receiving notificationsToggle disabledCheck user notification preferencesConnection failsInvalid JWT tokenRefresh authentication tokenNotifications delayedNetwork issuesCheck internet connectionDuplicate notificationsMultiple socket connectionsEnsure only one socket instanceMissing notificationsNot in recipients listVerify you're following the user or in the group
+Debug Checklist
+
+ Socket is connected (socket.connected === true)
+ JWT token is valid and not expired
+ User has the relevant notification toggle enabled
+ User is in the recipients list for that event
+ No JavaScript errors in browser console
+ Backend server is running and accessible
+ Firewall/CORS not blocking WebSocket

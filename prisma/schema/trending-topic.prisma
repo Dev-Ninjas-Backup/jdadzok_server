@@ -1,0 +1,23 @@
+model TrendingTopic {
+  id String @id @default(uuid())
+
+  keyword  String @unique // Trending keyword/hashtag
+  mentions Int    @default(0) // Number of mentions
+  score    Float  @default(0.0) // Trending score
+
+  // Time period this trend is for
+  startDate DateTime
+  endDate   DateTime
+
+  // Category this trend belongs to
+  categoryId String?
+  category   PostCategory? @relation("TrendingTopics", fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([score])
+  @@index([startDate, endDate])
+  @@index([keyword])
+  @@map("trending_topics")
+}

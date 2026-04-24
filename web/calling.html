@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Video Call Test Client</title>
+        <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .header {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .header h1 {
+                color: #333;
+                margin-bottom: 15px;
+            }
+
+            .connection-status {
+                display: inline-block;
+                padding: 5px 15px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            .status-connected {
+                background: #10b981;
+                color: white;
+            }
+
+            .status-disconnected {
+                background: #ef4444;
+                color: white;
+            }
+
+            .status-pending {
+                background: #f59e0b;
+                color: white;
+            }
+
+            .controls-panel {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+                color: #555;
+                font-weight: 600;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #e5e7eb;
+                border-radius: 5px;
+                font-size: 14px;
+                font-family: monospace;
+            }
+
+            .form-group textarea {
+                min-height: 80px;
+                resize: vertical;
+            }
+
+            .form-group input:focus,
+            .form-group textarea:focus {
+                outline: none;
+                border-color: #667eea;
+            }
+
+            .checkbox-group {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 15px;
+            }
+
+            .checkbox-group label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
+            .btn-group {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            button {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 5px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+
+            button:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            }
+
+            button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .btn-primary {
+                background: #667eea;
+                color: white;
+            }
+
+            .btn-success {
+                background: #10b981;
+                color: white;
+            }
+
+            .btn-danger {
+                background: #ef4444;
+                color: white;
+            }
+
+            .btn-warning {
+                background: #f59e0b;
+                color: white;
+            }
+
+            .btn-secondary {
+                background: #6b7280;
+                color: white;
+            }
+
+            .videos-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+
+            .video-wrapper {
+                background: white;
+                border-radius: 10px;
+                padding: 15px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                position: relative;
+            }
+
+            .video-wrapper h3 {
+                margin-bottom: 10px;
+                color: #333;
+                font-size: 16px;
+            }
+
+            .video-wrapper video {
+                width: 100%;
+                border-radius: 8px;
+                background: #000;
+                aspect-ratio: 16/9;
+            }
+
+            .video-info {
+                display: flex;
+                gap: 10px;
+                margin-top: 10px;
+                font-size: 12px;
+            }
+
+            .badge {
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-weight: 600;
+            }
+
+            .badge-video {
+                background: #10b981;
+                color: white;
+            }
+
+            .badge-audio {
+                background: #3b82f6;
+                color: white;
+            }
+
+            .badge-off {
+                background: #ef4444;
+                color: white;
+            }
+
+            .logs-panel {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .logs-panel h3 {
+                margin-bottom: 15px;
+                color: #333;
+            }
+
+            #logs {
+                background: #1f2937;
+                color: #10b981;
+                padding: 15px;
+                border-radius: 5px;
+                height: 300px;
+                overflow-y: auto;
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+                line-height: 1.6;
+            }
+
+            .log-entry {
+                margin-bottom: 5px;
+            }
+
+            .log-info {
+                color: #3b82f6;
+            }
+
+            .log-success {
+                color: #10b981;
+            }
+
+            .log-error {
+                color: #ef4444;
+            }
+
+            .log-warning {
+                color: #f59e0b;
+            }
+
+            .participants-list {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+            }
+
+            .participants-list h3 {
+                margin-bottom: 15px;
+                color: #333;
+            }
+
+            .participant-item {
+                padding: 10px;
+                background: #f3f4f6;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .participant-name {
+                font-weight: 600;
+                color: #333;
+            }
+
+            .participant-id {
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+            .alert {
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 15px;
+            }
+
+            .alert-info {
+                background: #dbeafe;
+                color: #1e40af;
+                border-left: 4px solid #3b82f6;
+            }
+
+            .alert-success {
+                background: #d1fae5;
+                color: #065f46;
+                border-left: 4px solid #10b981;
+            }
+
+            .alert-error {
+                background: #fee2e2;
+                color: #991b1b;
+                border-left: 4px solid #ef4444;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎥 Video Call Test Client (Auth Enabled)</h1>
+                <div>
+                    <span id="connectionStatus" class="connection-status status-disconnected"
+                        >Disconnected</span
+                    >
+                    <span id="mySocketId" style="margin-left: 15px; color: #6b7280"></span>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <h2 style="margin-bottom: 15px; color: #333">🔐 Authentication & Connection</h2>
+
+                <div class="alert alert-info">
+                    <strong>ℹ️ Setup Instructions:</strong><br />
+                    1. Enter your JWT token (get it from your login endpoint)<br />
+                    2. Click "Connect to Server"<br />
+                    3. Once authenticated, get camera/mic access<br />
+                    4. Join a call room
+                </div>
+
+                <div class="form-group">
+                    <label>Server URL:</label>
+                    <input
+                        type="text"
+                        id="serverUrl"
+                        value="http://localhost:5056"
+                        placeholder="http://localhost:5056"
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label>JWT Token (Required):</label>
+                    <textarea
+                        id="jwtToken"
+                        placeholder="Paste your JWT token here (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)"
+                    ></textarea>
+                    <small style="color: #6b7280"
+                        >Get your token from your login API endpoint</small
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>User Name:</label>
+                    <input type="text" id="userName" value="Alice" placeholder="Your name" />
+                </div>
+
+                <div class="form-group">
+                    <label>Call ID (Room):</label>
+                    <input type="text" id="callId" value="room-123" placeholder="room-123" />
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="enableVideo" checked />
+                        Enable Video
+                    </label>
+                    <label>
+                        <input type="checkbox" id="enableAudio" checked />
+                        Enable Audio
+                    </label>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="connect()" id="connectBtn">
+                        Connect to Server
+                    </button>
+                    <button
+                        class="btn-secondary"
+                        onclick="disconnect()"
+                        disabled
+                        id="disconnectBtn"
+                    >
+                        Disconnect
+                    </button>
+                    <button class="btn-success" onclick="getUserMedia()" id="getMediaBtn" disabled>
+                        Get Camera/Mic
+                    </button>
+                    <button class="btn-success" onclick="joinCall()" disabled id="joinBtn">
+                        Join Call
+                    </button>
+                    <button class="btn-danger" onclick="leaveCall()" disabled id="leaveBtn">
+                        Leave Call
+                    </button>
+                </div>
+
+                <div class="btn-group" style="margin-top: 15px">
+                    <button
+                        class="btn-warning"
+                        onclick="toggleVideo()"
+                        disabled
+                        id="toggleVideoBtn"
+                    >
+                        Toggle Video
+                    </button>
+                    <button
+                        class="btn-warning"
+                        onclick="toggleAudio()"
+                        disabled
+                        id="toggleAudioBtn"
+                    >
+                        Toggle Audio
+                    </button>
+                </div>
+            </div>
+
+            <div class="participants-list">
+                <h3>Participants (<span id="participantCount">0</span>)</h3>
+                <div id="participantsList"></div>
+            </div>
+
+            <div class="videos-container">
+                <div class="video-wrapper">
+                    <h3>📹 Your Video (Local)</h3>
+                    <video id="localVideo" autoplay muted playsinline></video>
+                    <div class="video-info">
+                        <span class="badge badge-off" id="localVideoStatus">Video: OFF</span>
+                        <span class="badge badge-off" id="localAudioStatus">Audio: OFF</span>
+                    </div>
+                </div>
+                <div id="remoteVideos"></div>
+            </div>
+
+            <div class="logs-panel">
+                <h3>📋 Event Logs</h3>
+                <button
+                    onclick="document.getElementById('logs').innerHTML = ''"
+                    style="float: right"
+                    class="btn-secondary"
+                >
+                    Clear Logs
+                </button>
+                <div id="logs"></div>
+            </div>
+        </div>
+
+        <script>
+            let socket = null;
+            let localStream = null;
+            let peerConnections = new Map();
+            let remoteStreams = new Map();
+
+            const ICE_SERVERS = {
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" },
+                ],
+            };
+
+            // Logging function
+            function log(message, type = "info") {
+                const logs = document.getElementById("logs");
+                const timestamp = new Date().toLocaleTimeString();
+                const logClass = `log-${type}`;
+                logs.innerHTML += `<div class="log-entry ${logClass}">[${timestamp}] ${message}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+
+            // Connect to server with JWT authentication
+            function connect() {
+                const serverUrl = document.getElementById("serverUrl").value;
+                const jwtToken = document.getElementById("jwtToken").value.trim();
+
+                if (!jwtToken) {
+                    log("❌ Please enter your JWT token", "error");
+                    alert("Please enter your JWT token first!");
+                    return;
+                }
+
+                document.getElementById("connectionStatus").textContent = "Connecting...";
+                document.getElementById("connectionStatus").className =
+                    "connection-status status-pending";
+
+                log("🔄 Connecting to server with authentication...", "info");
+
+                // Connect with JWT token in auth object
+                socket = io(`${serverUrl}/calling`, {
+                    auth: {
+                        token: jwtToken,
+                    },
+                    transports: ["websocket", "polling"],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    reconnectionAttempts: 5,
+                });
+
+                // Handle successful authentication
+                socket.on("authenticated", (data) => {
+                    log(
+                        `✅ Authenticated successfully! Socket ID: ${data.socketId}, User ID: ${data.userId}`,
+                        "success",
+                    );
+                    document.getElementById("connectionStatus").textContent = "Connected";
+                    document.getElementById("connectionStatus").className =
+                        "connection-status status-connected";
+                    document.getElementById("mySocketId").textContent =
+                        "Socket: " + data.socketId.substring(0, 10) + "...";
+
+                    document.getElementById("connectBtn").disabled = true;
+                    document.getElementById("disconnectBtn").disabled = false;
+                    document.getElementById("getMediaBtn").disabled = false;
+
+                    setupSocketListeners();
+                });
+
+                // Handle authentication error
+                socket.on("authError", (error) => {
+                    log(`❌ Authentication failed: ${error.message}`, "error");
+                    document.getElementById("connectionStatus").textContent = "Auth Failed";
+                    document.getElementById("connectionStatus").className =
+                        "connection-status status-disconnected";
+                    alert(
+                        `Authentication failed: ${error.message}\n\nPlease check your JWT token.`,
+                    );
+                    socket.disconnect();
+                });
+
+                // Handle connection
+                socket.on("connect", () => {
+                    log(`🔌 Socket connected: ${socket.id}`, "info");
+                });
+
+                // Handle connection error
+                socket.on("connect_error", (error) => {
+                    log(`❌ Connection error: ${error.message}`, "error");
+                    document.getElementById("connectionStatus").textContent = "Connection Error";
+                    document.getElementById("connectionStatus").className =
+                        "connection-status status-disconnected";
+                });
+
+                // Handle disconnection
+                socket.on("disconnect", (reason) => {
+                    log(`⚠️ Disconnected: ${reason}`, "warning");
+                    document.getElementById("connectionStatus").textContent = "Disconnected";
+                    document.getElementById("connectionStatus").className =
+                        "connection-status status-disconnected";
+                    document.getElementById("mySocketId").textContent = "";
+
+                    document.getElementById("connectBtn").disabled = false;
+                    document.getElementById("disconnectBtn").disabled = true;
+                    document.getElementById("getMediaBtn").disabled = true;
+                    document.getElementById("joinBtn").disabled = true;
+                    document.getElementById("leaveBtn").disabled = true;
+                    document.getElementById("toggleVideoBtn").disabled = true;
+                    document.getElementById("toggleAudioBtn").disabled = true;
+                });
+
+                // Handle general errors
+                socket.on("error", (error) => {
+                    log(`❌ Error: ${error.message}`, "error");
+                });
+            }
+
+            // Setup socket event listeners
+            function setupSocketListeners() {
+                socket.on("existingParticipants", async ({ participants }) => {
+                    log(`📋 Found ${participants.length} existing participants`, "info");
+                    updateParticipantsList(participants);
+
+                    for (const participant of participants) {
+                        await createPeerConnection(participant.socketId, true);
+                    }
+                });
+
+                socket.on(
+                    "participantJoined",
+                    async ({ socketId, userName, hasVideo, hasAudio }) => {
+                        log(`👋 ${userName} (${socketId}) joined the call`, "success");
+                        await createPeerConnection(socketId, false);
+                    },
+                );
+
+                socket.on("participantLeft", ({ socketId }) => {
+                    log(`👋 Participant ${socketId} left`, "warning");
+                    removePeerConnection(socketId);
+                });
+
+                socket.on("offer", async ({ offer, senderId }) => {
+                    log(`📨 Received offer from ${senderId}`, "info");
+                    await handleOffer(offer, senderId);
+                });
+
+                socket.on("answer", async ({ answer, senderId }) => {
+                    log(`📨 Received answer from ${senderId}`, "info");
+                    await handleAnswer(answer, senderId);
+                });
+
+                socket.on("iceCandidate", async ({ candidate, senderId }) => {
+                    log(`🧊 Received ICE candidate from ${senderId}`, "info");
+                    await handleIceCandidate(candidate, senderId);
+                });
+
+                socket.on("participantVideoStarted", ({ socketId }) => {
+                    log(`📹 ${socketId} started video`, "info");
+                });
+
+                socket.on("participantVideoStopped", ({ socketId }) => {
+                    log(`📹 ${socketId} stopped video`, "info");
+                });
+
+                socket.on("participantAudioStarted", ({ socketId }) => {
+                    log(`🎤 ${socketId} started audio`, "info");
+                });
+
+                socket.on("participantAudioStopped", ({ socketId }) => {
+                    log(`🔇 ${socketId} stopped audio`, "info");
+                });
+            }
+
+            // Get user media
+            async function getUserMedia() {
+                try {
+                    const enableVideo = document.getElementById("enableVideo").checked;
+                    const enableAudio = document.getElementById("enableAudio").checked;
+
+                    log("📷 Requesting camera/microphone access...", "info");
+
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        video: enableVideo ? { width: 1280, height: 720 } : false,
+                        audio: enableAudio,
+                    });
+
+                    const localVideo = document.getElementById("localVideo");
+                    localVideo.srcObject = localStream;
+
+                    updateLocalMediaStatus();
+
+                    log("✅ Got local media stream", "success");
+                    document.getElementById("joinBtn").disabled = false;
+                } catch (error) {
+                    log(`❌ Error accessing media devices: ${error.message}`, "error");
+                    alert(
+                        `Failed to access camera/microphone: ${error.message}\n\nPlease allow camera/microphone permissions.`,
+                    );
+                }
+            }
+
+            // Join call
+            function joinCall() {
+                const callId = document.getElementById("callId").value;
+                const userName = document.getElementById("userName").value;
+                const hasVideo = document.getElementById("enableVideo").checked;
+                const hasAudio = document.getElementById("enableAudio").checked;
+
+                socket.emit("joinCall", {
+                    callId,
+                    userName,
+                    hasVideo,
+                    hasAudio,
+                });
+
+                log(`🚀 Joining call: ${callId} as ${userName}`, "success");
+
+                document.getElementById("joinBtn").disabled = true;
+                document.getElementById("leaveBtn").disabled = false;
+                document.getElementById("toggleVideoBtn").disabled = false;
+                document.getElementById("toggleAudioBtn").disabled = false;
+            }
+
+            // Leave call
+            function leaveCall() {
+                const callId = document.getElementById("callId").value;
+
+                socket.emit("leaveCall", { callId });
+
+                // Close all peer connections
+                peerConnections.forEach((pc) => pc.close());
+                peerConnections.clear();
+                remoteStreams.clear();
+
+                // Clear remote videos
+                document.getElementById("remoteVideos").innerHTML = "";
+                document.getElementById("participantsList").innerHTML = "";
+                document.getElementById("participantCount").textContent = "0";
+
+                log("👋 Left the call", "warning");
+
+                document.getElementById("joinBtn").disabled = false;
+                document.getElementById("leaveBtn").disabled = true;
+                document.getElementById("toggleVideoBtn").disabled = true;
+                document.getElementById("toggleAudioBtn").disabled = true;
+            }
+
+            // Toggle video
+            function toggleVideo() {
+                if (!localStream) return;
+
+                const videoTrack = localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    const callId = document.getElementById("callId").value;
+
+                    const event = videoTrack.enabled ? "startVideo" : "stopVideo";
+                    socket.emit(event, { callId });
+
+                    updateLocalMediaStatus();
+                    log(`📹 Video ${videoTrack.enabled ? "enabled" : "disabled"}`, "info");
+                }
+            }
+
+            // Toggle audio
+            function toggleAudio() {
+                if (!localStream) return;
+
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    const callId = document.getElementById("callId").value;
+
+                    const event = audioTrack.enabled ? "startAudio" : "stopAudio";
+                    socket.emit(event, { callId });
+
+                    updateLocalMediaStatus();
+                    log(`🎤 Audio ${audioTrack.enabled ? "enabled" : "disabled"}`, "info");
+                }
+            }
+
+            // Update local media status
+            function updateLocalMediaStatus() {
+                const videoStatus = document.getElementById("localVideoStatus");
+                const audioStatus = document.getElementById("localAudioStatus");
+
+                const videoTrack = localStream?.getVideoTracks()[0];
+                const audioTrack = localStream?.getAudioTracks()[0];
+
+                if (videoTrack?.enabled) {
+                    videoStatus.textContent = "Video: ON";
+                    videoStatus.className = "badge badge-video";
+                } else {
+                    videoStatus.textContent = "Video: OFF";
+                    videoStatus.className = "badge badge-off";
+                }
+
+                if (audioTrack?.enabled) {
+                    audioStatus.textContent = "Audio: ON";
+                    audioStatus.className = "badge badge-audio";
+                } else {
+                    audioStatus.textContent = "Audio: OFF";
+                    audioStatus.className = "badge badge-off";
+                }
+            }
+
+            // Create peer connection
+            async function createPeerConnection(remoteSocketId, initiator) {
+                const pc = new RTCPeerConnection(ICE_SERVERS);
+                peerConnections.set(remoteSocketId, pc);
+
+                log(`🔗 Creating peer connection with ${remoteSocketId}`, "info");
+
+                // Add local tracks
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => {
+                        pc.addTrack(track, localStream);
+                    });
+                }
+
+                // Handle incoming tracks
+                pc.ontrack = (event) => {
+                    log(`📺 Received remote track from ${remoteSocketId}`, "success");
+                    const [remoteStream] = event.streams;
+                    remoteStreams.set(remoteSocketId, remoteStream);
+                    addRemoteVideo(remoteSocketId, remoteStream);
+                };
+
+                // Handle ICE candidates
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socket.emit("iceCandidate", {
+                            targetSocketId: remoteSocketId,
+                            candidate: event.candidate,
+                        });
+                    }
+                };
+
+                // Connection state
+                pc.onconnectionstatechange = () => {
+                    log(
+                        `🔌 Connection state with ${remoteSocketId}: ${pc.connectionState}`,
+                        "info",
+                    );
+                };
+
+                // If initiator, create offer
+                if (initiator) {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+
+                    socket.emit("offer", {
+                        targetSocketId: remoteSocketId,
+                        signal: offer,
+                    });
+
+                    log(`📤 Sent offer to ${remoteSocketId}`, "info");
+                }
+            }
+
+            // Handle incoming offer
+            async function handleOffer(offer, senderId) {
+                let pc = peerConnections.get(senderId);
+
+                if (!pc) {
+                    await createPeerConnection(senderId, false);
+                    pc = peerConnections.get(senderId);
+                }
+
+                await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+
+                socket.emit("answer", {
+                    targetSocketId: senderId,
+                    signal: answer,
+                });
+
+                log(`📤 Sent answer to ${senderId}`, "info");
+            }
+
+            // Handle incoming answer
+            async function handleAnswer(answer, senderId) {
+                const pc = peerConnections.get(senderId);
+                if (pc) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                }
+            }
+
+            // Handle incoming ICE candidate
+            async function handleIceCandidate(candidate, senderId) {
+                const pc = peerConnections.get(senderId);
+                if (pc) {
+                    try {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (error) {
+                        log(`⚠️ Error adding ICE candidate: ${error.message}`, "warning");
+                    }
+                }
+            }
+
+            // Add remote video
+            function addRemoteVideo(socketId, stream) {
+                const container = document.getElementById("remoteVideos");
+
+                // Remove existing if present
+                const existing = document.getElementById(`video-${socketId}`);
+                if (existing) {
+                    existing.remove();
+                }
+
+                const wrapper = document.createElement("div");
+                wrapper.className = "video-wrapper";
+                wrapper.id = `video-${socketId}`;
+
+                wrapper.innerHTML = `
+                <h3>👤 Remote: ${socketId.substring(0, 8)}...</h3>
+                <video autoplay playsinline></video>
+                <div class="video-info">
+                    <span class="badge badge-video">Connected</span>
+                </div>
+            `;
+
+                const video = wrapper.querySelector("video");
+                video.srcObject = stream;
+
+                container.appendChild(wrapper);
+            }
+
+            // Remove peer connection
+            function removePeerConnection(socketId) {
+                const pc = peerConnections.get(socketId);
+                if (pc) {
+                    pc.close();
+                    peerConnections.delete(socketId);
+                }
+
+                remoteStreams.delete(socketId);
+
+                const videoElement = document.getElementById(`video-${socketId}`);
+                if (videoElement) {
+                    videoElement.remove();
+                }
+            }
+
+            // Update participants list
+            function updateParticipantsList(participants) {
+                const list = document.getElementById("participantsList");
+                const count = document.getElementById("participantCount");
+
+                count.textContent = participants.length + 1; // +1 for self
+
+                list.innerHTML = participants
+                    .map(
+                        (p) => `
+                <div class="participant-item">
+                    <div>
+                        <div class="participant-name">${p.userName}</div>
+                        <div class="participant-id">${p.socketId}</div>
+                    </div>
+                    <div>
+                        <span class="badge ${p.hasVideo ? "badge-video" : "badge-off"}">${p.hasVideo ? "📹" : "🚫"}</span>
+                        <span class="badge ${p.hasAudio ? "badge-audio" : "badge-off"}">${p.hasAudio ? "🎤" : "🔇"}</span>
+                    </div>
+                </div>
+            `,
+                    )
+                    .join("");
+            }
+
+            // Disconnect
+            function disconnect() {
+                if (localStream) {
+                    localStream.getTracks().forEach((track) => track.stop());
+                    localStream = null;
+                    document.getElementById("localVideo").srcObject = null;
+                }
+
+                peerConnections.forEach((pc) => pc.close());
+                peerConnections.clear();
+                remoteStreams.clear();
+
+                if (socket) {
+                    socket.disconnect();
+                    socket = null;
+                }
+
+                document.getElementById("remoteVideos").innerHTML = "";
+                updateLocalMediaStatus();
+                log("🔌 Disconnected from server", "warning");
+            }
+        </script>
+    </body>
+</html>

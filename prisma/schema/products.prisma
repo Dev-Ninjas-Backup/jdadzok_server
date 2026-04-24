@@ -1,0 +1,44 @@
+model Product {
+  id String @id @default(uuid())
+
+  // Product seller
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Product category
+  categoryId String
+  category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  // Product details
+  title          String
+  description    String        @db.Text
+  price          Float // Product price
+  location       String? // Physical location if applicable
+  availability   Int           @default(1) // Stock quantity
+  digitalFileUrl String[]
+  spent          Float         @default(0)
+  promotionFee   Float         @default(0.0)
+  // Product settings
+  isVisible      Boolean       @default(true) // Can be hidden by seller
+  status         Status        @default(CONTINUED)
+  dedicatedAd    DedicatedAd[]
+  // Product interactions
+  wishlistItems  Wishlist[] // Users who wishlisted this
+  orders         Order[] // Orders for this product
+  revenues       Revenue[] // Revenue generated from this product
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([isVisible])
+  @@index([price])
+  @@map("products")
+}
+
+enum Status {
+  CONTINUED
+  SOLDOUT
+  DISCONTINUED
+}

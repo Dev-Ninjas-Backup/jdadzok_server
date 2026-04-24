@@ -1,0 +1,25 @@
+model VolunteerProject {
+  id          String    @id @default(uuid())
+  title       String
+  description String    @db.Text
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+
+  // --- RELATION TO NGO ---
+  ngoId String
+  ngo   Ngo    @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  // NGO who created this project
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Applications
+  applications VolunteerApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Endorsement Endorsement[]
+}

@@ -1,0 +1,27 @@
+model FileInstance {
+  id String @id @default(uuid())
+
+  // File information
+  filename         String? // Generated filename
+  originalFilename String? // Original uploaded filename
+  path             String? // File path on server
+  url              String  @unique // Public URL to access file
+
+  // File metadata
+  fileType String? // File extension
+  mimeType String? // MIME type
+  size     Int? // File size in bytes
+
+  // File ownership
+  uploadedById String?
+  uploadedBy   User?   @relation("UploadedFiles", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Messenger Messenger[]
+
+  @@index([uploadedById])
+  @@index([fileType])
+  @@index([createdAt])
+  @@map("file_instances")
+}

@@ -1,0 +1,14 @@
+model Choice {
+  id String @id @default(uuid())
+
+  text String @unique // Choice text (e.g., "Entertainment & Pop Culture")
+  slug String @unique // URL-friendly version
+
+  UserChoice UserChoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@map("choices")
+}

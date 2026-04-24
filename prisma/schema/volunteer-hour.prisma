@@ -1,0 +1,10 @@
+model VolunteerHour {
+  id             String               @id @default(uuid())
+  applicationId  String
+  application    VolunteerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  loggedByUserId String
+  loggedByUser   User                 @relation(fields: [loggedByUserId], references: [id])
+  hours          Int
+  note           String?              @db.Text
+  createdAt      DateTime             @default(now())
+}

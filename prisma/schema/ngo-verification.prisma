@@ -1,0 +1,23 @@
+model NgoVerification {
+  id String @id @default(uuid())
+
+  // NGO being verified
+  ngoId String
+  ngo   Ngo    @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  // Verification details
+  verificationType     IdentityVerificationType
+  documents            String[] // URL to verification documents
+  status               VerificationStatus       @default(PENDING) // PENDING, APPROVED, REJECTED
+  verificationResponse Json?
+  // Admin who processed verification
+  reviewedById         String?
+  reviewedBy           User?                    @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ngoId])
+  @@index([status])
+  @@map("ngo_verifications")
+}

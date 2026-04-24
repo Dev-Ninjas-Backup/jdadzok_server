@@ -1,0 +1,27 @@
+model Subscription {
+  id String @id @default(uuid())
+
+  // User subscribing
+  subscriberId String
+  subscriber   User   @relation("SubscriberSubscriptions", fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  // Creator being subscribed to
+  creatorId String
+  creator   User   @relation("CreatorSubscriptions", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  // Subscription details
+  status     SubscriptionStatus @default(PENDING)
+  monthlyFee Float              @default(0.0) // Monthly subscription fee
+  startDate  DateTime? // When subscription started
+  endDate    DateTime? // When subscription ends
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User can only subscribe once to each creator
+  @@unique([subscriberId, creatorId])
+  @@index([subscriberId])
+  @@index([creatorId])
+  @@index([status])
+  @@map("subscriptions")
+}

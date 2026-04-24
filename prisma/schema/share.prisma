@@ -1,0 +1,20 @@
+model Share {
+  id String @id @default(uuid())
+
+  // User sharing the post
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Post being shared
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prevent duplicate shares
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@map("shares")
+}

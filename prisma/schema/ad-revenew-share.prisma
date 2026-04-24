@@ -1,0 +1,25 @@
+model AdRevenueShare {
+  id String @id @default(uuid())
+
+  // User receiving revenue share
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Revenue period
+  month Int // 1-12
+  year  Int // e.g., 2025
+
+  // Revenue details
+  amount          Float // Amount earned
+  capLevelAtTime  CapLevel // User's cap level during this period
+  sharePercentage Float // Percentage they received (2%, 10%, 20%, etc.)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One revenue share per user per month
+  @@unique([userId, month, year])
+  @@index([userId])
+  @@index([year, month])
+  @@map("ad_revenue_shares")
+}

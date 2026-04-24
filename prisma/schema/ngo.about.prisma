@@ -1,0 +1,18 @@
+model NgoAbout {
+  id String @id @default(uuid())
+
+  // Link to NGO
+  ngoId String @unique
+  ngo   Ngo    @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  // Extended information
+  location     String? // Detailed location
+  foundingDate DateTime? // When NGO was founded
+  mission      String?   @db.Text // NGO mission statement
+  website      String? // NGO website
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ngo_about")
+}

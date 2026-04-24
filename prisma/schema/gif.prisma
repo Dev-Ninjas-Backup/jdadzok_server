@@ -1,0 +1,12 @@
+model Gif {
+  id  String @id @default(uuid())
+  url String @unique // GIF URL
+
+  // Posts using this GIF
+  postMetadata PostMetadata[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("gifs")
+}

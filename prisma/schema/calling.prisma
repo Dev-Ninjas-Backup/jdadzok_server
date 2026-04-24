@@ -1,0 +1,40 @@
+model Calling {
+  id              String     @id @default(uuid())
+  hostUserId      String
+  recipientUserId String?
+  status          CallStatus @default(CALLING)
+  title           String?
+  isPrivate       Boolean    @default(false)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  host         User              @relation("HostedCalls", fields: [hostUserId], references: [id])
+  recipient    User?             @relation("ReceivedCalls", fields: [recipientUserId], references: [id]) // ← ADD THIS RELATION
+  participants CallParticipant[]
+
+  @@index([hostUserId])
+  @@index([recipientUserId]) 
+  @@map("calls")
+}
+
+model CallParticipant {
+  id        String    @id @default(uuid())
+  callId    String
+  socketId  String
+  userName  String
+  hasVideo  Boolean   @default(false)
+  hasAudio  Boolean   @default(false)
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  call Calling @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@index([socketId])
+  @@map("call_participants")
+}
+

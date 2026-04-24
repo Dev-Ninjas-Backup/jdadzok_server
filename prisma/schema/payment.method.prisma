@@ -1,0 +1,24 @@
+model PaymentMethods {
+  id String @id @default(uuid())
+
+  // Who hold that payment method 
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Card info 
+  method      PaymentMethod
+  cardHolder  String
+  cardNumber  String
+  expireMonth String
+  expireYear  String
+  CVC         String
+  isDefault   Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([method])
+  @@index([createdAt])
+  @@map("payment-methods")
+}

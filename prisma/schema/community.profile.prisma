@@ -1,0 +1,26 @@
+model CommunityProfile {
+  id String @id @default(uuid())
+
+  // Link to community
+  communityId String    @unique
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  // Profile information
+  name           String
+  username       String?
+  title          String? // Community tagline
+  bio            String? @db.Text
+  avatarUrl      String? // Community logo
+  coverUrl       String? // Cover image
+  location       String? // Community location
+  balance        Float   @default(0.0)
+  // Social metrics
+  followersCount Int     @default(0)
+  followingCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+  @@map("community_profiles")
+}

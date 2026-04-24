@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>LiveChat - 2 User Test</title>
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: system-ui, sans-serif;
+            }
+            body {
+                background: #f4f6f9;
+                color: #333;
+            }
+
+            .container {
+                display: flex;
+                height: 100vh;
+            }
+            .sidebar {
+                width: 300px;
+                background: #fff;
+                border-right: 1px solid #ddd;
+                overflow-y: auto;
+            }
+            .chat-area {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .header {
+                padding: 1rem;
+                border-bottom: 1px solid #eee;
+                font-weight: 600;
+            }
+            .chat-list {
+                list-style: none;
+            }
+            .chat-item {
+                padding: 1rem;
+                border-bottom: 1px solid #eee;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .chat-item:hover {
+                background: #f8f9fa;
+            }
+            .chat-item.active {
+                background: #e3f2fd;
+            }
+            .unread-badge {
+                background: #ff4081;
+                color: white;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: #ddd;
+                margin-right: 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .chat-header {
+                padding: 1rem;
+                border-bottom: 1px solid #ddd;
+                background: #fff;
+                display: flex;
+                align-items: center;
+            }
+            .chat-messages {
+                flex: 1;
+                padding: 1rem;
+                overflow-y: auto;
+                background: #f9f9f9;
+            }
+            .message {
+                margin: 8px 0;
+                max-width: 70%;
+                padding: 10px 14px;
+                border-radius: 18px;
+                position: relative;
+            }
+            .message.sent {
+                background: #2979ff;
+                color: white;
+                margin-left: auto;
+                border-bottom-right-radius: 4px;
+            }
+            .message.received {
+                background: #e0e0e0;
+                color: #333;
+                margin-right: auto;
+                border-bottom-left-radius: 4px;
+            }
+            .message .time {
+                font-size: 11px;
+                opacity: 0.7;
+                margin-top: 4px;
+            }
+            .read-receipt {
+                font-size: 10px;
+                color: #2979ff;
+                margin-top: 2px;
+                text-align: right;
+            }
+
+            .typing {
+                font-style: italic;
+                color: #888;
+                padding: 0.5rem 1rem;
+                display: none;
+            }
+
+            .input-area {
+                padding: 1rem;
+                background: #fff;
+                border-top: 1px solid #ddd;
+                display: flex;
+                gap: 10px;
+            }
+            .input-area input {
+                flex: 1;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 25px;
+                outline: none;
+            }
+            .input-area button {
+                padding: 0 20px;
+                background: #2979ff;
+                color: white;
+                border: none;
+                border-radius: 25px;
+                cursor: pointer;
+            }
+
+            .token-box {
+                padding: 1rem;
+                background: #fff;
+                border-bottom: 1px solid #eee;
+            }
+            .token-box input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-family: monospace;
+            }
+            .token-box button {
+                margin-top: 8px;
+                padding: 8px 16px;
+                background: #2979ff;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+
+            .user-info {
+                padding: 0.5rem 1rem;
+                background: #e8f5e8;
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Token Input -->
+        <div class="token-box">
+            <h3>Paste JWT Token</h3>
+            <input type="text" id="jwtToken" placeholder="eyJhbGciOi..." />
+            <button onclick="connectWithToken()">Connect</button>
+            <p><small>Use mock tokens below or generate real ones</small></p>
+        </div>
+
+        <!-- User Info -->
+        <div id="userInfo" class="user-info" style="display: none"></div>
+
+        <!-- Chat UI -->
+        <div id="chatApp" class="container" style="display: none">
+            <div class="sidebar">
+                <div class="header">My Chats</div>
+                <ul class="chat-list" id="chatList"></ul>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header">
+                    <div id="chatWith"></div>
+                </div>
+                <div class="chat-messages" id="messages"></div>
+                <div id="typing" class="typing">Typing...</div>
+                <div class="input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." />
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // === CONFIG ===
+            const API_URL = "http://localhost:5056/chat";
+            const SOCKET_URL = "http://localhost:5056/chat";
+
+            // === GLOBALS ===
+            let socket;
+            let currentUser = null;
+            let currentChat = null;
+            let messagesEnd = null;
+
+            // === MOCK TOKENS (for testing) ===
+            const MOCK_TOKENS = {
+                user1: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0ZmU0YzE2Ny1iOTRhLTQwOTctYWM1My04MzNjZjFjZjgzZGIiLCJyb2xlcyI6IlVTRVIiLCJlbWFpbCI6InNvZnR2YW5jZXdlYkBnbWFpbC5jb20iLCJpYXQiOjE3NjIyMDk0MjQsImV4cCI6MTc2OTk4NTQyNH0.4Uhox6U5eBwEgFrmPxucRl8mPCP_nPKazQ7OoJIQhZ0",
+                user2: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1Njc0ODcxOS0wMzNmLTQ5NjEtOGIxOC1hMDZjOWE5NmZlNmUiLCJyb2xlcyI6IlNVUEVSX0FETUlOIiwiZW1haWwiOiJzdXBlcmFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTc2MjIxMDMyNCwiZXhwIjoxNzY5OTg2MzI0fQ.CNrvcyN6OcFgrgvn6Wz0ig0PtgdBc4XG27kQby0idXU",
+            };
+
+            // === CONNECT WITH TOKEN ===
+            function connectWithToken() {
+                const token = document.getElementById("jwtToken").value.trim() || MOCK_TOKENS.user1;
+                if (!token) return alert("Paste a token");
+
+                localStorage.setItem("token", token);
+
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    currentUser = { id: payload.sub, email: payload.email };
+                    document.getElementById("userInfo").textContent =
+                        `Connected as: ${currentUser.email} (ID: ${currentUser.id})`;
+                    document.getElementById("userInfo").style.display = "block";
+                } catch (e) {
+                    return alert("Invalid JWT");
+                }
+
+                document.querySelector(".token-box").style.display = "none";
+                document.getElementById("chatApp").style.display = "flex";
+
+                initSocket();
+                loadChats();
+            }
+
+            // === SOCKET.IO ===
+            function initSocket() {
+                socket = io(SOCKET_URL, {
+                    auth: { token: localStorage.getItem("token") },
+                });
+
+                socket.on("connect", () => {
+                    console.log("Connected");
+                });
+
+                socket.on("chat:message_receive", (msg) => {
+                    if (msg.chatId === currentChat?.id) {
+                        appendMessage(msg, msg.sender.id === currentUser.id);
+                        if (msg.sender.id !== currentUser.id) markAsRead(msg.id);
+                    } else {
+                        updateUnreadCount(msg.chatId);
+                    }
+                });
+
+                socket.on("chat:message_read", ({ messageId, readBy }) => {
+                    const el = document.querySelector(`[data-msg-id="${messageId}"] .read-receipt`);
+                    if (el && readBy !== currentUser.id) {
+                        el.textContent = "Read";
+                    }
+                });
+
+                socket.on("chat:typing_start", () => {
+                    document.getElementById("typing").style.display = "block";
+                });
+
+                socket.on("chat:typing_stop", () => {
+                    document.getElementById("typing").style.display = "none";
+                });
+            }
+
+            // === LOAD CHATS ===
+            async function loadChats() {
+                try {
+                    const res = await axios.get(`${API_URL}/chat/my`, {
+                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                    });
+
+                    const list = document.getElementById("chatList");
+                    list.innerHTML = "";
+
+                    res.data.forEach((chat) => {
+                        const other = chat.participants.find(
+                            (p) => p.user.id !== currentUser.id,
+                        )?.user;
+                        const lastMsg = chat.messages[0];
+
+                        const li = document.createElement("li");
+                        li.className = "chat-item";
+                        li.onclick = () => openChat(chat, other);
+
+                        li.innerHTML = `
+            <div style="display: flex; align-items: center;">
+              <div class="avatar">${(other?.profile?.name || "U")[0]}</div>
+              <div>
+                <div><strong>${other?.profile?.name || "User"}</strong></div>
+                <div style="font-size: 13px; color: #666;">
+                  ${lastMsg ? (lastMsg.senderId === currentUser.id ? "You: " : "") + truncate(lastMsg.content, 30) : "No messages"}
+                </div>
+              </div>
+            </div>
+            ${chat.unread > 0 ? `<div class="unread-badge">${chat.unread}</div>` : ""}
+          `;
+
+                        list.appendChild(li);
+                    });
+                } catch (err) {
+                    alert("Failed to load chats. Token valid?");
+                }
+            }
+
+            // === OPEN CHAT ===
+            async function openChat(chat, otherUser) {
+                currentChat = chat;
+                document.getElementById("chatWith").textContent =
+                    otherUser?.profile?.name || "User";
+
+                document
+                    .querySelectorAll(".chat-item")
+                    .forEach((i) => i.classList.remove("active"));
+                event.target.closest(".chat-item").classList.add("active");
+
+                await loadMessages(chat.id, true);
+                scrollToBottom();
+            }
+
+            // === LOAD MESSAGES ===
+            async function loadMessages(chatId, reset = false) {
+                if (reset) {
+                    document.getElementById("messages").innerHTML = "";
+                    messagesEnd = null;
+                }
+
+                try {
+                    const res = await axios.get(`${API_URL}/chat/${chatId}/messages`, {
+                        params: { cursor: messagesEnd },
+                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                    });
+
+                    const msgs = res.data;
+                    if (msgs.length > 0) messagesEnd = msgs[msgs.length - 1].id;
+
+                    msgs.reverse().forEach((msg) => {
+                        appendMessage(msg, msg.sender.id === currentUser.id);
+                    });
+
+                    if (reset) scrollToBottom();
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            // === APPEND MESSAGE ===
+            function appendMessage(msg, isSent) {
+                const div = document.createElement("div");
+                div.className = `message ${isSent ? "sent" : "received"}`;
+                div.dataset.msgId = msg.id;
+
+                div.innerHTML = `
+        ${msg.content || ""}
+        <div class="time">${formatTime(msg.createdAt)}</div>
+        ${isSent ? '<div class="read-receipt">Sent</div>' : ""}
+      `;
+
+                document.getElementById("messages").appendChild(div);
+            }
+
+            // === SEND MESSAGE ===
+            function sendMessage() {
+                const input = document.getElementById("messageInput");
+                const content = input.value.trim();
+                if (!content || !currentChat) return;
+
+                socket.emit("chat:message_send", {
+                    chatId: currentChat.id,
+                    content,
+                });
+
+                input.value = "";
+            }
+
+            // === MARK AS READ ===
+            function markAsRead(messageId) {
+                socket.emit("chat:message_read", { messageId });
+            }
+
+            // === TYPING ===
+            let typingTimer;
+            document.getElementById("messageInput").addEventListener("input", () => {
+                socket.emit("chat:typing_start", { chatId: currentChat?.id });
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    socket.emit("chat:typing_stop", { chatId: currentChat?.id });
+                }, 1000);
+            });
+
+            // === SCROLL ===
+            function scrollToBottom() {
+                const el = document.getElementById("messages");
+                el.scrollTop = el.scrollHeight;
+            }
+
+            // === UTILS ===
+            function truncate(str, n) {
+                return str?.length > n ? str.slice(0, n) + "..." : str;
+            }
+
+            function formatTime(date) {
+                const d = new Date(date);
+                return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            }
+
+            function updateUnreadCount(chatId) {
+                const item = document.querySelector(`[onclick*="'${chatId}'"]`);
+                if (item) {
+                    let badge = item.querySelector(".unread-badge");
+                    if (!badge) {
+                        badge = document.createElement("div");
+                        badge.className = "unread-badge";
+                        item.appendChild(badge);
+                    }
+                    const count = (parseInt(badge.textContent || "0") || 0) + 1;
+                    badge.textContent = count > 99 ? "99+" : count;
+                }
+            }
+
+            // === ENTER TO SEND ===
+            document.getElementById("messageInput").addEventListener("keypress", (e) => {
+                if (e.key === "Enter") sendMessage();
+            });
+
+            // === START CHAT (for testing) ===
+            window.startPrivateChat = async function (otherUserId) {
+                try {
+                    await axios.post(
+                        `${API_URL}/chat/private`,
+                        { otherUserId },
+                        {
+                            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                        },
+                    );
+                    await loadChats();
+                } catch (err) {
+                    alert("Failed: " + err.response?.data?.message);
+                }
+            };
+        </script>
+    </body>
+</html>

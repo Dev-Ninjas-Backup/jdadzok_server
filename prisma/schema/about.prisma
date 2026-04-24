@@ -1,0 +1,18 @@
+model About {
+  id String @id @default(uuid())
+
+  // Link to user
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Extended profile information
+  location    String? // Detailed location
+  dateOfBirth DateTime? // User's birthday
+  work        String? // Work/occupation details
+  website     String? // Personal website
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("about")
+}

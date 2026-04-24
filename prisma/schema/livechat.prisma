@@ -1,0 +1,124 @@
+// ---------------------------------------------------------------
+// 1. ENUMS
+// ---------------------------------------------------------------
+enum LiveChatType {
+  INDIVIDUAL
+  GROUP
+}
+
+enum LiveMessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum LiveMediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+// ---------------------------------------------------------------
+// 2. CHAT (your "LiveChat")
+// ---------------------------------------------------------------
+model LiveChat {
+  id        String       @id @default(uuid())
+  type      LiveChatType @default(INDIVIDUAL)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Who created the chat (optional)
+  createdBy   User?   @relation("LiveChatCreator", fields: [createdById], references: [id])
+  createdById String?
+
+  // Relations
+  participants LiveChatParticipant[]
+  messages     LiveMessage[]
+  messageReads LiveMessageRead[]
+
+  @@index([createdById])
+  @@index([type])
+  @@map("live_chats")
+}
+
+// ---------------------------------------------------------------
+// 3. PARTICIPANT – **with real PK** (your new model)
+// ---------------------------------------------------------------
+model LiveChatParticipant {
+  id String @id @default(uuid())
+
+  // Chat this participant belongs to
+  chatId String
+  chat   LiveChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  // User participating in chat
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime? // null = still active
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One user per chat only
+  @@unique([chatId, userId])
+  @@index([chatId])
+  @@index([userId])
+  @@map("chat_participants")
+}
+
+// ---------------------------------------------------------------
+// 4. MESSAGE
+// ---------------------------------------------------------------
+model LiveMessage {
+  id String @id @default(uuid())
+
+  chatId String
+  chat   LiveChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content   String?        @db.Text
+  mediaUrl  String?
+  mediaType LiveMediaType?
+
+  status LiveMessageStatus @default(SENT)
+
+  readBy LiveMessageRead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chatId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("live_messages")
+}
+
+// ---------------------------------------------------------------
+// 5. READ RECEIPT (optional chat reference)
+// ---------------------------------------------------------------
+model LiveMessageRead {
+  id String @id @default(uuid())
+
+  messageId String
+  message   LiveMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  readAt DateTime @default(now())
+
+  // Optional link back to chat (helps queries)
+  liveChat   LiveChat? @relation(fields: [liveChatId], references: [id])
+  liveChatId String?
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@index([liveChatId])
+  @@map("live_message_reads")
+}

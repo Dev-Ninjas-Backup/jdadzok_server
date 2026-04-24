@@ -1,0 +1,14 @@
+model DonationLog {
+  id            String   @id @default(uuid())
+  donorId       String
+  ngoId         String
+  ngoOwnerId    String
+  amount        Int
+  stripeTxFrom  String
+  stripeTxTo    String
+  createdAt     DateTime @default(now())
+
+  donor    User @relation("DonationDonor", fields: [donorId], references: [id])
+  ngo      Ngo  @relation(fields: [ngoId], references: [id])
+  ngoOwner User @relation("DonationReceiver", fields: [ngoOwnerId], references: [id])
+}

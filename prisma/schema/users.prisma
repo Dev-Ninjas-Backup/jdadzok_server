@@ -1,0 +1,134 @@
+model User {
+  id String @id @default(uuid())
+
+  // Authentication fields
+  email        String       @unique
+  password     String?
+  authProvider AuthProvider @default(EMAIL)
+  isVerified   Boolean      @default(false)
+
+  // User role and progression
+  role      Role     @default(USER)
+  capLevel  CapLevel @default(NONE)
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ---- ONE-TO-ONE RELATIONSHIPS ----
+  profile Profile?
+  about   About?
+  metrics UserMetrics? @relation("UserMetrics")
+
+  // ---- ONE-TO-MANY RELATIONSHIPS ----
+  posts    Post[]
+  comments Comment[]
+  likes    Like[]
+  shares   Share[]
+
+  // Chat system
+  messages        LiveMessage[]
+  chatParticipant LiveChatParticipant[]
+  createdChats    LiveChat[]            @relation("LiveChatCreator")
+  messageReads    LiveMessageRead[]
+  // Call system
+  // Calling relations
+  hostedCalls   Calling[] @relation("HostedCalls")
+  receivedCalls Calling[] @relation("ReceivedCalls") // ← ADD THIS
+  // Marketplace
+  products Product[]
+  orders   Order[]    @relation("UserOrders")
+  wishlist Wishlist[]
+
+  stripeAccountId  String?
+  stripeCustomerId String?
+  sellerEarnings   SellerEarnings?
+
+  // Volunteer system
+  volunteerApps     VolunteerApplication[]
+  volunteerProjects VolunteerProject[]
+
+  // Community/NGO ownership
+  ownedCommunities Community[]
+  ownedNgos        Ngo[]
+
+  // Monetization
+  payouts                 Payout[]
+  adRevenueShares         AdRevenueShare[]
+  revenues                Revenue[]
+  creatorSubscriptions    Subscription[]   @relation("CreatorSubscriptions")
+  subscriberSubscriptions Subscription[]   @relation("SubscriberSubscriptions")
+
+  // Moderation
+  notifications         Notification[]
+  bans                  Ban[]
+  reports               Report[]          @relation("ReportsMade")
+  reviewedReports       Report[]          @relation("ReportReviewer")
+  reviewedVerifications NgoVerification[] @relation("VerificationReviewer")
+  issuedBans            Ban[]             @relation("BanIssuer")
+
+  // File uploads
+  uploadedFiles FileInstance[] @relation("UploadedFiles")
+
+  // ---- MANY-TO-MANY RELATIONSHIPS ----
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
+
+  // ============== Following sytem ==================
+  // Users this user follows
+  follows    UserFollow[] @relation("follows")
+  // Users following this user
+  followedBy UserFollow[] @relation("followedBy")
+
+  // Community interactions
+  communityMemberships CommunitiesMembership[]
+  likedCommunities     Community[]             @relation("CommunityLikers")
+
+  // NGO interactions
+  followedNgos Ngo[] @relation("NgoFollowers")
+  likedNgos    Ngo[] @relation("NgoLikers")
+
+  // Post tags
+  taggedInPosts PostTagUser[]
+
+  // Endorsements
+  givenEndorsements    Endorsement[] @relation("Endorser")
+  receivedEndorsements Endorsement[] @relation("Endorsee")
+
+  // User choices
+  userChoices UserChoice[]
+
+  corporateContacts CorporateMembership[] @relation("CorporateContact")
+
+  CommunityFollower CommunityFollower[]
+
+  // payment methods -> a user can has multiple payment methods
+  PaymentMethods       PaymentMethods[]
+  NotificationToggle   NotificationToggle[]
+  userNotifications    UserNotification[]
+  VolunteerCompletion  VolunteerCompletion[]
+  VolunteerHour        VolunteerHour[]
+  VolunteerApplication VolunteerApplication[] @relation("ConfirmedByNgo")
+
+ 
+  // activityScores ActivityScore[]
+
+  // ----------donation relation -----------`
+  withdraws Withdraw[]
+
+  sentRequests     FriendRequest[] @relation("FriendRequestSender")
+  receivedRequests FriendRequest[] @relation("FriendRequestReceiver")
+
+  savedPosts SavedPost[]
+
+    // For donor role
+  donationsMade DonationLog[] @relation("DonationDonor")
+
+  // For NGO owner receiving donations
+  donationsReceived DonationLog[] @relation("DonationReceiver")
+
+  @@index([email])
+  @@index([capLevel])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}

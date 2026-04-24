@@ -1,0 +1,26 @@
+model Endorsement {
+  id String @id @default(uuid())
+
+  // User giving the endorsement
+  fromUserId String
+  fromUser   User   @relation("Endorser", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  // User receiving the endorsement
+  toUserId String
+  toUser   User   @relation("Endorsee", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  // Endorsement content
+  message String @db.Text // Endorsement message
+
+  // Optional: Link to specific volunteer project
+  projectId String?
+  project   VolunteerProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([projectId])
+  @@map("endorsements")
+}

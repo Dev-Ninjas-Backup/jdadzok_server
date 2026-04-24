@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "⚡ Running CI hook..."
+if ! node ./scripts/ci-hooks.js; then
+  echo "❌ ci-hooks.js failed, aborting commit."
+  exit 1
+fi
+
+if [ "$PRODUCTION" = "true" ]; then
+  echo "🚀 Running production script..."
+  if ! bash ./scripts/scripts.productions.sh; then
+    echo "❌ Production script failed, aborting commit."
+    exit 1
+  fi
+else
+  echo "⚡ Skipping production script"
+fi

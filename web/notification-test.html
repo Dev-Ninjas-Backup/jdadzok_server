@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Notifications for user</title>
+        <meta charset="utf-8" />
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+        <style>
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4caf50;
+                color: white;
+                padding: 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 1000;
+                max-width: 300px;
+                font-family: sans-serif;
+                animation: slideIn 0.3s ease;
+            }
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            #status {
+                margin: 10px 0;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>NGO Real-time Notifications</h1>
+        <button onclick="connect()">Connect to Notifications</button>
+        <div id="status" style="color: red">Disconnected</div>
+
+        <script>
+            let socket;
+
+            function connect() {
+                const token =
+                    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4YjVmZjFjNy1mZjZkLTRkODEtOWViNy1kOWE3M2E5ZDk2YWUiLCJyb2xlcyI6IlVTRVIiLCJlbWFpbCI6InNvZnR2YW5jZXdlYkBnbWFpbC5jb20iLCJpYXQiOjE3NjM2NTkwNDEsImV4cCI6MTc3MTQzNTA0MX0.hCiTmzGdI2UxhTv3nQe_va3rrUE_TLYSDiA56dWbpdI";
+
+                if (socket) socket.close();
+
+                socket = io("http://localhost:5056/js/notification", {
+                    auth: { token: `Bearer ${token}` },
+                    transports: ["websocket"],
+                });
+
+                socket.on("connect", () => {
+                    document.getElementById("status").innerHTML =
+                        "Connected! (Waiting for notification...)";
+                    document.getElementById("status").style.color = "green";
+                    console.log("WebSocket Connected!");
+                });
+
+                socket.on("connect_error", (err) => {
+                    console.error("Connection failed:", err.message);
+                    document.getElementById("status").innerHTML = "Failed: " + err.message;
+                    document.getElementById("status").style.color = "red";
+                });
+
+                socket.on("ngo.create", (data) => {
+                    console.log("NGO Notification Received:", data);
+                    showNotification(data);
+                    playSound();
+                });
+
+                socket.on("community.create", (data) => {
+                    console.log("community Notification Received:", data);
+                    showNotification(data);
+                    playSound();
+                });
+                socket.on("post.create", (data) => {
+                    console.log("post Notification Received:", data);
+                    showNotification(data);
+                    playSound();
+                });
+
+                socket.on("custom.create", (data) => {
+                    console.log("post.comment Notification Received:", data);
+                    showNotification(data);
+                    playSound();
+                });
+            }
+
+            socket.on("disconnect", () => {
+                document.getElementById("status").innerHTML = "Disconnected";
+                document.getElementById("status").style.color = "red";
+                console.log("WebSocket Disconnected!");
+            });
+            function showNotification(data) {
+                const div = document.createElement("div");
+                div.className = "notification";
+                div.innerHTML = `
+                <strong>${data.title}</strong><br>
+                <small>${data.message}</small><br>
+                <em>Just no w</em>
+            `;
+                document.body.appendChild(div);
+
+                setTimeout(() => {
+                    div.style.animation = "slideIn 0.3s reverse";
+                    setTimeout(() => div.remove(), 300);
+                }, 5000);
+            }
+
+            function playSound() {
+                const audio = new Audio(
+                    "https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3",
+                );
+                audio.play().catch(() => {});
+            }
+        </script>
+    </body>
+</html>

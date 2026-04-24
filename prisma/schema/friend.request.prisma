@@ -1,0 +1,19 @@
+model FriendRequest {
+  id        String   @id @default(uuid())
+
+  senderId   String
+  receiverId String
+
+  sender     User     @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  status     FriendRequestStatus @default(PENDING)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([senderId, receiverId]) // one person can't send twice
+  @@index([receiverId])
+}
+
+

@@ -1,0 +1,233 @@
+// ENUMS_START
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum AuthProvider {
+  GOOGLE
+  APPLE
+  EMAIL
+  FACEBOOK
+}
+
+enum CallStatus {
+  CALLING
+  RINING
+  ACTIVE
+  END
+  MISSED
+  DECLINED
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CapLevel {
+  NONE
+  GREEN
+  YELLOW
+  RED
+  BLACK
+  OSTRICH_FEATHER
+}
+
+enum ChatType {
+  TEXT
+  MEDIA
+  CALL
+}
+
+enum CommunityRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum CommunityType {
+  PUBLIC
+  PRIVATE
+  CUSTOM
+}
+
+enum Feelings {
+  HAPPY
+  SAD
+  ANGRY
+  AMAZED
+  AMUSED
+  SCARED
+  PROUD
+  TIRED
+  CONFUSED
+  RELAXED
+  EXCITED
+  WORRIED
+  LOVED
+  GRATEFUL
+  BLESSED
+  HUNGRY
+  HOPEFUL
+  LONELY
+  SILLY
+  THANKFUL
+  AWESOME
+  BORED
+  COOL
+  DETERMINED
+  IN_LOVE
+  INSPIRED
+  MOTIVATED
+  SICK
+  SLEEPY
+  STRESSED
+  STRONG
+  FUNNY
+  MEH
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  TRANSGENDER
+  GENDERQUEER
+  GENDERFLUID
+  AGENDER
+  BIGENDER
+  PANGENDER
+}
+
+enum IdentityVerificationType {
+  GOVERMENT_AND_PASSPORT
+  BUSINESS_CERTIFIED_AND_LICENSE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  BANNED
+}
+
+enum MembershipTier {
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum NotificationType {
+  VOLUNTEER_MATCH
+  SYSTEM
+  CAP_UPGRADE
+  LIKE
+  COMMENT
+  FOLLOW
+  SHARE
+  MENTION
+  EARNINGS
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+   SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PayOutStatus {
+  PENDING
+  PAID
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum PostFrom {
+  COMMUNITY
+  NGO
+  REGULAR_PROFILE
+}
+
+enum PostVisibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+}
+
+enum ReportTargetType {
+  POST
+  COMMENT
+  USER
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  CANCELED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VolunteerStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum WithdrawStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+// ENUMS_END

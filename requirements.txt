@@ -1,0 +1,129 @@
+# JDADZOK SERVER - CAP SYSTEM IMPLEMENTATION
+# Technical Requirements Document
+
+## PROJECT OVERVIEW
+Backend implementation for JdadZok social media platform featuring a gamified Cap system that rewards user engagement and volunteerism with revenue sharing opportunities.
+
+## TECHNICAL STACK
+- **Backend Framework**: NestJS with TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT with Passport
+- **Real-time**: WebSockets (Socket.IO)
+- **File Storage**: AWS S3 / Cloudinary
+- **Payment Processing**: Stripe / PayPal
+- **Email Service**: Nodemailer
+- **Caching**: Redis
+- **Queue Processing**: BullMQ
+
+## CAP SYSTEM FEATURES
+### CAP LEVELS & PROGRESSION SYSTEM
+
+#### 1. Cap Level Hierarchy
+| Level | Name | Ad Revenue Share | Benefits | Upgrade Requirements |
+|-------|------|------------------|----------|---------------------|
+| 🟢 GREEN | New Member | 2% | Basic visibility | Sign-up + first post |
+| 🟡 YELLOW | Active Contributor | 10% | Enhanced reach, marketplace access | Activity score ≥ 50 |
+| 🔴 RED | Trusted Creator | 20% | Volunteer hub access | Activity score ≥ 100 + admin verification |
+| ⚫ BLACK | Esteemed Contributor | 45% | High visibility, priority support | 8-week volunteer service completion |
+| 🪶 OSTRICH_FEATHER | Global Changemaker | 60% | Brand deals, global recognition | Panel nomination after BLACK status |
+
+#### 2. Technical Implementation
+
+
+**Database Models:**
+- `CapRequirements`: Stores level criteria and benefits
+- `UserMetrics`: Tracks engagement and activity scores
+- `AdRevenueShare`: Monthly revenue distribution records
+- `VolunteerApplication`: Volunteer project applications
+- `Users`: Includes capLevel field
+
+**Core Services:**
+- `CapLevelService`: Level calculation and promotion logic
+- `UserMetricsService`: Activity score computation
+- `AdRevenueService`: Revenue sharing calculations
+- `VolunteerTrackingService`: Volunteer hours management
+
+### API ENDPOINTS
+
+#### Cap Level Management
+```
+GET    /cap-level/status/:userId       # Get user's current cap status
+GET    /cap-level/requirements/:level  # Get requirements for specific level
+POST   /cap-level/calculate/:userId    # Recalculate user's eligible level
+PUT    /cap-level/promote/:userId      # Admin: Manual promotion
+GET    /cap-level/metrics/:userId      # Get detailed user metrics
+```
+
+#### User Metrics
+```
+POST   /user-metrics/update/:userId    # Update user activity metrics
+GET    /user-metrics/:userId           # Get user metrics summary
+POST   /user-metrics/activity-score    # Calculate activity score
+```
+
+#### Revenue Sharing
+```
+GET    /revenue/user/:userId           # Get user's revenue history
+POST   /revenue/calculate              # Calculate monthly revenue shares
+GET    /revenue/stats                  # Platform revenue statistics
+```
+
+
+### ACTIVITY SCORING ALGORITHM
+
+#### Engagement Metrics Weight
+```typescript
+interface ActivityScore {
+  posts: number * 5;        // 5 points per post
+  comments: number * 2;     // 2 points per comment
+  likes: number * 1;        // 1 point per like given
+  shares: number * 3;       // 3 points per share
+  followers: number * 0.5;  // 0.5 points per follower
+  volunteerHours: number * 10; // 10 points per volunteer hour
+}
+```
+
+#### Level Promotion Logic
+1. **GREEN → YELLOW**: Activity Score ≥ 50
+2. **YELLOW → RED**: Activity Score ≥ 100 + Admin verification
+3. **RED → BLACK**: 8-week volunteer service completion
+4. **BLACK → OSTRICH_FEATHER**: Secret panel nomination
+
+### VOLUNTEER INTEGRATION
+- Track volunteer applications and project completions
+- Verify 8-week service requirement for BLACK cap
+- Integration with volunteer project management system
+- Automatic cap promotion upon volunteer milestone completion
+
+### REVENUE SHARING SYSTEM
+- Monthly revenue calculation based on user engagement
+- Automatic distribution to user payment methods
+- Revenue tracking per user and per cap level
+- Admin dashboard for revenue management
+
+### REAL-TIME FEATURES
+- WebSocket notifications for cap level promotions
+- Live activity score updates
+- Real-time earnings tracking
+- Instant notification on volunteer project acceptance
+
+### SECURITY & VALIDATION
+- Admin approval required for RED+ levels
+- Volunteer service verification through NGO partnerships
+- Anti-gaming measures for activity score manipulation
+- Secure payment processing for revenue sharing
+
+### IMPLEMENTATION PRIORITY
+1. **Phase 1**: Basic cap level system with GREEN/YELLOW progression
+2. **Phase 2**: Volunteer integration and RED/BLACK levels
+3. **Phase 3**: Revenue sharing automation
+4. **Phase 4**: Advanced analytics and OSTRICH_FEATHER nomination system
+
+---
+
+## DEVELOPMENT NOTES
+- All cap level changes require database transactions for consistency
+- Activity scores should be calculated in background jobs to avoid performance impact
+- Revenue sharing calculations run monthly via scheduled tasks
+- Comprehensive logging for all cap level promotions and demotions
+- API rate limiting to prevent abuse of metrics calculation endpoints

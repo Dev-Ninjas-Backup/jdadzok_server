@@ -1,0 +1,24 @@
+model Payout {
+  id String @id @default(uuid())
+
+  // User receiving payout
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Payout details
+  amount Float // Amount being paid out
+  method PaymentMethod // How they want to be paid
+  status PayOutStatus  @default(PENDING)
+
+  // Payment processor information
+  transactionId String? // External transaction ID
+  processorFee  Float? // Fee charged by payment processor
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payouts")
+}

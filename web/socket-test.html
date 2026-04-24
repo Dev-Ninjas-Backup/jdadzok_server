@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Socket.IO Test Client</title>
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    </head>
+    <body>
+        <h1>Socket.IO Test Client</h1>
+
+        <label for="token">Token:</label>
+        <input type="text" id="token" placeholder="Enter token" />
+        <button onclick="connect()">Connect</button>
+
+        <p id="status">Not connected</p>
+        <pre id="log"></pre>
+
+        <script>
+            let socket;
+
+            function log(message) {
+                const logArea = document.getElementById("log");
+                logArea.textContent += message + "\n";
+                console.log(message);
+            }
+
+            function connect() {
+                const token = document.getElementById("token").value;
+
+                socket = io("http://localhost:5056/chats", {
+                    auth: {
+                        token: token,
+                    },
+                });
+
+                socket.on("connect", () => {
+                    document.getElementById("status").innerText = "✅ Connected";
+                    log("Connected to server. Socket ID: " + socket.id);
+                });
+
+                socket.on("connect_error", (err) => {
+                    document.getElementById("status").innerText = "❌ Connection Error";
+                    log("Connection failed: " + err.message);
+                });
+
+                socket.onAny((event, data) => {
+                    log(`📩 Received event: ${event}`);
+                    log(JSON.stringify(data, null, 2));
+                });
+
+                socket.on("disconnect", (reason) => {
+                    document.getElementById("status").innerText = "🔌 Disconnected";
+                    log("Disconnected: " + reason);
+                });
+            }
+        </script>
+    </body>
+</html>

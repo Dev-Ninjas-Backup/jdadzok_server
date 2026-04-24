@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "declaration": true,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "target": "ES2023",
+        "sourceMap": true,
+        "outDir": "./dist",
+        "baseUrl": "./",
+        "paths": {
+            "@type/*": ["src/@types/*"],
+            "@metadata/*": ["src/app-metadata/*"],
+            "@common/*": ["src/common/*"],
+            "@configs/*": ["src/configs/*"],
+            "@constants/*": ["src/constants/*"],
+            "@global/*": ["src/global/*"],
+            "@lib/*": ["src/lib/*"],
+            "@module/*": ["src/main/*"],
+            "@scripts/*": ["src/scripts/*"],
+            "@service/*": ["src/services/*"],
+            "@utils/*": ["src/utils/*"],
+            "@s3/*": ["src/s3/*"]
+        },
+        "incremental": true,
+        "skipLibCheck": true,
+        "strictNullChecks": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitAny": true,
+        "strictBindCallApply": true,
+        "noFallthroughCasesInSwitch": true
+    },
+    "include": ["src", "prisma/seeds/constants/index.ts"],
+    "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "generated", "prisma"]
+}

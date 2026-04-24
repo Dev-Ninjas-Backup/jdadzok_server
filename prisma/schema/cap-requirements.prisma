@@ -1,0 +1,24 @@
+model CapRequirements {
+  id String @id @default(uuid())
+
+  capLevel CapLevel @unique // The cap level these requirements are for
+
+  // Requirements to achieve this cap level
+  minActivityScore     Float? // Minimum activity score needed
+  minVolunteerHours    Int? // Minimum volunteer hours needed
+  requiresVerification Boolean @default(false) // Need admin verification
+  requiresNomination   Boolean @default(false) // Need panel nomination (for Ostrich Feather)
+
+  // Benefits of this cap level
+  adSharePercentage     Float // Percentage of ad revenue user gets
+  canAccessMarketplace  Boolean @default(false)
+  canAccessVolunteerHub Boolean @default(false)
+  canReceiveBrandDeals  Boolean @default(false)
+
+  description String? @db.Text // Description of this cap level
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cap_requirements")
+}

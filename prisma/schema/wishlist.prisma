@@ -1,0 +1,19 @@
+model Wishlist {
+  id String @id @default(uuid())
+
+  // Product in wishlist
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // User who wishlisted
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // User can only wishlist each product once
+  @@unique([productId, userId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlists")
+}

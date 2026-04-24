@@ -1,0 +1,8 @@
+model FinancialSettings {
+    id                  String  @id @default(uuid())
+    platformCOmmission  Int?
+    MinimumPayoutAmount Int?
+    currency            String?
+    stripeApiKey        String?
+    autoApprovePayouts  Boolean @default(false)
+}

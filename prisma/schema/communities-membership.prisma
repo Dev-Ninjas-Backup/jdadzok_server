@@ -1,0 +1,22 @@
+model CommunitiesMembership {
+  id String @id @default(uuid())
+
+  // User in the community
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Community membership details
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  role CommunityRole @default(MEMBER) // Member role in community
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // User can only have one membership per community
+  @@unique([userId, communityId])
+  @@index([userId])
+  @@index([communityId])
+  @@map("community_memberships")
+}
