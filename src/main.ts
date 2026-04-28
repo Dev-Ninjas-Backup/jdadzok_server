@@ -13,13 +13,18 @@ import z from "zod";
 import { AppModule } from "./app.module";
 import { ENVEnum } from "./common/enum/env.enum";
 import { AllExceptionsFilter } from "./common/filter/http-exception.filter";
+import * as express from "express";
 
 expand(config({ path: path.resolve(process.cwd(), ".env") }));
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
 
-    // use raw body for only /payments/webhook (or bookings/webhook etc.)
+    const uploadPath = path.join(process.cwd(), "uploads");
+    console.log("UPLOAD STATIC PATH:", uploadPath);
+
+    app.use("/uploads", express.static(uploadPath));
+
     app.use("/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
     // CORS configuration

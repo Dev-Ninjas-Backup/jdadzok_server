@@ -86,7 +86,7 @@ export class AdvanceQueryBuilder {
             // Handle array format: ['relation1', 'relation2']
             return include.reduce((acc, item) => {
                 if (typeof item === "string") {
-                    (acc)[item] = true;
+                    acc[item] = true;
                 } else if (typeof item === "object") {
                     Object.assign(acc, this.processInclude(item));
                 }

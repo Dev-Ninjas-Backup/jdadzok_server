@@ -28,9 +28,9 @@ export class JwtServices {
             secret: this.configService.getOrThrow(ENVEnum.JWT_SECRET),
         },
     ) {
-        return (await this.service.verifyAsync(token, {
+        return await this.service.verifyAsync(token, {
             ...options,
             audience: "",
-        }));
+        });
     }
 }

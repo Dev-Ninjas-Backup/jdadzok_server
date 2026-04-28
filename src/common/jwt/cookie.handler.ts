@@ -37,7 +37,7 @@ export function cookieHandler(
         case "get": {
             const cookie =
                 (ctx as Request).cookies ||
-                ((ctx as Request).headers.cookie!) ||
+                (ctx as Request).headers.cookie! ||
                 (ctx as Request).headers.authorization;
             if (!cookie) throw new UnauthorizedException("Unauthorized user, can't find token");
             return cookie.split(`${COOKIE_KEY}=`)[1] || cookie.split("Bearer ")[1];

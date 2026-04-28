@@ -301,10 +301,7 @@ export class UserMetricsController {
         description: "Activity leaderboard retrieved successfully",
         type: [ActivityLeaderboardDto],
     })
-    async getActivityLeaderboard(
-        @Query("limit") limit = 50,
-        @Query("capLevel") capLevel?: string,
-    ) {
+    async getActivityLeaderboard(@Query("limit") limit = 50, @Query("capLevel") capLevel?: string) {
         try {
             const topUsers = await this.userMetricsService.getTopUsers(limit);
 

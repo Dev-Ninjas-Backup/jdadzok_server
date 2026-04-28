@@ -18,29 +18,25 @@ export class S3Controller {
     constructor(private readonly s3Service: S3Service) {}
 
     @Post()
-    @ApiOperation({ summary: "Upload multiple OR single file files to S3" })
+    @ApiOperation({ summary: "Upload multiple OR single files" })
     @ApiConsumes("multipart/form-data")
     @ApiBody(apiBodyExample)
     @ApiResponse({ status: 201, type: S3ResponseDto, isArray: true })
     @UseInterceptors(
         FilesInterceptor("files", 20, {
             storage: multer.memoryStorage(),
-            limits: { files: 20 }, // TODO: based on the cap level it will be incress and dicress
+            limits: { files: 20 },
         }),
     )
     async upload(@UploadedFiles() files: Express.Multer.File[]) {
-        try {
-            if (!files || files.length === 0) {
-                throw new BadRequestException("No file(s) uploaded");
-            }
-
-            if (files.length > 20) {
-                throw new BadRequestException("You can upload a maximum of 20 files");
-            }
-
-            return this.s3Service.uploadFiles(files);
-        } catch (err) {
-            console.error(err);
+        if (!files || files.length === 0) {
+            throw new BadRequestException("No file(s) uploaded");
         }
+
+        if (files.length > 20) {
+            throw new BadRequestException("You can upload a maximum of 20 files");
+        }
+
+        return this.s3Service.uploadFiles(files);
     }
 }
