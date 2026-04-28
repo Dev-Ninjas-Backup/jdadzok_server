@@ -2,14 +2,14 @@ import { ApiProperty } from "@nestjs/swagger";
 
 export class S3ResponseDto {
     @ApiProperty()
-    originalName: string;
+    originalName!: string;
 
     @ApiProperty()
-    type: string;
+    type!: string;
 
     @ApiProperty()
-    size: number;
+    size!: number;
 
     @ApiProperty()
-    url: string;
+    url!: string;
 }

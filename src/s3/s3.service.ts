@@ -15,7 +15,7 @@ export class S3Service {
         this.baseUrl = this.configService.getOrThrow<string>("BASE_URL");
     }
 
-    async uploadFiles<T extends string>(files: Express.Multer.File[]): Promise<T[]> {
+    async uploadFiles(files: Express.Multer.File[]) {
         if (!files || files.length === 0) {
             throw new BadRequestException("No file(s) uploaded");
         }
@@ -24,16 +24,16 @@ export class S3Service {
             throw new BadRequestException("You can upload a maximum of 20 files");
         }
 
-        const results: string[] = [];
+        const results = [];
 
         for (const file of files) {
             results.push(await this.uploadFile(file));
         }
 
-        return results as T[];
+        return results;
     }
 
-    async uploadFile<T extends string>(file: Express.Multer.File): Promise<T> {
+    async uploadFile(file: Express.Multer.File) {
         if (!file?.buffer) {
             throw new BadRequestException("Invalid file");
         }
@@ -54,7 +54,12 @@ export class S3Service {
 
             const url = `${this.baseUrl}/${this.uploadDir}/${folder}/${fileName}`;
 
-            return url as T;
+            return {
+                originalName: file.originalname,
+                type: file.mimetype,
+                size: file.size,
+                url,
+            };
         } catch (error) {
             console.error(error);
             throw new BadRequestException("Failed to upload file");

@@ -113,15 +113,16 @@ export class NgoVerificationService {
         if (!uploadedDocs || uploadedDocs.length === 0) {
             throw new BadRequestException("Document upload failed. Please try again.");
         }
-
         // -----------------------------------------------------
         // 5. Save verification request
         // -----------------------------------------------------
+
+        const documentUrls = uploadedDocs.map((file) => file.url);
         const verification = await this.prisma.ngoVerification.create({
             data: {
                 ngoId,
                 ...dto,
-                documents: uploadedDocs,
+                documents: documentUrls,
             },
         });
 
