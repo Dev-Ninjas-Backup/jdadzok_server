@@ -33,7 +33,6 @@
         "prod": "bash ./scripts.sh",
         "db:seed": "tsx prisma/seed.ts",
         "seed:cap": "tsx src/scripts/seed-cap-requirements.ts",
-        "prepare": "husky",
         "postinstall": "npx prisma generate"
     },
     "dependencies": {
