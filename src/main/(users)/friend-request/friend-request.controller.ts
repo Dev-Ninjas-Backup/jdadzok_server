@@ -67,4 +67,13 @@ export class FriendRequestController {
     async getFriends(@GetVerifiedUser() user: VerifiedUser) {
         return handleRequest(() => this.service.getFriends(user.id), "Friends loaded successfully");
     }
+
+    @Get("/sent")
+    @ApiOperation({ summary: "Get friend requests sent by current user" })
+    async sentRequests(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.service.getSentRequests(user.id),
+            "Sent friend requests loaded successfully",
+        );
+    }
 }

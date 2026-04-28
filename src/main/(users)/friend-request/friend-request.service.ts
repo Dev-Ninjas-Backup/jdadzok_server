@@ -160,4 +160,30 @@ export class FriendRequestService {
 
         return friends;
     }
+
+    async getSentRequests(userId: string) {
+        return this.prisma.friendRequest.findMany({
+            where: {
+                senderId: userId,
+                status: "PENDING",
+            },
+            include: {
+                receiver: {
+                    select: {
+                        id: true,
+                        email: true,
+                        profile: {
+                            select: {
+                                name: true,
+                                avatarUrl: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+    }
 }
