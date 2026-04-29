@@ -43,7 +43,8 @@ export class S3Service {
 
         await fs.mkdir(folderPath, { recursive: true });
 
-        const fileExt = extname(file.originalname) || this.getExtByMimeType(file.mimetype);
+        const fileExt =
+            extname(file.originalname).toLowerCase() || this.getExtByMimeType(file.mimetype);
         const hash = createHash("sha256").update(file.buffer).digest("hex");
 
         const fileName = `${hash}-${uuidv4()}${fileExt}`;
@@ -77,9 +78,14 @@ export class S3Service {
         if (mimeType === "image/jpeg") return ".jpg";
         if (mimeType === "image/png") return ".png";
         if (mimeType === "image/webp") return ".webp";
+
         if (mimeType === "video/mp4") return ".mp4";
+        if (mimeType === "video/webm") return ".webm";
+        if (mimeType === "video/quicktime") return ".mov";
+
         if (mimeType === "audio/mpeg") return ".mp3";
         if (mimeType === "application/pdf") return ".pdf";
+
         return "";
     }
 }

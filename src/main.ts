@@ -14,16 +14,37 @@ import { AppModule } from "./app.module";
 import { ENVEnum } from "./common/enum/env.enum";
 import { AllExceptionsFilter } from "./common/filter/http-exception.filter";
 import * as express from "express";
+import { join } from "path";
 
 expand(config({ path: path.resolve(process.cwd(), ".env") }));
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     const configService = app.get(ConfigService);
 
-    const uploadPath = path.join(process.cwd(), "uploads");
-    console.log("UPLOAD STATIC PATH:", uploadPath);
+    app.use(
+        "/uploads",
+        express.static(join(process.cwd(), "uploads"), {
+            setHeaders: (res, filePath) => {
+                if (filePath.endsWith(".mp4")) {
+                    res.setHeader("Content-Type", "video/mp4");
+                    res.setHeader("Accept-Ranges", "bytes");
+                    res.setHeader("Content-Disposition", "inline");
+                }
 
-    app.use("/uploads", express.static(uploadPath));
+                if (filePath.endsWith(".webm")) {
+                    res.setHeader("Content-Type", "video/webm");
+                    res.setHeader("Accept-Ranges", "bytes");
+                    res.setHeader("Content-Disposition", "inline");
+                }
+
+                if (filePath.endsWith(".mov")) {
+                    res.setHeader("Content-Type", "video/quicktime");
+                    res.setHeader("Accept-Ranges", "bytes");
+                    res.setHeader("Content-Disposition", "inline");
+                }
+            },
+        }),
+    );
 
     app.use("/stripe/webhook", bodyParser.raw({ type: "application/json" }));
 
