@@ -21,7 +21,8 @@ import { UpdateUserDto } from "./dto/update.user.dto";
 import { CreateUserDto } from "./dto/users.dto";
 import { UserRepository } from "./users.repository";
 import { AllUserQueryDto } from "./dto/all-user-query.dto";
-import { Prisma } from "@prisma/client";
+import { CapLevel, Prisma, Role } from "@prisma/client";
+import { CapLevel } from "../../../constants/enums";
 
 @Injectable()
 export class UserService {
@@ -306,27 +307,19 @@ export class UserService {
 
         const search = query.search?.trim();
 
-        const where: Prisma.UserWhereInput = search
-            ? {
-                OR: [
-                    {
-                        email: {
-                            contains: search,
-                            mode: 'insensitive',
-                        },
+        const orConditions: Prisma.UserWhereInput[] = [];
+
+        if (search) {
+            orConditions.push(
+                {
+                    email: {
+                        contains: search,
+                        mode: 'insensitive',
                     },
-                    {
-                        role: {
-                            equals: search as any,
-                        },
-                    },
-                    {
-                        capLevel: {
-                            equals: search as any,
-                        },
-                    },
-                    {
-                        profile: {
+                },
+                {
+                    profile: {
+                        is: {
                             OR: [
                                 {
                                     name: {
@@ -361,7 +354,31 @@ export class UserService {
                             ],
                         },
                     },
-                ],
+                },
+            );
+
+            const upperSearch = search.toUpperCase();
+
+            if (Object.values(Role).includes(upperSearch as Role)) {
+                orConditions.push({
+                    role: {
+                        equals: upperSearch as Role,
+                    },
+                });
+            }
+
+            if (Object.values(CapLevel).includes(upperSearch as CapLevel)) {
+                orConditions.push({
+                    capLevel: {
+                        equals: upperSearch as CapLevel,
+                    },
+                });
+            }
+        }
+
+        const where: Prisma.UserWhereInput = search
+            ? {
+                OR: orConditions,
             }
             : {};
 
@@ -392,5 +409,5 @@ export class UserService {
             },
             data: users,
         };
+
     }
-}
