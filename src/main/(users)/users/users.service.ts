@@ -22,7 +22,7 @@ import { CreateUserDto } from "./dto/users.dto";
 import { UserRepository } from "./users.repository";
 import { AllUserQueryDto } from "./dto/all-user-query.dto";
 import { CapLevel, Prisma, Role } from "@prisma/client";
-import { CapLevel } from "../../../constants/enums";
+
 
 @Injectable()
 export class UserService {
