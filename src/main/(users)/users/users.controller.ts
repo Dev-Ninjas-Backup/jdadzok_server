@@ -11,6 +11,7 @@ import {
     Param,
     Patch,
     Post,
+    Query,
     UseGuards,
     UsePipes,
     ValidationPipe,
@@ -23,10 +24,11 @@ import { UpdateUserDto } from "./dto/update.user.dto";
 import { CreateUserDto } from "./dto/users.dto";
 import { UserService } from "./users.service";
 import { handleRequest } from "@common/utils/handle.request.util";
+import { AllUserQueryDto } from "./dto/all-user-query.dto";
 
 @Controller("users")
 export class UserController {
-    constructor(private readonly service: UserService) {}
+    constructor(private readonly service: UserService) { }
 
     @MakePublic()
     @Post("register")
@@ -141,12 +143,15 @@ export class UserController {
     }
 
     @ApiBearerAuth()
-    @Get("allUser")
+    @Get('allUser')
     @UseGuards(JwtAuthGuard)
-    async allUser(@GetVerifiedUser() user: VerifiedUser) {
-        if (user.role !== "SUPER_ADMIN") {
-            throw new ForbiddenException("Forbidden access");
-        }
-        return handleRequest(() => this.service.allUser(), "Get all user successfully");
+    async allUser(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Query() query: AllUserQueryDto,
+    ) {
+        return handleRequest(
+            () => this.service.allUser(query),
+            'Get all user successfully',
+        );
     }
 }

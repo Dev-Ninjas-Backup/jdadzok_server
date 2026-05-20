@@ -31,7 +31,7 @@ export class UserService {
         private readonly jwtService: JwtServices,
         private readonly otpService: OptService,
         private readonly mailService: MailService,
-    ) {}
+    ) { }
 
     async register(body: CreateUserDto) {
         // email must need to be end with @gmail.com
@@ -296,8 +296,99 @@ export class UserService {
         return await this.repository.getUserById(id);
     }
 
-    async allUser() {
-        const allUser = await this.prisma.user.findMany({});
-        return allUser;
+
+    async allUser(query: AllUserQueryDto) {
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const search = query.search?.trim();
+
+        const where: Prisma.UserWhereInput = search
+            ? {
+                OR: [
+                    {
+                        email: {
+                            contains: search,
+                            mode: 'insensitive',
+                        },
+                    },
+                    {
+                        role: {
+                            equals: search as any,
+                        },
+                    },
+                    {
+                        capLevel: {
+                            equals: search as any,
+                        },
+                    },
+                    {
+                        profile: {
+                            OR: [
+                                {
+                                    name: {
+                                        contains: search,
+                                        mode: 'insensitive',
+                                    },
+                                },
+                                {
+                                    username: {
+                                        contains: search,
+                                        mode: 'insensitive',
+                                    },
+                                },
+                                {
+                                    title: {
+                                        contains: search,
+                                        mode: 'insensitive',
+                                    },
+                                },
+                                {
+                                    bio: {
+                                        contains: search,
+                                        mode: 'insensitive',
+                                    },
+                                },
+                                {
+                                    location: {
+                                        contains: search,
+                                        mode: 'insensitive',
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            }
+            : {};
+
+        const [users, total] = await this.prisma.$transaction([
+            this.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: {
+                    createdAt: 'desc',
+                },
+                include: {
+                    profile: true,
+                },
+            }),
+
+            this.prisma.user.count({
+                where,
+            }),
+        ]);
+
+        return {
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+            data: users,
+        };
     }
 }
