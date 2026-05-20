@@ -20,6 +20,8 @@ import { ResentOtpDto } from "./dto/resent-otp.dto";
 import { UpdateUserDto } from "./dto/update.user.dto";
 import { CreateUserDto } from "./dto/users.dto";
 import { UserRepository } from "./users.repository";
+import { AllUserQueryDto } from "./dto/all-user-query.dto";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class UserService {
