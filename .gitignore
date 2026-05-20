@@ -37,6 +37,8 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env
+.env*
 
 # temp directory
 .temp
@@ -83,3 +85,4 @@ temp_auto_push.bat
 temp_interactive_push.bat
 .gitignore
 config.bat
+.env
