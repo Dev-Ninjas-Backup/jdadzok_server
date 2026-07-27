@@ -290,9 +290,14 @@ export class AppController {
     @Header("Content-Type", "text/plain; charset=utf-8")
     @Header("Cache-Control", "public, max-age=86400")
     getRobotsTxt(): string {
-        return ["User-agent: *", "Allow: /", "Allow: /docs", "Allow: /api/health", "Disallow: /uploads/", ""].join(
-            "\n",
-        );
+        return [
+            "User-agent: *",
+            "Allow: /",
+            "Allow: /docs",
+            "Allow: /api/health",
+            "Disallow: /uploads/",
+            "",
+        ].join("\n");
     }
 
     @ApiOkResponse({

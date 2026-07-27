@@ -23,7 +23,6 @@ import { UserRepository } from "./users.repository";
 import { AllUserQueryDto } from "./dto/all-user-query.dto";
 import { CapLevel, Prisma, Role } from "@prisma/client";
 
-
 @Injectable()
 export class UserService {
     constructor(
@@ -34,7 +33,7 @@ export class UserService {
         private readonly jwtService: JwtServices,
         private readonly otpService: OptService,
         private readonly mailService: MailService,
-    ) { }
+    ) {}
 
     async register(body: CreateUserDto) {
         // email must need to be end with @gmail.com
@@ -299,7 +298,6 @@ export class UserService {
         return await this.repository.getUserById(id);
     }
 
-
     async allUser(query: AllUserQueryDto) {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 10;
@@ -314,7 +312,7 @@ export class UserService {
                 {
                     email: {
                         contains: search,
-                        mode: 'insensitive',
+                        mode: "insensitive",
                     },
                 },
                 {
@@ -324,31 +322,31 @@ export class UserService {
                                 {
                                     name: {
                                         contains: search,
-                                        mode: 'insensitive',
+                                        mode: "insensitive",
                                     },
                                 },
                                 {
                                     username: {
                                         contains: search,
-                                        mode: 'insensitive',
+                                        mode: "insensitive",
                                     },
                                 },
                                 {
                                     title: {
                                         contains: search,
-                                        mode: 'insensitive',
+                                        mode: "insensitive",
                                     },
                                 },
                                 {
                                     bio: {
                                         contains: search,
-                                        mode: 'insensitive',
+                                        mode: "insensitive",
                                     },
                                 },
                                 {
                                     location: {
                                         contains: search,
-                                        mode: 'insensitive',
+                                        mode: "insensitive",
                                     },
                                 },
                             ],
@@ -378,8 +376,8 @@ export class UserService {
 
         const where: Prisma.UserWhereInput = search
             ? {
-                OR: orConditions,
-            }
+                  OR: orConditions,
+              }
             : {};
 
         const [users, total] = await this.prisma.$transaction([
@@ -388,7 +386,7 @@ export class UserService {
                 skip,
                 take: limit,
                 orderBy: {
-                    createdAt: 'desc',
+                    createdAt: "desc",
                 },
                 include: {
                     profile: true,
@@ -409,6 +407,5 @@ export class UserService {
             },
             data: users,
         };
-
     }
 }

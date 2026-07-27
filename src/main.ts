@@ -15,7 +15,7 @@ import { ENVEnum } from "./common/enum/env.enum";
 import { AllExceptionsFilter } from "./common/filter/http-exception.filter";
 import * as express from "express";
 import { join } from "path";
-import 'dotenv/config';
+import "dotenv/config";
 
 expand(config({ path: path.resolve(process.cwd(), ".env") }));
 async function bootstrap() {
@@ -64,7 +64,7 @@ async function bootstrap() {
             "http://localhost:5177",
             "https://jdadzok-admin-dashboard.netlify.app",
             "http://13.204.75.28",
-            "https://admin.synqulan.com"
+            "https://admin.synqulan.com",
         ],
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         credentials: true,

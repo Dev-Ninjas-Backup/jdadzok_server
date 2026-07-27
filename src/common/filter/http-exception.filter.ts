@@ -44,7 +44,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         const errorPayload = errorResponse(errorData, message as any);
         const path = request.path || request.url.split("?")[0];
         const isNoise404 =
-            status === HttpStatus.NOT_FOUND &&
+            status === 404 &&
             ["/favicon.ico", "/favicon.svg", "/robots.txt", "/apple-touch-icon.png"].includes(path);
 
         if (!isNoise404) {

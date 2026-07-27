@@ -28,7 +28,7 @@ import { AllUserQueryDto } from "./dto/all-user-query.dto";
 
 @Controller("users")
 export class UserController {
-    constructor(private readonly service: UserService) { }
+    constructor(private readonly service: UserService) {}
 
     @MakePublic()
     @Post("register")
@@ -143,15 +143,9 @@ export class UserController {
     }
 
     @ApiBearerAuth()
-    @Get('allUser')
+    @Get("allUser")
     @UseGuards(JwtAuthGuard)
-    async allUser(
-        @GetVerifiedUser() user: VerifiedUser,
-        @Query() query: AllUserQueryDto,
-    ) {
-        return handleRequest(
-            () => this.service.allUser(query),
-            'Get all user successfully',
-        );
+    async allUser(@GetVerifiedUser() user: VerifiedUser, @Query() query: AllUserQueryDto) {
+        return handleRequest(() => this.service.allUser(query), "Get all user successfully");
     }
 }
