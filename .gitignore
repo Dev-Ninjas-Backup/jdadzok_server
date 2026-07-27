@@ -62,7 +62,6 @@ pnpm-lock.yaml
 pnpm-lock.yml
 .env.keys
 pnpm-lock.yaml
-.env*
 
 
 cicdpipe.pem
@@ -80,3 +79,8 @@ jdadzok_server.pem
 *.pem
 *.key
 /To Borhan - June 26
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
+config.bat
