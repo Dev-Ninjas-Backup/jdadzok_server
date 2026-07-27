@@ -42,12 +42,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         //--------------------- Return standardized error payload------------------------
         const errorPayload = errorResponse(errorData, message as any);
-        console.error("===============================");
-        console.error("Request URL:", request.url);
-        console.error("HTTP Status:", status);
-        console.error("Error Message:", message);
-        console.error("Error Details:", exception);
-        console.error("===============================");
+        const path = request.path || request.url.split("?")[0];
+        const isNoise404 =
+            status === HttpStatus.NOT_FOUND &&
+            ["/favicon.ico", "/favicon.svg", "/robots.txt", "/apple-touch-icon.png"].includes(path);
+
+        if (!isNoise404) {
+            console.error("===============================");
+            console.error("Request URL:", request.url);
+            console.error("HTTP Status:", status);
+            console.error("Error Message:", message);
+            console.error("Error Details:", exception);
+            console.error("===============================");
+        }
+
         response.status(status).json(errorPayload);
     }
 }

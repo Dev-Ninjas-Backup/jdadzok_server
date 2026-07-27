@@ -36,6 +36,8 @@ export class AppController {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="alternate icon" href="/favicon.ico" />
   <title>${displayName}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -262,6 +264,35 @@ export class AppController {
   </script>
 </body>
 </html>`;
+    }
+
+    @ApiExcludeEndpoint()
+    @Get("favicon.svg")
+    @Header("Content-Type", "image/svg+xml")
+    @Header("Cache-Control", "public, max-age=86400")
+    getFaviconSvg(): string {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#0f172a"/>
+  <circle cx="16" cy="16" r="8" fill="#22c55e"/>
+  <circle cx="16" cy="16" r="3.5" fill="#0f172a"/>
+</svg>`;
+    }
+
+    @ApiExcludeEndpoint()
+    @Get("favicon.ico")
+    getFaviconIco(@Res() res: Response) {
+        // Browsers often request .ico; redirect to the SVG icon.
+        return res.redirect(301, "/favicon.svg");
+    }
+
+    @ApiExcludeEndpoint()
+    @Get("robots.txt")
+    @Header("Content-Type", "text/plain; charset=utf-8")
+    @Header("Cache-Control", "public, max-age=86400")
+    getRobotsTxt(): string {
+        return ["User-agent: *", "Allow: /", "Allow: /docs", "Allow: /api/health", "Disallow: /uploads/", ""].join(
+            "\n",
+        );
     }
 
     @ApiOkResponse({
