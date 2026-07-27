@@ -21,7 +21,7 @@ import { UpdateUserProfileDto } from "../../user-profile/dto/user.profile.dto";
 class UserDto {
     @ApiProperty({
         description: "User email address",
-        example: "devlopersabbir@gmail.com",
+        example: "softvence@saikat.com.bd",
     })
     @IsEmail()
     email?: string;

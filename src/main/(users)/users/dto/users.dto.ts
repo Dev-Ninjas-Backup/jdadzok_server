@@ -17,7 +17,7 @@ class UserCreate {
 
     @ApiProperty({
         description: "User email address",
-        example: "devlopersabbir@gmail.com",
+        example: "softvence@saikat.com.bd",
     })
     @IsEmail()
     email: string;
