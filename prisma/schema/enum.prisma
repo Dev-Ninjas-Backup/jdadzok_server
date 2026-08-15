@@ -59,6 +59,15 @@ enum CommunityType {
   CUSTOM
 }
 
+enum ContributionType {
+  MENTORING
+  ADVICE
+  PROJECT
+  TEACHING
+  CHARITY
+  OTHER
+}
+
 enum Feelings {
   HAPPY
   SAD

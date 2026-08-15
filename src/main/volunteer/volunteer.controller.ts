@@ -66,6 +66,15 @@ export class VolunteerController {
         );
     }
 
+    @ApiOperation({ summary: "List contribution types (mentoring, advice, …, Other)" })
+    @Get("contribution-types")
+    listContributionTypes() {
+        return handleRequest(
+            () => Promise.resolve(this.volunteerService.listContributionTypes()),
+            "Contribution types retrieved",
+        );
+    }
+
     @ApiOperation({ summary: "Log working hours for a volunteer application" })
     @Patch("log-hours/:applicationId")
     logHours(

@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **17** |
+| Implemented `[x]` | **18** |
 | Partial / mismatch `[~]` | **10** (8 partial + 2 mismatch) |
-| Missing `[ ]` | **9** |
+| Missing `[ ]` | **8** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -70,7 +70,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[x]` | Volunteer / mentor opt-in flag | Boolean from onboarding; toggleable; gates mentoring tools **independent of Cap** | `Profile.isVolunteerMentorOptIn`; set via `POST /choices` (onboarding) or `PATCH /user-profile` / `PATCH /user-profile/volunteer-mentor-opt-in`; gates volunteer apply + hour logging |
 | `[x]` | Opportunities / projects | NGO-listed placements; apply / accept / reject; hours count | `VolunteerProject` + `VolunteerApplication` in `src/main/volunteer/` |
 | `[~]` | Hours bank & carry forward | Hours persist across Caps; Black = Red + threshold + review | Hours logged per application (cap 352/project) into `workedHours`; lifetime Black threshold only partially in cap cron |
-| `[ ]` | Contribution types + “Other” | Mentoring, advice, project, teaching, charity + free-text Other (pattern app-wide) | No contribution-type field / Other escape hatch on volunteer models |
+| `[x]` | Contribution types + “Other” | Mentoring, advice, project, teaching, charity + free-text Other (pattern app-wide) | `ContributionType` on `VolunteerHour` + Bridge listings; Other free-text via `resolveOtherText`; interests `Other` choice + `Profile.interestOtherText`; Bridge discover filters |
 
 **Key paths:** `prisma/schema/volunteer-*.prisma`, `src/main/volunteer/volunteer.service.ts`, `prisma/schema/profile.prisma`
 
@@ -156,12 +156,12 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.1 Welcome | Cap ladder / marketing content partly static; no dedicated welcome API |
 | `[x]` | 8.2 Sign in | Auth: email/password + providers under `src/main/(started)/auth/` |
 | `[~]` | 8.3 Get started (sign up) | Signup works; Green Cap default via `capLevel`; Community Pledge / Terms agreement flow not fully modelled as spec |
-| `[~]` | 8.4 Areas of interest | `choices` / `user-choice` exist; **volunteer opt-in** available on `POST /choices` via `isVolunteerMentorOptIn`; universal “Other + free text” pattern still missing |
+| `[~]` | 8.4 Areas of interest | `choices` / `user-choice` + **Other** (`slug: other` → `interestOtherText`); volunteer opt-in on `POST /choices` |
 | `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings language is client concern |
 | `[~]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in toggle; still missing cap style/placement, mentees |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
-| `[~]` | 8.8 Log a contribution | Hour logging exists for accepted apps; contribution types / self-report pending+endorsement gate incomplete |
-| `[~]` | 8.9 Recognition leaderboard | Leaderboard-ish metrics exist; contribution ranking & “Other” filters incomplete |
+| `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report endorsement gate still incomplete |
+| `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
 | `[x]` | 8.10 The Bridge | `(bridge)` module: expertise / gig / project-help listings + Cap-weighted discover + booking scaffold |
 | `[~]` | 8.11 Explore as a guest | Explore endpoints exist; guest contract incomplete |
 | `[~]` | 8.12 Corporate CSR dashboard | `CorporateMembership` + admin/dashboard pieces; SDG/ESG reporting missing; tier names mismatch |
@@ -215,7 +215,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 ### Priority B — verification & volunteering depth
 
-6. `[ ]` Contribution types + “Other” (and reuse Other pattern on interests / Bridge filters)
+6. `[x]` **Contribution types + “Other”** (and reuse Other pattern on interests / Bridge filters)
 7. `[ ]` Self-report hours pending until endorsement (real gate)
 8. `[ ]` Counterparty (mentee) confirmation path
 9. `[ ]` Harden Red → Black admin gate (no bypass without audit)
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority B.6 — Contribution types + “Other” (and reuse Other pattern on interests / Bridge filters).
+**Suggested next coding PR:** Priority B.7 — Self-report hours pending until endorsement (real gate).
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority B.6 — `ContributionType` + Other free-text pattern on volunteer hours, interests, and Bridge filters |
 | 2026-08-15 | Priority A.5 — `(bridge)` module scaffold: expertise / gig / project-help listings, Cap-weighted discover, booking stub (separate from Product/Order) |
 | 2026-08-15 | Priority A.4 — `CapLevel.SKY_BLUE` rename; invitation nomination + KYC/notability audit trail; Red-rate earning until Black-level hours |
 | 2026-08-15 | Priority A.3 — Mutual-Connect gating: `FriendRequest` ACCEPTED required for private chat + general calls (server-side) |

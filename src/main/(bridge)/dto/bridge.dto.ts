@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { BridgeListingStatus, BridgeListingType } from "@prisma/client";
+import { BridgeListingStatus, BridgeListingType, ContributionType } from "@prisma/client";
 import { Type } from "class-transformer";
 import {
     ArrayMaxSize,
@@ -13,6 +13,7 @@ import {
     MaxLength,
     Min,
     MinLength,
+    ValidateIf,
 } from "class-validator";
 
 export class CreateBridgeListingDto {
@@ -38,6 +39,24 @@ export class CreateBridgeListingDto {
     @IsString({ each: true })
     skills?: string[];
 
+    @ApiPropertyOptional({
+        enum: ContributionType,
+        description: "Contribution category for Bridge filters. OTHER requires contributionOther.",
+    })
+    @IsOptional()
+    @IsEnum(ContributionType)
+    contributionType?: ContributionType;
+
+    @ApiPropertyOptional({
+        example: "Community repair cafe facilitation",
+        description: "Required when contributionType is OTHER",
+    })
+    @ValidateIf((o: CreateBridgeListingDto) => o.contributionType === ContributionType.OTHER)
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    contributionOther?: string;
+
     @ApiPropertyOptional()
     @IsOptional()
     @IsString()
@@ -54,7 +73,6 @@ export class CreateBridgeListingDto {
     @IsEnum(BridgeListingStatus)
     status?: BridgeListingStatus;
 
-    // Expertise
     @ApiPropertyOptional({ description: "Hourly rate for EXPERTISE listings" })
     @IsOptional()
     @IsNumber()
@@ -67,7 +85,6 @@ export class CreateBridgeListingDto {
     @MaxLength(500)
     availabilityNote?: string;
 
-    // Gig / project help
     @ApiPropertyOptional({ description: "Budget for GIG / PROJECT_HELP" })
     @IsOptional()
     @IsNumber()
@@ -108,6 +125,22 @@ export class BridgeListQueryDto {
     @IsOptional()
     @IsString()
     skill?: string;
+
+    @ApiPropertyOptional({
+        enum: ContributionType,
+        description: "Filter by contribution type (includes OTHER)",
+    })
+    @IsOptional()
+    @IsEnum(ContributionType)
+    contributionType?: ContributionType;
+
+    @ApiPropertyOptional({
+        description:
+            "Free-text Other / search against contributionOther, skills, and title (app-wide Other pattern)",
+    })
+    @IsOptional()
+    @IsString()
+    otherText?: string;
 
     @ApiPropertyOptional({ default: 1 })
     @IsOptional()

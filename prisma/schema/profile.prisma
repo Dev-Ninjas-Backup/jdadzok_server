@@ -17,6 +17,8 @@ model Profile {
   isToggleNotification Boolean   @default(true)
   // Volunteer / mentor opt-in — independent of Cap; gates mentoring tools & verified-hour logging
   isVolunteerMentorOptIn Boolean @default(false)
+  /// Free-text when user selects the “Other” interest (app-wide Other pattern)
+  interestOtherText      String?  @db.Text
   // personal information
   dateOfBirth          DateTime?
   gender               Gender    @default(MALE)

@@ -37,6 +37,10 @@ model BridgeListing {
   location    String?
   remoteOk    Boolean @default(true)
 
+  /// Contribution category for filters (mentoring / advice / … / Other)
+  contributionType  ContributionType?
+  contributionOther String?            @db.Text
+
   /// Snapshot of owner Cap at publish/update — used for Cap-weighted visibility ranking
   ownerCapLevel CapLevel @default(NONE)
 
@@ -58,6 +62,7 @@ model BridgeListing {
   @@index([type, status])
   @@index([ownerId])
   @@index([ownerCapLevel])
+  @@index([contributionType])
   @@index([createdAt])
   @@map("bridge_listings")
 }

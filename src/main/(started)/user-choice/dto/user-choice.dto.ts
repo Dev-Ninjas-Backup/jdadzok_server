@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { ArrayNotEmpty, IsArray, IsBoolean, IsOptional, IsUUID } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsBoolean, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 
 export class CreateUserChoiceDto {
     @ApiProperty({
@@ -20,6 +20,16 @@ export class CreateUserChoiceDto {
     @IsOptional()
     @IsBoolean()
     isVolunteerMentorOptIn?: boolean;
+
+    @ApiPropertyOptional({
+        example: "Urban farming & repair cafes",
+        description:
+            "Required when one of the selected choices is the Other interest (slug: other). App-wide Other pattern.",
+    })
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    interestOtherText?: string;
 }
 
 export class UpdateUserChoiceDto extends PartialType(CreateUserChoiceDto) {}
