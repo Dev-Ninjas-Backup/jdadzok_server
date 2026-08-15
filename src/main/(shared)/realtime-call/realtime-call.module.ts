@@ -4,9 +4,10 @@ import { RealTimeCallService } from "./realtime-call.service";
 import { RealTimeCallController } from "./realtime-call.controller";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { CallModule } from "../calling/calling.module";
+import { FriendRequestModule } from "@module/(users)/friend-request/friend-request.module";
 
 @Module({
-    imports: [CallModule],
+    imports: [CallModule, FriendRequestModule],
     controllers: [RealTimeCallController],
     providers: [RealTimeCallGateway, RealTimeCallService, PrismaService],
 })

@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **10** |
-| Partial / mismatch `[~]` | **13** (11 partial + 2 mismatch) |
-| Missing `[ ]` | **13** |
+| Implemented `[x]` | **12** |
+| Partial / mismatch `[~]` | **12** (10 partial + 2 mismatch) |
+| Missing `[ ]` | **12** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -95,8 +95,8 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
 | `[~]` | Follow (one-way) | Subscribe to updates; feeds audience / ads; no consent | **Mismatch:** both `Follow` and `UserFollow` exist and are used |
-| `[~]` | Connect (mutual) | Request both accept; gate for private messaging and general calls | `FriendRequest` model + APIs exist; not wired as Connect precondition elsewhere |
-| `[ ]` | Messaging gated by mutual Connect | Must be enforced **server-side** | No friend/Connect check in chat service / gateway |
+| `[x]` | Connect (mutual) | Request both accept; gate for private messaging and general calls | `FriendRequest` ACCEPTED enforced server-side on private chat + `callPurpose=GENERAL` calls |
+| `[x]` | Messaging gated by mutual Connect | Must be enforced **server-side** | `FriendRequestService.assertConnected` on private chat create/send (HTTP + socket) |
 | `[ ]` | General vs Mentorship chat | Two distinct inbox contexts; mentorship thread auto-opens on accept | `LiveChatType` = `INDIVIDUAL` / `GROUP` only |
 | `[x]` | Verified session call vs General call | Opposite screens/records; one logs to Cap, one never | `CallPurpose` `GENERAL` \| `MENTORSHIP` on `Calling`; only mentorship ends auto-log verified hours |
 
@@ -168,11 +168,11 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.12 Corporate CSR dashboard | `CorporateMembership` + admin/dashboard pieces; SDG/ESG reporting missing; tier names mismatch |
 | `[x]` | 8.13 Personal dashboard | Dashboard module present |
 | `[~]` | 8.14 Messages (inbox) | Live chat exists; no General vs Mentorship tabs/types |
-| `[~]` | 8.15 General chat | Chat works; **Connect gate missing** |
+| `[x]` | 8.15 General chat | Private chat create/send gated by mutual Connect (`FriendRequest` ACCEPTED) |
 | `[ ]` | 8.16 Mentorship chat | Missing type, auto-open, verified-call affordances |
 | `[x]` | 8.17 Verified session call | `callPurpose=MENTORSHIP` + auto verified `VolunteerHour` on call end |
-| `[~]` | 8.18 General call | Calling exists; `callPurpose=GENERAL` (default) never counts toward Cap hours |
-| `[~]` | 8.19 Connections & following | Follow + FriendRequest exist; dual Follow models; Connect not enforced on chat/calls |
+| `[~]` | 8.18 General call | `callPurpose=GENERAL` requires mutual Connect; never counts toward Cap hours |
+| `[~]` | 8.19 Connections & following | Follow + FriendRequest exist; dual Follow models remain; Connect enforced on general chat/calls |
 | `[x]` | 8.20 Landing pages | Static assets in June 26 folder; not API-served |
 
 ---
@@ -189,7 +189,7 @@ These support Synqulan but are not the Cap / Bridge / verification gaps above. T
 | `[x]` | NGO & communities | Explore NGO/community, membership, verification fields |
 | `[x]` | Notifications | In-app notifications + toggles (`(shared)/notifications`) |
 | `[x]` | Calling (base) | Audio/video calling (`(shared)/calling`, realtime-call) with `callPurpose`; mentorship end auto-logs verified hours |
-| `[x]` | Chat (base) | LiveChat / LiveMessage sockets — **without** Connect gate or mentorship type |
+| `[x]` | Chat (base) | LiveChat / LiveMessage sockets — private messaging gated by mutual Connect; mentorship chat type still missing |
 | `[x]` | Goods marketplace | Product, order, wishlist/favourites, categories |
 | `[x]` | Payments / Stripe | Stripe module, payouts, withdraw, seller earnings |
 | `[x]` | Donations | Donation module |
@@ -210,7 +210,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 1. `[x]` **Volunteer / mentor opt-in** on `User` or `Profile` (+ onboarding / profile toggle APIs)
 2. `[x]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
-3. `[ ]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
+3. `[x]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
 4. `[ ]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
 5. `[ ]` **Bridge module decision & scaffold** — new `(bridge)` module (not goods `Product`/`Order`): expertise listings, paid gigs, Cap-weighted visibility
 
@@ -245,7 +245,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority A.3 — Mutual-Connect gating on chat (and general calls) via `FriendRequest` ACCEPTED.
+**Suggested next coding PR:** Priority A.4 — Sky Blue rename + parallel track (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow).
 
 ---
 
@@ -253,6 +253,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority A.3 — Mutual-Connect gating: `FriendRequest` ACCEPTED required for private chat + general calls (server-side) |
 | 2026-08-15 | Priority A.2 — `Calling.callPurpose` (`GENERAL`/`MENTORSHIP`) + auto verified `VolunteerHour` on mentorship call end |
 | 2026-08-15 | Priority A.1 — `Profile.isVolunteerMentorOptIn` + onboarding (`POST /choices`) / profile toggle APIs; gates volunteer apply + verified-hour logging |
 | 2026-07-27 | Initial status document created from June 26 brief + codebase verification |

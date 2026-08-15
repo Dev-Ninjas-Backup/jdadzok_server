@@ -6,5 +6,6 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 @Module({
     controllers: [FriendRequestController],
     providers: [FriendRequestService, PrismaService],
+    exports: [FriendRequestService],
 })
 export class FriendRequestModule {}

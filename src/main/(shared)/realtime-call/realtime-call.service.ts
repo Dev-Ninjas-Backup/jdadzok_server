@@ -1,6 +1,7 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { CallPurpose, CallStatus } from "@prisma/client";
+import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
 import { MentorshipCallHoursService } from "../calling/service/mentorship-call-hours.service";
 
 @Injectable()
@@ -8,6 +9,7 @@ export class RealTimeCallService {
     constructor(
         private prisma: PrismaService,
         private readonly mentorshipCallHours: MentorshipCallHoursService,
+        private readonly friendRequestService: FriendRequestService,
     ) {}
 
     async createCall(
@@ -16,6 +18,10 @@ export class RealTimeCallService {
         title?: string,
         callPurpose: CallPurpose = CallPurpose.GENERAL,
     ) {
+        if (callPurpose === CallPurpose.GENERAL) {
+            await this.friendRequestService.assertConnected(hostUserId, recipientUserId);
+        }
+
         if (callPurpose === CallPurpose.MENTORSHIP) {
             const hostProfile = await this.prisma.profile.findFirst({
                 where: { userId: hostUserId },

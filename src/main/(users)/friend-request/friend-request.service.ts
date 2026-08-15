@@ -1,10 +1,40 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
+import { FriendRequestStatus } from "@prisma/client";
 import { FriendRequestAction } from "./dto/friend-request.dto";
 
 @Injectable()
 export class FriendRequestService {
     constructor(private prisma: PrismaService) {}
+
+    /** Mutual Connect = ACCEPTED FriendRequest in either direction */
+    async areConnected(userA: string, userB: string): Promise<boolean> {
+        if (!userA || !userB || userA === userB) {
+            return false;
+        }
+
+        const connection = await this.prisma.friendRequest.findFirst({
+            where: {
+                status: FriendRequestStatus.ACCEPTED,
+                OR: [
+                    { senderId: userA, receiverId: userB },
+                    { senderId: userB, receiverId: userA },
+                ],
+            },
+            select: { id: true },
+        });
+
+        return !!connection;
+    }
+
+    async assertConnected(userA: string, userB: string): Promise<void> {
+        const connected = await this.areConnected(userA, userB);
+        if (!connected) {
+            throw new ForbiddenException(
+                "Mutual Connect is required before messaging or starting a general call. Send and accept a Connect request first.",
+            );
+        }
+    }
 
     async sendRequest(senderId: string, receiverId: string) {
         if (senderId === receiverId) throw new Error("You cannot send request to yourself");

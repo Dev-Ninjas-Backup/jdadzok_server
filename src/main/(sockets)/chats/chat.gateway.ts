@@ -45,58 +45,36 @@ export class ChatGateway extends BaseSocketGateway {
     ) {
         const { receiverId } = data;
 
-        //Find or create a chat between sender and receiver
-        let chat = await this.prisma.liveChat.findFirst({
-            where: {
-                OR: [
-                    {
-                        participants: { some: { userId: user.id } },
-                        AND: { participants: { some: { userId: receiverId } } },
-                    },
-                ],
-            },
-            include: { participants: { include: { user: true } } },
-        });
+        try {
+            // Find or create 1-to-1 chat (enforces mutual Connect server-side)
+            const chat = await this.chatService.getOrCreatePrivateChat(user.id, receiverId);
 
-        if (!chat) {
-            chat = await this.prisma.liveChat.create({
-                data: {
-                    participants: {
-                        create: [{ userId: user.id }, { userId: receiverId }],
-                    },
-                },
-                include: { participants: { include: { user: true } } },
-            });
+            // Create the message (re-checks Connect for INDIVIDUAL)
+            const message = await this.chatService.createMessage(user.id, chat.id, data);
+
+            // Build payload
+            const payload = {
+                id: message.id,
+                chatId: message.chatId,
+                content: message.content,
+                mediaUrl: message.mediaUrl,
+                mediaType: message.mediaType,
+                sender: message.sender,
+                receiver:
+                    message.chat.participants
+                        .map((p) => p.user)
+                        .find((u) => u.id !== message.senderId) ?? null,
+                createdAt: message.createdAt,
+            };
+
+            // Emit message to both users (sender & receiver)
+            this.emitToUserViaClientsMap(receiverId, "chat:message_receive", payload);
+            this.emitToUserViaClientsMap(user.id, "chat:message_sent", payload);
+        } catch (err) {
+            const message =
+                err instanceof Error ? err.message : "Failed to send message";
+            return client.emit("error", { message });
         }
-
-        //  Verify sender is indeed part of this chat
-        const isParticipant = chat.participants.some((p) => p.userId === user.id);
-        if (!isParticipant) {
-            console.log("User not in chat:", user.id, chat.id);
-            return client.emit("error", { message: "You are not in this chat" });
-        }
-
-        //  Create the message
-        const message = await this.chatService.createMessage(user.id, chat.id, data);
-
-        // Build payload
-        const payload = {
-            id: message.id,
-            chatId: message.chatId,
-            content: message.content,
-            mediaUrl: message.mediaUrl,
-            mediaType: message.mediaType,
-            sender: message.sender,
-            receiver:
-                message.chat.participants
-                    .map((p) => p.user)
-                    .find((u) => u.id !== message.senderId) ?? null,
-            createdAt: message.createdAt,
-        };
-
-        //  Emit message to both users (sender & receiver)
-        this.emitToUserViaClientsMap(receiverId, "chat:message_receive", payload);
-        this.emitToUserViaClientsMap(user.id, "chat:message_sent", payload);
     }
 
     @SubscribeMessage("chat:message_read")

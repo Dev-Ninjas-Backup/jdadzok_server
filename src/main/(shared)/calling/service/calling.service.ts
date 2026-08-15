@@ -14,6 +14,7 @@ import { Cache } from "cache-manager";
 import { CallGateway } from "../calling.gateway";
 import { CallPurpose, CallStatus } from "@prisma/client";
 import { MentorshipCallHoursService } from "./mentorship-call-hours.service";
+import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
 
 export interface Participant {
     socketId: string;
@@ -49,6 +50,7 @@ export class CallService {
         private readonly prisma: PrismaService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private readonly mentorshipCallHours: MentorshipCallHoursService,
+        private readonly friendRequestService: FriendRequestService,
     ) {}
 
     /**
@@ -67,6 +69,11 @@ export class CallService {
     }> {
         if (callerId === recipientUserId) {
             throw new BadRequestException("Cannot call yourself");
+        }
+
+        // GENERAL calls require mutual Connect; MENTORSHIP uses volunteer opt-in instead
+        if (callPurpose === CallPurpose.GENERAL) {
+            await this.friendRequestService.assertConnected(callerId, recipientUserId);
         }
 
         if (callPurpose === CallPurpose.MENTORSHIP) {

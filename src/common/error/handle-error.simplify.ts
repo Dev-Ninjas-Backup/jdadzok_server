@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     ConflictException,
+    HttpException,
     InternalServerErrorException,
     NotFoundException,
     UnauthorizedException,
@@ -13,6 +14,11 @@ export function simplifyError(
     customMessage = "Operation Failed",
     record = "Record",
 ): never {
+    // Preserve intentional Nest HTTP errors (e.g. ForbiddenException from Connect gating)
+    if (error instanceof HttpException) {
+        throw error;
+    }
+
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
         switch (error.code) {
             case "P2002":

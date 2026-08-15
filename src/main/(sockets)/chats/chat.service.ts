@@ -3,15 +3,21 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 
 import { HandleError } from "@common/error/handle-error.decorator";
 import { LiveChat } from "@prisma/client";
+import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
 import { CreateMessageDto } from "./dto/create.message.dto";
 
 @Injectable()
 export class ChatService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private readonly friendRequestService: FriendRequestService,
+    ) {}
 
-    /** Find or create 1-to-1 chat */
+    /** Find or create 1-to-1 chat (requires mutual Connect) */
     @HandleError("Failed to get or create chat", "chat")
     async getOrCreatePrivateChat(userA: string, userB: string): Promise<LiveChat> {
+        await this.friendRequestService.assertConnected(userA, userB);
+
         const existing = await this.prisma.liveChat.findFirst({
             where: {
                 type: "INDIVIDUAL",
@@ -150,6 +156,14 @@ export class ChatService {
         const isParticipant = chat.participants.some((p) => p.userId === senderId);
         if (!isParticipant) {
             throw new ForbiddenException("You are not a participant in this chat");
+        }
+
+        // General (individual) chat requires mutual Connect with the other party
+        if (chat.type === "INDIVIDUAL") {
+            const other = chat.participants.find((p) => p.userId !== senderId);
+            if (other) {
+                await this.friendRequestService.assertConnected(senderId, other.userId);
+            }
         }
 
         return this.prisma.liveMessage.create({
@@ -326,6 +340,8 @@ export class ChatService {
     // --------------------- getOrCreatePrivateChat-----------------------
     @HandleError("Failed to get or create private chat", "chat")
     async getOrCreatePrivateChatId(userId: string, otherUserId: string) {
+        await this.friendRequestService.assertConnected(userId, otherUserId);
+
         // Find chats where userId is a participant
         const chats = await this.prisma.liveChat.findMany({
             where: {
