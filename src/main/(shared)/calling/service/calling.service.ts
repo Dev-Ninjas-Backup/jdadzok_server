@@ -2,10 +2,18 @@
 
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+    BadRequestException,
+    ForbiddenException,
+    Inject,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { CallGateway } from "../calling.gateway";
-import { CallStatus } from "@prisma/client";
+import { CallPurpose, CallStatus } from "@prisma/client";
+import { MentorshipCallHoursService } from "./mentorship-call-hours.service";
 
 export interface Participant {
     socketId: string;
@@ -22,6 +30,7 @@ export interface CallRoom {
     recipientUserId: string;
     participants: Participant[];
     status: "CALLING" | "ACTIVE" | "ENDED" | "CANCELLED" | "MISSED" | "DECLINED";
+    callPurpose: CallPurpose;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -39,6 +48,7 @@ export class CallService {
     constructor(
         private readonly prisma: PrismaService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        private readonly mentorshipCallHours: MentorshipCallHoursService,
     ) {}
 
     /**
@@ -49,9 +59,26 @@ export class CallService {
         recipientUserId: string,
         socketId: string,
         callGateway: CallGateway,
-    ): Promise<{ callId: string; status: "ringing" | "recipient_offline" | "user_busy" }> {
+        callPurpose: CallPurpose = CallPurpose.GENERAL,
+    ): Promise<{
+        callId: string;
+        status: "ringing" | "recipient_offline" | "user_busy";
+        callPurpose: CallPurpose;
+    }> {
         if (callerId === recipientUserId) {
             throw new BadRequestException("Cannot call yourself");
+        }
+
+        if (callPurpose === CallPurpose.MENTORSHIP) {
+            const callerProfile = await this.prisma.profile.findFirst({
+                where: { userId: callerId },
+                select: { isVolunteerMentorOptIn: true },
+            });
+            if (!callerProfile?.isVolunteerMentorOptIn) {
+                throw new ForbiddenException(
+                    "Volunteer / mentor opt-in is required to start a mentorship call",
+                );
+            }
         }
 
         // Check if caller is already in a call
@@ -83,7 +110,9 @@ export class CallService {
         const call = await this.prisma.calling.create({
             data: {
                 hostUserId: callerId,
+                recipientUserId,
                 status: "CALLING",
+                callPurpose,
             },
         });
 
@@ -103,6 +132,7 @@ export class CallService {
                 },
             ],
             status: "CALLING",
+            callPurpose,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -124,11 +154,12 @@ export class CallService {
             await this.updateCallStatus(call.id, "MISSED");
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${callerId}`);
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${recipientUserId}`);
-            return { callId: call.id, status: "recipient_offline" };
+            return { callId: call.id, status: "recipient_offline", callPurpose };
         }
 
         const payload = {
             callId: call.id,
+            callPurpose,
             caller: {
                 userId: callerId,
                 socketId: socketId, // Include caller's socket ID
@@ -144,10 +175,10 @@ export class CallService {
         });
 
         this.logger.log(
-            `Call initiated: ${callerId} → ${recipientUserId} (call: ${call.id}, socket: ${socketId})`,
+            `Call initiated: ${callerId} → ${recipientUserId} (call: ${call.id}, purpose: ${callPurpose}, socket: ${socketId})`,
         );
 
-        return { callId: call.id, status: "ringing" };
+        return { callId: call.id, status: "ringing", callPurpose };
     }
 
     /**
@@ -413,6 +444,7 @@ export class CallService {
 
         // Update database
         await this.updateCallStatus(callId, "END");
+        await this.mentorshipCallHours.maybeLogVerifiedHoursFromCall(callId);
 
         this.logger.log(`Call ${callId} ended`);
     }

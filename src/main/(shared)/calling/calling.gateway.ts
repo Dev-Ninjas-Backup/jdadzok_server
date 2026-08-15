@@ -17,6 +17,7 @@ import {
 import { Server, Socket } from "socket.io";
 import { IceCandidateDto, JoinCallDto, WebRTCSignalDto } from "./dto/calling.dto";
 import { CallService } from "./service/calling.service";
+import { CallPurpose } from "@prisma/client";
 
 @WebSocketGateway({
     cors: { origin: "*", credentials: true },
@@ -508,7 +509,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage("callUser")
     async handleDirectCallUser(
         @ConnectedSocket() callerSocket: Socket,
-        @MessageBody() payload: { userId: string },
+        @MessageBody() payload: { userId: string; callPurpose?: CallPurpose },
     ) {
         if (!this.requireAuth(callerSocket)) return;
 
@@ -536,6 +537,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 payload.userId,
                 callerSocketId,
                 this,
+                payload.callPurpose,
             );
 
             const callId = result.callId;
@@ -565,6 +567,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             callerSocket.emit("callStarted", {
                 callId,
                 status: result.status,
+                callPurpose: result.callPurpose,
                 recipientUserId: payload.userId,
                 callerSocketId: callerSocketId,
                 recipientSocketId: recipientSocketId,
@@ -584,6 +587,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             // Recipient is online - send incoming call notification
             const incomingCallPayload = {
                 callId,
+                callPurpose: result.callPurpose,
                 caller: {
                     userId: callerId,
                     name: callerInfo?.profile?.name || callerName,

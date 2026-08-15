@@ -8,6 +8,7 @@ import { JwtService } from "@nestjs/jwt";
 import { CallGateway } from "./calling.gateway";
 import { CallController } from "./controller/calling.controller";
 import { CallService } from "./service/calling.service";
+import { MentorshipCallHoursService } from "./service/mentorship-call-hours.service";
 
 @Module({
     imports: [
@@ -17,8 +18,14 @@ import { CallService } from "./service/calling.service";
             max: 1000,
         }),
     ],
-    providers: [CallGateway, CallService, JwtService, ConfigService],
+    providers: [
+        CallGateway,
+        CallService,
+        MentorshipCallHoursService,
+        JwtService,
+        ConfigService,
+    ],
     controllers: [CallController],
-    exports: [CallService],
+    exports: [CallService, MentorshipCallHoursService],
 })
 export class CallModule {}

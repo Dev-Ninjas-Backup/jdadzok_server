@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **8** |
+| Implemented `[x]` | **10** |
 | Partial / mismatch `[~]` | **13** (11 partial + 2 mismatch) |
-| Missing `[ ]` | **15** |
+| Missing `[ ]` | **13** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -80,7 +80,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
-| `[ ]` | In-platform mentorship call (highest trust) | Verified call in-app; duration auto-logs as verified hours | `Calling` has no mentorship/verified type; no link to `VolunteerHour` |
+| `[x]` | In-platform mentorship call (highest trust) | Verified call in-app; duration auto-logs as verified hours | `Calling.callPurpose=MENTORSHIP`; on `END` with `startedAt`, auto-creates verified `VolunteerHour` linked to call (+ ACCEPTED application when found) |
 | `[x]` | Partner-verified (NGO) | Vetted partner confirms; hours auto-count | Hours require `ACCEPTED` application; NGO owner confirms via `updateStatus()` |
 | `[ ]` | Counterparty confirmation | Mentee / recipient confirms mentoring session | No mentee-side confirm path |
 | `[~]` | Self-reported + endorsement gate | Self-logged hours pending until higher-Cap / admin endorsement | `Endorsement` exists but is auto-created by NGO on completion — not a pending gate on self-report |
@@ -98,7 +98,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[~]` | Connect (mutual) | Request both accept; gate for private messaging and general calls | `FriendRequest` model + APIs exist; not wired as Connect precondition elsewhere |
 | `[ ]` | Messaging gated by mutual Connect | Must be enforced **server-side** | No friend/Connect check in chat service / gateway |
 | `[ ]` | General vs Mentorship chat | Two distinct inbox contexts; mentorship thread auto-opens on accept | `LiveChatType` = `INDIVIDUAL` / `GROUP` only |
-| `[ ]` | Verified session call vs General call | Opposite screens/records; one logs to Cap, one never | Single `Calling` shape; no `callPurpose` / `isVerified` |
+| `[x]` | Verified session call vs General call | Opposite screens/records; one logs to Cap, one never | `CallPurpose` `GENERAL` \| `MENTORSHIP` on `Calling`; only mentorship ends auto-log verified hours |
 
 **Key paths:** `prisma/schema/follow.prisma`, `prisma/schema/users.follow.prisma`, `prisma/schema/friend.request.prisma`, `prisma/schema/livechat.prisma`, `src/main/(sockets)/chats/`, `src/main/(users)/friend-request/`
 
@@ -170,8 +170,8 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.14 Messages (inbox) | Live chat exists; no General vs Mentorship tabs/types |
 | `[~]` | 8.15 General chat | Chat works; **Connect gate missing** |
 | `[ ]` | 8.16 Mentorship chat | Missing type, auto-open, verified-call affordances |
-| `[ ]` | 8.17 Verified session call | Missing call purpose + auto hour log |
-| `[~]` | 8.18 General call | Calling exists; no explicit “not recorded / not counted” type distinction |
+| `[x]` | 8.17 Verified session call | `callPurpose=MENTORSHIP` + auto verified `VolunteerHour` on call end |
+| `[~]` | 8.18 General call | Calling exists; `callPurpose=GENERAL` (default) never counts toward Cap hours |
 | `[~]` | 8.19 Connections & following | Follow + FriendRequest exist; dual Follow models; Connect not enforced on chat/calls |
 | `[x]` | 8.20 Landing pages | Static assets in June 26 folder; not API-served |
 
@@ -188,7 +188,7 @@ These support Synqulan but are not the Cap / Bridge / verification gaps above. T
 | `[x]` | Users & profiles | User CRUD, profile, metrics, bans, reports |
 | `[x]` | NGO & communities | Explore NGO/community, membership, verification fields |
 | `[x]` | Notifications | In-app notifications + toggles (`(shared)/notifications`) |
-| `[x]` | Calling (base) | Audio/video calling infrastructure (`(shared)/calling`, realtime-call) — **without** mentorship verification dimension |
+| `[x]` | Calling (base) | Audio/video calling (`(shared)/calling`, realtime-call) with `callPurpose`; mentorship end auto-logs verified hours |
 | `[x]` | Chat (base) | LiveChat / LiveMessage sockets — **without** Connect gate or mentorship type |
 | `[x]` | Goods marketplace | Product, order, wishlist/favourites, categories |
 | `[x]` | Payments / Stripe | Stripe module, payouts, withdraw, seller earnings |
@@ -209,7 +209,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 ### Priority A — load-bearing (audit “fix five first”)
 
 1. `[x]` **Volunteer / mentor opt-in** on `User` or `Profile` (+ onboarding / profile toggle APIs)
-2. `[ ]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
+2. `[x]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
 3. `[ ]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
 4. `[ ]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
 5. `[ ]` **Bridge module decision & scaffold** — new `(bridge)` module (not goods `Product`/`Order`): expertise listings, paid gigs, Cap-weighted visibility
@@ -245,7 +245,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority A.2 — Calling mentorship dimension + auto-create `VolunteerHour` on verified call end.
+**Suggested next coding PR:** Priority A.3 — Mutual-Connect gating on chat (and general calls) via `FriendRequest` ACCEPTED.
 
 ---
 
@@ -253,6 +253,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority A.2 — `Calling.callPurpose` (`GENERAL`/`MENTORSHIP`) + auto verified `VolunteerHour` on mentorship call end |
 | 2026-08-15 | Priority A.1 — `Profile.isVolunteerMentorOptIn` + onboarding (`POST /choices`) / profile toggle APIs; gates volunteer apply + verified-hour logging |
 | 2026-07-27 | Initial status document created from June 26 brief + codebase verification |
 

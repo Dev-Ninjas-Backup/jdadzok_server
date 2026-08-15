@@ -42,6 +42,7 @@ export class CallController {
             dto.recipientUserId,
             "http-request",
             this.callGateway,
+            dto.callPurpose,
         );
     }
 

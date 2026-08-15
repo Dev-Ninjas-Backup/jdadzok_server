@@ -13,6 +13,11 @@ enum AuthProvider {
   FACEBOOK
 }
 
+enum CallPurpose {
+  GENERAL
+  MENTORSHIP
+}
+
 enum CallStatus {
   CALLING
   RINING

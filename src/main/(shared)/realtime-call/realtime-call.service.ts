@@ -1,16 +1,39 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Injectable } from "@nestjs/common";
-import { CallStatus } from "@prisma/client";
+import { ForbiddenException, Injectable } from "@nestjs/common";
+import { CallPurpose, CallStatus } from "@prisma/client";
+import { MentorshipCallHoursService } from "../calling/service/mentorship-call-hours.service";
+
 @Injectable()
 export class RealTimeCallService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private readonly mentorshipCallHours: MentorshipCallHoursService,
+    ) {}
 
-    async createCall(hostUserId: string, recipientUserId: string, title?: string) {
+    async createCall(
+        hostUserId: string,
+        recipientUserId: string,
+        title?: string,
+        callPurpose: CallPurpose = CallPurpose.GENERAL,
+    ) {
+        if (callPurpose === CallPurpose.MENTORSHIP) {
+            const hostProfile = await this.prisma.profile.findFirst({
+                where: { userId: hostUserId },
+                select: { isVolunteerMentorOptIn: true },
+            });
+            if (!hostProfile?.isVolunteerMentorOptIn) {
+                throw new ForbiddenException(
+                    "Volunteer / mentor opt-in is required to start a mentorship call",
+                );
+            }
+        }
+
         return this.prisma.calling.create({
             data: {
                 hostUserId,
                 recipientUserId,
                 title,
+                callPurpose,
             },
         });
     }
@@ -44,10 +67,12 @@ export class RealTimeCallService {
     }
 
     async endCall(callId: string) {
-        return this.prisma.calling.update({
+        const call = await this.prisma.calling.update({
             where: { id: callId },
             data: { status: CallStatus.END, endedAt: new Date() },
         });
+        await this.mentorshipCallHours.maybeLogVerifiedHoursFromCall(callId);
+        return call;
     }
 
     async getCallStatus(callId: string) {
@@ -56,6 +81,7 @@ export class RealTimeCallService {
             select: {
                 id: true,
                 status: true,
+                callPurpose: true,
                 startedAt: true,
                 endedAt: true,
                 hostUserId: true,

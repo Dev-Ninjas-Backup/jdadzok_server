@@ -61,6 +61,8 @@ export const callType = ["AUDIO", "VIDEO"] as const;
 export type CallType = (typeof callType)[number];
 export const callStatus = ["CALLING", "RINING", "ACTIVE", "END", "MISSED", "DECLINED"] as const;
 export type CallStatus = (typeof callStatus)[number];
+export const callPurpose = ["GENERAL", "MENTORSHIP"] as const;
+export type CallPurpose = (typeof callPurpose)[number];
 
 export const messageStatus = ["SENT", "DELIVERED", "READ"] as const;
 export type MessageStatus = (typeof messageStatus)[number];

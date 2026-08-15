@@ -1,10 +1,16 @@
 model VolunteerHour {
-  id             String               @id @default(uuid())
-  applicationId  String
-  application    VolunteerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  id             String                @id @default(uuid())
+  applicationId  String?
+  application    VolunteerApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  callId         String?               @unique
+  call           Calling?              @relation(fields: [callId], references: [id], onDelete: SetNull)
   loggedByUserId String
-  loggedByUser   User                 @relation(fields: [loggedByUserId], references: [id])
-  hours          Int
-  note           String?              @db.Text
-  createdAt      DateTime             @default(now())
+  loggedByUser   User                  @relation(fields: [loggedByUserId], references: [id])
+  hours          Float
+  isVerified     Boolean               @default(false)
+  note           String?               @db.Text
+  createdAt      DateTime              @default(now())
+
+  @@index([loggedByUserId])
+  @@index([applicationId])
 }

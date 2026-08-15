@@ -1,6 +1,7 @@
 // src/call/dto/calling.dto.ts
-import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { CallPurpose } from "@prisma/client";
+import { IsBoolean, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
 
 export class JoinCallDto {
     @ApiProperty({ description: "Call ID" })
@@ -61,6 +62,16 @@ export class StartCallToUserDto {
     @IsString()
     @IsNotEmpty()
     recipientUserId: string;
+
+    @ApiPropertyOptional({
+        enum: CallPurpose,
+        default: CallPurpose.GENERAL,
+        description:
+            "GENERAL never counts toward Cap hours. MENTORSHIP auto-logs verified VolunteerHour on call end (requires volunteer/mentor opt-in).",
+    })
+    @IsOptional()
+    @IsEnum(CallPurpose)
+    callPurpose?: CallPurpose;
 }
 
 export class AcceptCallDto {

@@ -10,6 +10,7 @@ import {
 import { Server, Socket } from "socket.io";
 import { RealTimeCallService } from "./realtime-call.service";
 import * as jwt from "jsonwebtoken";
+import { CallPurpose } from "@prisma/client";
 
 @WebSocketGateway({
     cors: { origin: "*" },
@@ -61,12 +62,14 @@ export class RealTimeCallGateway implements OnGatewayConnection, OnGatewayDiscon
             hostUserId: string;
             recipientUserId: string;
             title?: string;
+            callPurpose?: CallPurpose;
         },
     ) {
         const call = await this.callService.createCall(
             data.hostUserId,
             data.recipientUserId,
             data.title,
+            data.callPurpose,
         );
         const hostSocket = this.users.get(data.hostUserId);
         const receiverSocket = this.users.get(data.recipientUserId);
@@ -76,6 +79,7 @@ export class RealTimeCallGateway implements OnGatewayConnection, OnGatewayDiscon
                 callId: call.id,
                 to: data.recipientUserId,
                 title: data.title,
+                callPurpose: call.callPurpose,
             });
         }
 
@@ -85,6 +89,7 @@ export class RealTimeCallGateway implements OnGatewayConnection, OnGatewayDiscon
                 callId: call.id,
                 from: data.hostUserId,
                 title: data.title,
+                callPurpose: call.callPurpose,
             });
         } else {
             await this.callService.markMissed(call.id);

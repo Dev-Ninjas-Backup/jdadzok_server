@@ -1,21 +1,24 @@
 model Calling {
-  id              String     @id @default(uuid())
+  id              String      @id @default(uuid())
   hostUserId      String
   recipientUserId String?
-  status          CallStatus @default(CALLING)
+  status          CallStatus  @default(CALLING)
+  callPurpose     CallPurpose @default(GENERAL)
   title           String?
-  isPrivate       Boolean    @default(false)
+  isPrivate       Boolean     @default(false)
   startedAt       DateTime?
   endedAt         DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  host         User              @relation("HostedCalls", fields: [hostUserId], references: [id])
-  recipient    User?             @relation("ReceivedCalls", fields: [recipientUserId], references: [id]) // ← ADD THIS RELATION
-  participants CallParticipant[]
+  host          User              @relation("HostedCalls", fields: [hostUserId], references: [id])
+  recipient     User?             @relation("ReceivedCalls", fields: [recipientUserId], references: [id])
+  participants  CallParticipant[]
+  volunteerHour VolunteerHour?
 
   @@index([hostUserId])
-  @@index([recipientUserId]) 
+  @@index([recipientUserId])
+  @@index([callPurpose])
   @@map("calls")
 }
 
