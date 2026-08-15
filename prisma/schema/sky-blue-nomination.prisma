@@ -1,0 +1,58 @@
+enum SkyBlueNominationStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  REVOKED
+}
+
+/// Invitation-only parallel track for Sky Blue (not a sequential rung after Black).
+model SkyBlueNomination {
+  id String @id @default(uuid())
+
+  nomineeId String
+  nominee   User   @relation("SkyBlueNominee", fields: [nomineeId], references: [id], onDelete: Cascade)
+
+  nominatedById String
+  nominatedBy   User   @relation("SkyBlueNominator", fields: [nominatedById], references: [id], onDelete: Cascade)
+
+  status SkyBlueNominationStatus @default(PENDING)
+
+  // Dual verification: KYC + notability
+  kycVerified     Boolean   @default(false)
+  kycVerifiedAt   DateTime?
+  kycVerifiedById String?
+  kycNotes        String?   @db.Text
+
+  notabilityVerified     Boolean   @default(false)
+  notabilityVerifiedAt   DateTime?
+  notabilityVerifiedById String?
+  notabilityNotes        String?   @db.Text
+
+  decisionNotes String?   @db.Text
+  decidedAt     DateTime?
+  decidedById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events SkyBlueNominationEvent[]
+
+  @@index([nomineeId])
+  @@index([status])
+  @@index([nominatedById])
+  @@map("sky_blue_nominations")
+}
+
+model SkyBlueNominationEvent {
+  id           String             @id @default(uuid())
+  nominationId String
+  nomination   SkyBlueNomination  @relation(fields: [nominationId], references: [id], onDelete: Cascade)
+  actorId      String?
+  action       String
+  detail       String?            @db.Text
+  createdAt    DateTime           @default(now())
+
+  @@index([nominationId])
+  @@map("sky_blue_nomination_events")
+}

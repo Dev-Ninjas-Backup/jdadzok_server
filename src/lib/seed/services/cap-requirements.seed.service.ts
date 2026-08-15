@@ -70,17 +70,17 @@ export class CapRequirementsSeedService {
                 "Esteemed Contributor - 45% ad revenue share with high visibility. Must complete 8-week volunteer service.",
         },
         {
-            capLevel: "OSTRICH_FEATHER",
+            capLevel: "SKY_BLUE",
             minActivityScore: 100,
-            minVolunteerHours: 320,
+            minVolunteerHours: 320, // Black-level volunteering unlocks full Sky Blue ad share
             adSharePercentage: 60,
             canAccessMarketplace: true,
             canAccessVolunteerHub: true,
             canReceiveBrandDeals: true,
             requiresVerification: true,
-            requiresNomination: true, // Secret panel nomination required
+            requiresNomination: true, // Invitation / nomination only — parallel track
             description:
-                "Global Changemaker - 60% ad revenue share, brand deals, and global recognition. Requires panel nomination.",
+                "Sky Blue — invitation-only. KYC + notability required. Earns at Red ad-share rate until Black-level volunteering hours are met, then full Sky Blue rate.",
         },
     ];
 

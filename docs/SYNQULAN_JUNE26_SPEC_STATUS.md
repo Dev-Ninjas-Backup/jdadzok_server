@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **12** |
-| Partial / mismatch `[~]` | **12** (10 partial + 2 mismatch) |
-| Missing `[ ]` | **12** |
+| Implemented `[x]` | **14** |
+| Partial / mismatch `[~]` | **11** (9 partial + 2 mismatch) |
+| Missing `[ ]` | **11** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -52,10 +52,10 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
 | `[x]` | Five-level ladder | Green → Yellow → Red → Black → Sky Blue, stored per user with progression rules | `CapLevel` enum + `User.capLevel`, `CapRequirements`, cron promotion under `src/main/(core)/cap-level/` |
-| `[~]` | Top-tier rename (Sky Blue) | Top cap is **Sky Blue**, not “black with ostrich feather” | Still `OSTRICH_FEATHER` in `prisma/schema/enum.prisma`; README frames it as post-Black “Global Changemaker” |
+| `[x]` | Top-tier rename (Sky Blue) | Top cap is **Sky Blue**, not “black with ostrich feather” | `CapLevel.SKY_BLUE` (renamed from `OSTRICH_FEATHER`); parallel invitation track |
 | `[x]` | Green → Yellow → Red (score-driven) | Lower rungs driven by Impact / Activity score | `ActivityScore` + cap cron / processor auto-promote when `requiresVerification` is false |
 | `[~]` | Red → Black: hours + admin gate | Must be Red, meet verified-hours threshold, admin review | `CapRequirements.requiresVerification` + `PUT /cap-level/promote/:userId`; order-of-ops (Red first) not fully locked in promotion logic |
-| `[ ]` | Sky Blue: invitation-only, dual verification | Never applied for; KYC + notability; committee + audit trail; earns at Red rate until Black-level volunteering | No invitation/nomination workflow (only `requiresNomination` flag on requirements). No parallel-track earning override |
+| `[x]` | Sky Blue: invitation-only, dual verification | Never applied for; KYC + notability; committee + audit trail; earns at Red rate until Black-level volunteering | `SkyBlueNomination` + events; `/cap-level/sky-blue/*`; ad-share uses Red rate until Black `minVolunteerHours` |
 | `[~]` | Revenue % hidden, configurable | Exact ad-share % never hard-coded in UI copy — business data | `CapRequirements.adSharePercentage` is DB-backed (good); module README still documents fixed 2/10/20/45/60% figures |
 | `[ ]` | Illustrated cap: style & placement | Profile setting: style (structured / soft) and placement (worn / beside; default beside) | No fields on `Profile` or `User` |
 
@@ -211,7 +211,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 1. `[x]` **Volunteer / mentor opt-in** on `User` or `Profile` (+ onboarding / profile toggle APIs)
 2. `[x]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
 3. `[x]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
-4. `[ ]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
+4. `[x]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
 5. `[ ]` **Bridge module decision & scaffold** — new `(bridge)` module (not goods `Product`/`Order`): expertise listings, paid gigs, Cap-weighted visibility
 
 ### Priority B — verification & volunteering depth
@@ -245,7 +245,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority A.4 — Sky Blue rename + parallel track (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow).
+**Suggested next coding PR:** Priority A.5 — Bridge module decision & scaffold (expertise listings, paid gigs, Cap-weighted visibility).
 
 ---
 
@@ -253,6 +253,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority A.4 — `CapLevel.SKY_BLUE` rename; invitation nomination + KYC/notability audit trail; Red-rate earning until Black-level hours |
 | 2026-08-15 | Priority A.3 — Mutual-Connect gating: `FriendRequest` ACCEPTED required for private chat + general calls (server-side) |
 | 2026-08-15 | Priority A.2 — `Calling.callPurpose` (`GENERAL`/`MENTORSHIP`) + auto verified `VolunteerHour` on mentorship call end |
 | 2026-08-15 | Priority A.1 — `Profile.isVolunteerMentorOptIn` + onboarding (`POST /choices`) / profile toggle APIs; gates volunteer apply + verified-hour logging |

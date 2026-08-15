@@ -10,9 +10,9 @@ export * from "./volunteer-tracking.dto";
 class CapLevelDto {
     @ApiProperty({
         description: "Cap level",
-        enum: ["GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"],
+        enum: ["GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"],
     })
-    @IsEnum(["GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"])
+    @IsEnum(["GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"])
     capLevel: CapLevel;
 
     @ApiProperty({
@@ -85,11 +85,11 @@ export class UpdateCapLevelDto extends PartialType(IntersectionType(CapLevelDto)
 export class PromoteUserDto {
     @ApiProperty({
         description: "Target cap level",
-        enum: ["GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"],
+        enum: ["GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"],
         required: false,
     })
     @IsOptional()
-    @IsEnum(["GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"])
+    @IsEnum(["GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"])
     targetLevel?: CapLevel;
 
     @ApiProperty({

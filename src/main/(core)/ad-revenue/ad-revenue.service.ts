@@ -2,7 +2,7 @@ import { CapLevel } from "@constants/enums";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { UserMetricsService } from "@module/(users)/profile-metrics/user-metrics.service";
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { User, UserMetrics } from "@prisma/client";
+import { CapLevel as PrismaCapLevel, User, UserMetrics } from "@prisma/client";
 import { CapLevelRepository } from "../cap-level/cap-lavel.repository";
 import {
     CreateRevenueShareDto,
@@ -418,7 +418,16 @@ export class AdRevenueService {
             if (!requirements || !user.metrics) continue;
 
             // Calculate user's share based on their cap level and activity
-            const sharePercentage = requirements.adSharePercentage;
+            // Sky Blue: earn at Red rate until Black-level volunteering hours are met
+            let sharePercentage = requirements.adSharePercentage;
+            if (user.capLevel === PrismaCapLevel.SKY_BLUE) {
+                const blackReq = requirementsMap.get(PrismaCapLevel.BLACK);
+                const redReq = requirementsMap.get(PrismaCapLevel.RED);
+                const threshold = blackReq?.minVolunteerHours ?? 320;
+                if (user.metrics.volunteerHours < threshold) {
+                    sharePercentage = redReq?.adSharePercentage ?? 20;
+                }
+            }
             const activityScore = user.metrics.activityScore;
 
             // Basic distribution - could be enhanced with activity-based multipliers

@@ -66,7 +66,7 @@ export class HelperFunctions {
             YELLOW: "Amazing! You upgraded to Yellow Cap! 🟡",
             RED: "Incredible! You reached Red Cap level! 🔴",
             BLACK: "Outstanding! You achieved Black Cap status! ⚫",
-            OSTRICH_FEATHER: "Legendary! You earned the Ostrich Feather Cap! 🪶",
+            SKY_BLUE: "Extraordinary! You have been invited to Sky Blue Cap! 🔵",
         };
 
         await this.prisma.notification.create({

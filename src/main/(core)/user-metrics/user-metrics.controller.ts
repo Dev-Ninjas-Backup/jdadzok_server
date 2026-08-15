@@ -521,7 +521,7 @@ export class UserMetricsController {
                         averageVolunteerHours: 0,
                         userCount: 0,
                     },
-                    OSTRICH_FEATHER: {
+                    SKY_BLUE: {
                         averagePosts: 0,
                         averageScore: 0,
                         averageVolunteerHours: 0,

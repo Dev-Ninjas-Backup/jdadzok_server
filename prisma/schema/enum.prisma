@@ -38,7 +38,7 @@ enum CapLevel {
   YELLOW
   RED
   BLACK
-  OSTRICH_FEATHER
+  SKY_BLUE
 }
 
 enum ChatType {

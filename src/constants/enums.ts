@@ -4,7 +4,7 @@ export type Role = (typeof role)[number];
 export const authProvider = ["GOOGLE", "APPLE", "EMAIL", "FACEBOOK"] as const;
 export type AuthProvider = (typeof authProvider)[number];
 
-export const capLevel = ["NONE", "GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"] as const;
+export const capLevel = ["NONE", "GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"] as const;
 export type CapLevel = (typeof capLevel)[number];
 
 export const mediaType = ["IMAGE", "VIDEO", "GIF"] as const;

@@ -7,10 +7,10 @@ model CapRequirements {
   minActivityScore     Float? // Minimum activity score needed
   minVolunteerHours    Int? // Minimum volunteer hours needed
   requiresVerification Boolean @default(false) // Need admin verification
-  requiresNomination   Boolean @default(false) // Need panel nomination (for Ostrich Feather)
+  requiresNomination   Boolean @default(false) // Invitation/nomination track (Sky Blue)
 
   // Benefits of this cap level
-  adSharePercentage     Float // Percentage of ad revenue user gets
+  adSharePercentage     Float // Percentage of ad revenue user gets (Sky Blue: full rate after Black-level hours)
   canAccessMarketplace  Boolean @default(false)
   canAccessVolunteerHub Boolean @default(false)
   canReceiveBrandDeals  Boolean @default(false)

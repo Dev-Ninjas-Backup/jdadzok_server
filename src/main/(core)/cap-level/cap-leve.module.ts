@@ -4,14 +4,14 @@ import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { UserMetricsService } from "../../(users)/profile-metrics/user-metrics.service";
 import { AdRevenueService } from "../ad-revenue/ad-revenue.service";
-// import { RevenueController } from "../revenue/revenue.controller";
-// import { VolunteerTrackingService } from "../volunteer-tracking/volunteer-tracking.service";
 import { CapLevelRepository } from "./cap-lavel.repository";
 import { CapLevelService } from "./cap-lavel.service";
 import { CapLevelController } from "./cap-level.controller";
 import { CapLevelCronJobProcessor } from "./cron/cap-level.cron-job.processor";
 import { CapLevelCronJobService } from "./cron/cap-level.cron-job.service";
 import { CapLevelProcessorService } from "./cron/cap-level.processor.service";
+import { SkyBlueNominationController } from "./sky-blue-nomination.controller";
+import { SkyBlueNominationService } from "./sky-blue-nomination.service";
 
 @Module({
     imports: [
@@ -20,7 +20,7 @@ import { CapLevelProcessorService } from "./cron/cap-level.processor.service";
         }),
         UserModule,
     ],
-    controllers: [CapLevelController],
+    controllers: [CapLevelController, SkyBlueNominationController],
     providers: [
         CapLevelCronJobProcessor,
         CapLevelCronJobService,
@@ -29,7 +29,8 @@ import { CapLevelProcessorService } from "./cron/cap-level.processor.service";
         CapLevelProcessorService,
         UserMetricsService,
         AdRevenueService,
+        SkyBlueNominationService,
     ],
-    exports: [CapLevelService, UserMetricsService, AdRevenueService],
+    exports: [CapLevelService, UserMetricsService, AdRevenueService, SkyBlueNominationService],
 })
 export class CapLevelModule {}

@@ -23,6 +23,12 @@ interface UserCapStatus {
     metrics: UserMetrics | null;
     eligibility: CapEligibilityResult;
     progressPercentage: number;
+    earning: {
+        effectiveSharePercentage: number;
+        nominalSharePercentage: number;
+        earningAtRedRate: boolean;
+        blackVolunteerHoursRequired: number | null;
+    };
 }
 
 @Injectable()
@@ -38,8 +44,10 @@ export class CapLevelService {
         "YELLOW",
         "RED",
         "BLACK",
-        "OSTRICH_FEATHER",
     ];
+
+    /** Parallel invitation track — never a sequential “next” after Black */
+    private readonly parallelCapLevels = new Set<CapLevel>(["SKY_BLUE"]);
 
     async getUserCapStatus(userId: string): Promise<UserCapStatus> {
         // Get user with metrics
@@ -75,6 +83,11 @@ export class CapLevelService {
             nextRequirements,
         );
 
+        const earning = await this.getEffectiveAdSharePercentage(
+            userWithMetrics.capLevel,
+            metrics!.volunteerHours,
+        );
+
         return {
             user: userWithMetrics,
             currentLevel: userWithMetrics.capLevel,
@@ -84,6 +97,7 @@ export class CapLevelService {
             metrics,
             eligibility,
             progressPercentage,
+            earning,
         };
     }
 
@@ -107,11 +121,15 @@ export class CapLevelService {
         let requirements: CapRequirements | null = null;
         const missingRequirements: string[] = [];
 
-        // Check each level starting from current + 1
-        const currentLevelIndex = this.capLevelOrder.indexOf(currentLevel);
+        // Check each level starting from current + 1 (ladder only — skip Sky Blue parallel track)
+        const currentLevelIndex = this.capLevelOrder.indexOf(
+            this.parallelCapLevels.has(currentLevel) ? "BLACK" : currentLevel,
+        );
 
-        for (let i = currentLevelIndex + 1; i < this.capLevelOrder.length; i++) {
+        for (let i = Math.max(currentLevelIndex + 1, 0); i < this.capLevelOrder.length; i++) {
             const checkLevel = this.capLevelOrder[i];
+            if (this.parallelCapLevels.has(checkLevel)) continue;
+
             const levelRequirements = await this.repository.getCapRequirements(checkLevel);
 
             if (!levelRequirements) continue;
@@ -134,6 +152,19 @@ export class CapLevelService {
                 }
                 break;
             }
+        }
+
+        // Sky Blue is invitation-only — never auto-eligible via ladder
+        if (currentLevel === "SKY_BLUE") {
+            return {
+                currentLevel,
+                eligibleLevel: currentLevel,
+                canPromote: false,
+                requirements: await this.repository.getCapRequirements("SKY_BLUE"),
+                missingRequirements: [],
+                activityScore: metrics.activityScore,
+                volunteerHours: metrics.volunteerHours,
+            };
         }
 
         return {
@@ -199,11 +230,61 @@ export class CapLevelService {
     }
 
     private getNextCapLevel(currentLevel: CapLevel): CapLevel | null {
+        if (this.parallelCapLevels.has(currentLevel)) {
+            return null;
+        }
         const currentIndex = this.capLevelOrder.indexOf(currentLevel);
         if (currentIndex === -1 || currentIndex === this.capLevelOrder.length - 1) {
             return null;
         }
         return this.capLevelOrder[currentIndex + 1];
+    }
+
+    /**
+     * Sky Blue earns at Red ad-share until Black-level volunteering hours are met,
+     * then uses the full Sky Blue CapRequirements.adSharePercentage.
+     */
+    async getEffectiveAdSharePercentage(
+        capLevel: CapLevel,
+        volunteerHours: number,
+    ): Promise<{
+        effectiveSharePercentage: number;
+        nominalSharePercentage: number;
+        earningAtRedRate: boolean;
+        blackVolunteerHoursRequired: number | null;
+    }> {
+        const requirements = await this.repository.getCapRequirements(capLevel);
+        const nominal = requirements?.adSharePercentage ?? 0;
+
+        if (capLevel !== "SKY_BLUE") {
+            return {
+                effectiveSharePercentage: nominal,
+                nominalSharePercentage: nominal,
+                earningAtRedRate: false,
+                blackVolunteerHoursRequired: null,
+            };
+        }
+
+        const blackReq = await this.repository.getCapRequirements("BLACK");
+        const redReq = await this.repository.getCapRequirements("RED");
+        const threshold = blackReq?.minVolunteerHours ?? 320;
+        const redShare = redReq?.adSharePercentage ?? 20;
+
+        if (volunteerHours >= threshold) {
+            return {
+                effectiveSharePercentage: nominal,
+                nominalSharePercentage: nominal,
+                earningAtRedRate: false,
+                blackVolunteerHoursRequired: threshold,
+            };
+        }
+
+        return {
+            effectiveSharePercentage: redShare,
+            nominalSharePercentage: nominal,
+            earningAtRedRate: true,
+            blackVolunteerHoursRequired: threshold,
+        };
     }
 
     private async calculateProgressPercentage(

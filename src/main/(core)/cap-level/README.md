@@ -21,7 +21,9 @@ The Cap Level System is a comprehensive gamified progression and revenue-sharing
 | 🟡 **YELLOW**          | Active Contributor   | 10%              | Enhanced reach, expanded marketplace   | Activity score ≥ 50                       |
 | 🔴 **RED**             | Trusted Creator      | 20%              | Volunteer hub access, priority support | Activity score ≥ 100 + admin verification |
 | ⚫ **BLACK**           | Esteemed Contributor | 45%              | High visibility, brand partnerships    | 8-week volunteer service completion       |
-| 🪶 **OSTRICH_FEATHER** | Global Changemaker   | 60%              | Global recognition, exclusive deals    | Panel nomination after BLACK status       |
+| 🔵 **SKY_BLUE**        | Sky Blue (invite)    | 60%*             | Global recognition; parallel track     | Committee nomination + KYC + notability   |
+
+\*Sky Blue earns at **Red** rate until Black-level volunteering hours are completed.
 
 ## Activity Scoring Algorithm
 
@@ -43,7 +45,7 @@ interface ActivityScore {
 1. **GREEN → YELLOW**: Activity Score ≥ 50 (automatic)
 2. **YELLOW → RED**: Activity Score ≥ 100 + Admin verification
 3. **RED → BLACK**: 8-week volunteer service completion (200+ hours, 3+ projects)
-4. **BLACK → OSTRICH_FEATHER**: Secret panel nomination
+4. **Sky Blue**: Parallel invitation track only — never auto-promoted after Black. Use `/cap-level/sky-blue/*` nomination APIs.
 
 ## API Endpoints
 

@@ -6,5 +6,7 @@ export const CAP_LEVEL_RULES = {
     YELLOW: { minScore: 50, promoteAt: 100 },
     RED: { minScore: 100, promoteAt: 200, requiresAdmin: true },
     BLACK: { minScore: 200, promoteAt: 300, requiresVolunteer: true },
-    OSTRICH_FEATHER: { minScore: 300, promoteAt: 99999, requiresNomination: true },
+    /** Parallel invitation track — not a sequential rung after Black */
+    SKY_BLUE: { minScore: 0, promoteAt: 99999, requiresNomination: true },
 } as const;
+

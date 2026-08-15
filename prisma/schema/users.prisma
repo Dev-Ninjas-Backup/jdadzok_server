@@ -126,6 +126,10 @@ model User {
   // For NGO owner receiving donations
   donationsReceived DonationLog[] @relation("DonationReceiver")
 
+  // Sky Blue invitation track
+  skyBlueNominationsReceived SkyBlueNomination[] @relation("SkyBlueNominee")
+  skyBlueNominationsMade     SkyBlueNomination[] @relation("SkyBlueNominator")
+
   @@index([email])
   @@index([capLevel])
   @@index([role])

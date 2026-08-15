@@ -77,16 +77,13 @@ export class CapLevelRepository {
     }
 
     private getPreviousCapLevels(targetCapLevel: CapLevel): CapLevel[] {
-        const capLevels: CapLevel[] = [
-            "NONE",
-            "GREEN",
-            "YELLOW",
-            "RED",
-            "BLACK",
-            "OSTRICH_FEATHER",
-        ];
+        const capLevels: CapLevel[] = ["NONE", "GREEN", "YELLOW", "RED", "BLACK"];
+        // Sky Blue is parallel — treat prior ladder as up through BLACK
+        if (targetCapLevel === "SKY_BLUE") {
+            return [...capLevels];
+        }
         const targetIndex = capLevels.indexOf(targetCapLevel);
-        return capLevels.slice(0, targetIndex);
+        return capLevels.slice(0, Math.max(targetIndex, 0));
     }
 
     async getCapLevelStats(): Promise<any> {

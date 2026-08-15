@@ -95,10 +95,16 @@ export class AdminSettingsService {
             throw new BadRequestException("targetLevel is required");
         }
 
-        const validLevels = ["NONE", "GREEN", "YELLOW", "RED", "BLACK", "OSTRICH_FEATHER"] as const;
+        const validLevels = ["NONE", "GREEN", "YELLOW", "RED", "BLACK", "SKY_BLUE"] as const;
 
         if (!validLevels.includes(targetLevel as any)) {
             throw new BadRequestException(`Invalid CapLevel: ${targetLevel}`);
+        }
+
+        if (targetLevel === "SKY_BLUE" && !bypassVerification) {
+            throw new BadRequestException(
+                "Sky Blue is invitation-only. Use POST /cap-level/sky-blue/nominate (KYC + notability + approve). Pass bypassVerification only for emergency admin overrides.",
+            );
         }
 
         await this.prisma.user.update({
