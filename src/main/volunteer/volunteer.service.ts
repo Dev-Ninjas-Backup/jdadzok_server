@@ -7,9 +7,13 @@ import {
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
-import { ApplicationStatus, Role } from "@prisma/client";
+import { ApplicationStatus, ContributionType, Role } from "@prisma/client";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
+import {
+    isContributionOther,
+    resolveOtherText,
+} from "@common/utils/other-option.util";
 @Injectable()
 export class VolunteerService {
     constructor(private prisma: PrismaService) {}
@@ -148,6 +152,12 @@ export class VolunteerService {
             throw new BadRequestException("Check-out time must be after check-in time.");
         }
 
+        const contributionOther = resolveOtherText({
+            isOther: isContributionOther(dto.contributionType),
+            otherText: dto.contributionOther,
+            label: "contributionOther",
+        });
+
         // Calculate hours (rounded to 2 decimals)
         const hoursWorked = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
         const totalHours = app.workedHours + hoursWorked;
@@ -169,6 +179,8 @@ export class VolunteerService {
                     applicationId,
                     loggedByUserId: userId,
                     hours: hoursWorked,
+                    contributionType: dto.contributionType,
+                    contributionOther,
                     note: `Worked from ${checkIn.toISOString()} to ${checkOut.toISOString()}`,
                 },
             }),
@@ -213,6 +225,17 @@ export class VolunteerService {
             where: { volunteerId: userId },
             include: { project: true },
         });
+    }
+
+    listContributionTypes() {
+        return {
+            types: Object.values(ContributionType).map((value) => ({
+                value,
+                requiresOtherText: value === ContributionType.OTHER,
+            })),
+            otherPattern:
+                "When type is OTHER, send free-text in contributionOther (same pattern as interests / Bridge).",
+        };
     }
 
     async removeProject(projectId: string, userId: string) {

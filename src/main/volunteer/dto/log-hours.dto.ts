@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsISO8601 } from "class-validator";
+import { ContributionType } from "@prisma/client";
+import { IsEnum, IsISO8601, IsOptional, IsString, MaxLength, ValidateIf } from "class-validator";
 
 export class LogHoursDto {
     @ApiProperty({
@@ -27,4 +28,22 @@ export class LogHoursDto {
         },
     )
     checkOutTime: string;
+
+    @ApiProperty({
+        enum: ContributionType,
+        example: ContributionType.PROJECT,
+        description: "Contribution category. OTHER requires contributionOther free-text.",
+    })
+    @IsEnum(ContributionType)
+    contributionType: ContributionType;
+
+    @ApiProperty({
+        required: false,
+        example: "Community garden weekend shift",
+        description: "Required when contributionType is OTHER",
+    })
+    @ValidateIf((o: LogHoursDto) => o.contributionType === ContributionType.OTHER)
+    @IsString()
+    @MaxLength(500)
+    contributionOther?: string;
 }

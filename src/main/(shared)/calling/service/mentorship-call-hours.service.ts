@@ -1,6 +1,6 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable, Logger } from "@nestjs/common";
-import { ApplicationStatus, CallPurpose, CallStatus } from "@prisma/client";
+import { ApplicationStatus, CallPurpose, CallStatus, ContributionType } from "@prisma/client";
 
 @Injectable()
 export class MentorshipCallHoursService {
@@ -87,6 +87,8 @@ export class MentorshipCallHoursService {
                         loggedByUserId: mentorUserId,
                         hours,
                         isVerified: true,
+                        contributionType: ContributionType.MENTORING,
+                        contributionOther: null,
                         note: `Verified mentorship call ${call.id} (${call.startedAt!.toISOString()} → ${call.endedAt!.toISOString()})`,
                     },
                 });

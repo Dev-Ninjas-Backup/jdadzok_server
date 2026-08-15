@@ -8,9 +8,13 @@ model VolunteerHour {
   loggedByUser   User                  @relation(fields: [loggedByUserId], references: [id])
   hours          Float
   isVerified     Boolean               @default(false)
+  /// Mentoring | advice | project | teaching | charity | Other (+ free-text)
+  contributionType  ContributionType?
+  contributionOther String?            @db.Text
   note           String?               @db.Text
   createdAt      DateTime              @default(now())
 
   @@index([loggedByUserId])
   @@index([applicationId])
+  @@index([contributionType])
 }

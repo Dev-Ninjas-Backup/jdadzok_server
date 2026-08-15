@@ -11,5 +11,6 @@ export const preChoices = [
     { text: "Market & Monetize", slug: "market-and-monetize" },
     { text: "Lifestyle & Identity", slug: "lifestyle-and-identity" },
     { text: "Relationships & Growth", slug: "relationships-and-growth" },
+    { text: "Other", slug: "other" },
 ];
 export type PreChoices = (typeof preChoices)[number];

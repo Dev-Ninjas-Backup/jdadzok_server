@@ -19,6 +19,17 @@ export type VolunteerStatus = (typeof volunteerStatus)[number];
 export const applicationStatus = ["PENDING", "ACCEPTED", "REJECTED"] as const;
 export type ApplicationStatus = (typeof applicationStatus)[number];
 
+/** Contribution / activity categories (June 26) — OTHER requires free-text */
+export const contributionType = [
+    "MENTORING",
+    "ADVICE",
+    "PROJECT",
+    "TEACHING",
+    "CHARITY",
+    "OTHER",
+] as const;
+export type ContributionType = (typeof contributionType)[number];
+
 export const orderStatus = [
     "PENDING",
     "PAID",

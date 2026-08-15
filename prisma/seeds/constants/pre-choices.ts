@@ -35,5 +35,9 @@ export const preChoices = [
         text: "Relationships & Growth",
         slug: "relationships-and-growth",
     },
+    {
+        text: "Other",
+        slug: "other",
+    },
 ];
 export type PreChoices = (typeof preChoices)[number];

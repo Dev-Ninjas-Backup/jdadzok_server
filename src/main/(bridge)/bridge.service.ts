@@ -13,6 +13,10 @@ import {
     Prisma,
 } from "@prisma/client";
 import {
+    isContributionOther,
+    resolveOtherText,
+} from "@common/utils/other-option.util";
+import {
     BridgeListQueryDto,
     CreateBridgeBookingDto,
     CreateBridgeListingDto,
@@ -37,6 +41,12 @@ export class BridgeService {
     async createListing(ownerId: string, dto: CreateBridgeListingDto) {
         this.validateListingPayload(dto);
 
+        const contributionOther = resolveOtherText({
+            isOther: isContributionOther(dto.contributionType),
+            otherText: dto.contributionOther,
+            label: "contributionOther",
+        });
+
         const owner = await this.prisma.user.findUnique({
             where: { id: ownerId },
             select: { id: true, capLevel: true },
@@ -56,6 +66,8 @@ export class BridgeService {
                 location: dto.location,
                 remoteOk: dto.remoteOk ?? true,
                 ownerCapLevel: owner.capLevel,
+                contributionType: dto.contributionType,
+                contributionOther,
                 hourlyRate: dto.hourlyRate,
                 availabilityNote: dto.availabilityNote,
                 budgetAmount: dto.budgetAmount,
@@ -87,6 +99,19 @@ export class BridgeService {
             select: { capLevel: true },
         });
 
+        const nextType = dto.contributionType ?? listing.contributionType;
+        const contributionOther =
+            dto.contributionType !== undefined || dto.contributionOther !== undefined
+                ? resolveOtherText({
+                      isOther: isContributionOther(nextType),
+                      otherText:
+                          dto.contributionOther !== undefined
+                              ? dto.contributionOther
+                              : listing.contributionOther,
+                      label: "contributionOther",
+                  })
+                : undefined;
+
         return this.prisma.bridgeListing.update({
             where: { id: listingId },
             data: {
@@ -105,6 +130,10 @@ export class BridgeService {
                 ...(dto.platformFeePercent !== undefined && {
                     platformFeePercent: dto.platformFeePercent,
                 }),
+                ...(dto.contributionType !== undefined && {
+                    contributionType: dto.contributionType,
+                }),
+                ...(contributionOther !== undefined && { contributionOther }),
                 // Refresh Cap snapshot so ranking stays current
                 ownerCapLevel: owner?.capLevel ?? listing.ownerCapLevel,
             },
@@ -147,6 +176,20 @@ export class BridgeService {
             status: query.status ?? BridgeListingStatus.OPEN,
             ...(query.type && { type: query.type }),
             ...(query.skill && { skills: { has: query.skill } }),
+            ...(query.contributionType && { contributionType: query.contributionType }),
+            ...(query.otherText && {
+                OR: [
+                    {
+                        contributionOther: {
+                            contains: query.otherText,
+                            mode: "insensitive",
+                        },
+                    },
+                    { title: { contains: query.otherText, mode: "insensitive" } },
+                    { description: { contains: query.otherText, mode: "insensitive" } },
+                    { skills: { has: query.otherText } },
+                ],
+            }),
         };
 
         const [rows, total] = await Promise.all([
