@@ -5,7 +5,7 @@ Living checklist of what **To Borhan – June 26** asks for, mapped to the curre
 | Field | Value |
 | --- | --- |
 | **Codebase** | `jdadzok_server` · display name Synqulan Server · **v1.6.0** |
-| **Last updated** | 2026-07-27 |
+| **Last updated** | 2026-08-15 |
 | **Purpose** | Single source of truth for implemented / partial / missing work before shipping gaps one by one |
 
 ## Sources
@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **7** |
+| Implemented `[x]` | **8** |
 | Partial / mismatch `[~]` | **13** (11 partial + 2 mismatch) |
-| Missing `[ ]` | **16** |
+| Missing `[ ]` | **15** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -67,7 +67,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
-| `[ ]` | Volunteer / mentor opt-in flag | Boolean from onboarding; toggleable; gates mentoring tools **independent of Cap** | No `isVolunteer` / `isMentor` / opt-in on `User` or `Profile` |
+| `[x]` | Volunteer / mentor opt-in flag | Boolean from onboarding; toggleable; gates mentoring tools **independent of Cap** | `Profile.isVolunteerMentorOptIn`; set via `POST /choices` (onboarding) or `PATCH /user-profile` / `PATCH /user-profile/volunteer-mentor-opt-in`; gates volunteer apply + hour logging |
 | `[x]` | Opportunities / projects | NGO-listed placements; apply / accept / reject; hours count | `VolunteerProject` + `VolunteerApplication` in `src/main/volunteer/` |
 | `[~]` | Hours bank & carry forward | Hours persist across Caps; Black = Red + threshold + review | Hours logged per application (cap 352/project) into `workedHours`; lifetime Black threshold only partially in cap cron |
 | `[ ]` | Contribution types + “Other” | Mentoring, advice, project, teaching, charity + free-text Other (pattern app-wide) | No contribution-type field / Other escape hatch on volunteer models |
@@ -157,9 +157,9 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.1 Welcome | Cap ladder / marketing content partly static; no dedicated welcome API |
 | `[x]` | 8.2 Sign in | Auth: email/password + providers under `src/main/(started)/auth/` |
 | `[~]` | 8.3 Get started (sign up) | Signup works; Green Cap default via `capLevel`; Community Pledge / Terms agreement flow not fully modelled as spec |
-| `[~]` | 8.4 Areas of interest | `choices` / `user-choice` exist; **volunteer opt-in** and universal “Other + free text” pattern missing |
+| `[~]` | 8.4 Areas of interest | `choices` / `user-choice` exist; **volunteer opt-in** available on `POST /choices` via `isVolunteerMentorOptIn`; universal “Other + free text” pattern still missing |
 | `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings language is client concern |
-| `[~]` | 8.6 Member profile | Profile CRUD + metrics; missing opt-in toggle, cap style/placement, mentees |
+| `[~]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in toggle; still missing cap style/placement, mentees |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging exists for accepted apps; contribution types / self-report pending+endorsement gate incomplete |
 | `[~]` | 8.9 Recognition leaderboard | Leaderboard-ish metrics exist; contribution ranking & “Other” filters incomplete |
@@ -208,7 +208,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 ### Priority A — load-bearing (audit “fix five first”)
 
-1. `[ ]` **Volunteer / mentor opt-in** on `User` or `Profile` (+ onboarding / profile toggle APIs)
+1. `[x]` **Volunteer / mentor opt-in** on `User` or `Profile` (+ onboarding / profile toggle APIs)
 2. `[ ]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
 3. `[ ]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
 4. `[ ]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
@@ -245,7 +245,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested first coding PR after this doc:** Priority A.1 — volunteer/mentor opt-in flag.
+**Suggested next coding PR:** Priority A.2 — Calling mentorship dimension + auto-create `VolunteerHour` on verified call end.
 
 ---
 
@@ -253,6 +253,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority A.1 — `Profile.isVolunteerMentorOptIn` + onboarding (`POST /choices`) / profile toggle APIs; gates volunteer apply + verified-hour logging |
 | 2026-07-27 | Initial status document created from June 26 brief + codebase verification |
 
 ---

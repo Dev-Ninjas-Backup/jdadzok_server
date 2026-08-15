@@ -44,9 +44,18 @@ export class VolunteerService {
     }
 
     async applyToProject(dto: ApplyVolunteerDto, userId: string) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { profile: { select: { isVolunteerMentorOptIn: true } } },
+        });
         if (user?.role !== Role.USER)
             throw new ForbiddenException("Only regular volunteers can apply");
+
+        if (!user.profile?.isVolunteerMentorOptIn) {
+            throw new ForbiddenException(
+                "Volunteer / mentor opt-in is required before applying to projects. Enable it from onboarding or your profile.",
+            );
+        }
 
         const existing = await this.prisma.volunteerApplication.findFirst({
             where: { projectId: dto.projectId, volunteerId: userId },
@@ -104,6 +113,16 @@ export class VolunteerService {
     }
 
     async logHours(applicationId: string, dto: LogHoursDto, userId: string) {
+        const profile = await this.prisma.profile.findFirst({
+            where: { userId },
+            select: { isVolunteerMentorOptIn: true },
+        });
+        if (!profile?.isVolunteerMentorOptIn) {
+            throw new ForbiddenException(
+                "Volunteer / mentor opt-in is required to log verified hours. Enable it from your profile.",
+            );
+        }
+
         const app = await this.prisma.volunteerApplication.findUnique({
             where: { id: applicationId },
         });

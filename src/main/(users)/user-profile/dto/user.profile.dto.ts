@@ -43,6 +43,15 @@ class UserProfile {
     @IsBoolean()
     isToggleNotification?: boolean;
 
+    @ApiPropertyOptional({
+        example: false,
+        description:
+            "Opt in to volunteering / mentoring tools and verified-hour logging (independent of Cap level)",
+    })
+    @IsOptional()
+    @IsBoolean()
+    isVolunteerMentorOptIn?: boolean;
+
     @ApiPropertyOptional({ example: "1995-10-10T00:00:00.000Z" })
     @IsOptional()
     @IsISO8601()

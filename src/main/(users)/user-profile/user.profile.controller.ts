@@ -11,9 +11,10 @@ import {
     UsePipes,
     ValidationPipe,
 } from "@nestjs/common";
-import { ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { TUser, VerifiedUser } from "@type/index";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
+import { VolunteerMentorOptInDto } from "./dto/volunteer-mentor-opt-in.dto";
 import { UserProfileService } from "./user.profile.service";
 
 @ApiBearerAuth()
@@ -40,6 +41,29 @@ export class UserProfileController {
         try {
             const profile = await this.profileService.updateUserProfile(user.id, data);
             return successResponse(profile, "Profile update successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiOperation({
+        summary: "Toggle volunteer / mentor opt-in",
+        description:
+            "Enable or disable mentoring tools and verified-hour logging. Independent of Cap level.",
+    })
+    @Patch("volunteer-mentor-opt-in")
+    @UsePipes(ValidationPipe)
+    @UseGuards(JwtAuthGuard)
+    async setVolunteerMentorOptIn(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Body() dto: VolunteerMentorOptInDto,
+    ) {
+        try {
+            const profile = await this.profileService.setVolunteerMentorOptIn(
+                user.id,
+                dto.isVolunteerMentorOptIn,
+            );
+            return successResponse(profile, "Volunteer / mentor opt-in updated successfully");
         } catch (err) {
             return err;
         }

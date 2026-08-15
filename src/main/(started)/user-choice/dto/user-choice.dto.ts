@@ -1,5 +1,5 @@
-import { ApiProperty, PartialType } from "@nestjs/swagger";
-import { ArrayNotEmpty, IsArray, IsUUID } from "class-validator";
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
+import { ArrayNotEmpty, IsArray, IsBoolean, IsOptional, IsUUID } from "class-validator";
 
 export class CreateUserChoiceDto {
     @ApiProperty({
@@ -11,6 +11,15 @@ export class CreateUserChoiceDto {
     @ArrayNotEmpty()
     @IsUUID("4", { each: true })
     ids: string[];
+
+    @ApiPropertyOptional({
+        example: true,
+        description:
+            "Onboarding volunteer / mentor opt-in. When set, updates Profile.isVolunteerMentorOptIn (independent of Cap).",
+    })
+    @IsOptional()
+    @IsBoolean()
+    isVolunteerMentorOptIn?: boolean;
 }
 
 export class UpdateUserChoiceDto extends PartialType(CreateUserChoiceDto) {}

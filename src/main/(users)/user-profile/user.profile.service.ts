@@ -14,6 +14,13 @@ export class UserProfileService {
         return await this.profileRepository.updateUserProfile(userId, data);
     }
 
+    async setVolunteerMentorOptIn(userId: string, isVolunteerMentorOptIn: boolean) {
+        return await this.profileRepository.setVolunteerMentorOptIn(
+            userId,
+            isVolunteerMentorOptIn,
+        );
+    }
+
     async getUserProfile(userId: string, id: string) {
         return await this.profileRepository.getUserProfile(userId, id);
     }

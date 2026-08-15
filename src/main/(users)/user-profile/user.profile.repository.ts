@@ -123,6 +123,9 @@ export class UserProfileRepository {
                         ...(typeof data.isToggleNotification === "boolean" && {
                             isToggleNotification: data.isToggleNotification,
                         }),
+                        ...(typeof data.isVolunteerMentorOptIn === "boolean" && {
+                            isVolunteerMentorOptIn: data.isVolunteerMentorOptIn,
+                        }),
                         ...(data.dateOfBirth && { dateOfBirth: new Date(data.dateOfBirth) }),
                         ...(data.gender && { gender: data.gender }),
                         ...(data.experience && { experience: data.experience }),
@@ -130,6 +133,24 @@ export class UserProfileRepository {
                 },
             },
             include: { profile: true },
+        });
+    }
+
+    async setVolunteerMentorOptIn(userId: string, isVolunteerMentorOptIn: boolean) {
+        const profile = await this.prisma.profile.findFirst({ where: { userId } });
+        if (!profile) {
+            throw new NotFoundException("User profile not found!");
+        }
+
+        return await this.prisma.profile.update({
+            where: { id: profile.id },
+            data: { isVolunteerMentorOptIn },
+            select: {
+                id: true,
+                userId: true,
+                isVolunteerMentorOptIn: true,
+                updatedAt: true,
+            },
         });
     }
 
