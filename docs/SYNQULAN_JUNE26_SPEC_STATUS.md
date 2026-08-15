@@ -37,9 +37,9 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **14** |
-| Partial / mismatch `[~]` | **11** (9 partial + 2 mismatch) |
-| Missing `[ ]` | **11** |
+| Implemented `[x]` | **17** |
+| Partial / mismatch `[~]` | **10** (8 partial + 2 mismatch) |
+| Missing `[ ]` | **9** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
 
@@ -126,14 +126,13 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
-| `[~]` | Projects seeking help | Listed with mentorship, talent, paid gigs | Only via unpaid `VolunteerProject` (NGO) |
-| `[ ]` | Members listing expertise | Higher Caps get more Bridge visibility | No expertise-for-hire listing / Cap-weighted ranking |
-| `[ ]` | Paid gigs | Bookable; small fee framed as cut of payout | Not modelled; `Product`/`Order` ≠ services |
+| `[x]` | Projects seeking help | Listed with mentorship, talent, paid gigs | `BridgeListing` type `PROJECT_HELP` under `src/main/(bridge)/` (NGO unpaid placements remain on `VolunteerProject`) |
+| `[x]` | Members listing expertise | Higher Caps get more Bridge visibility | `BridgeListing` type `EXPERTISE`; discover API Cap-weighted by `ownerCapLevel` |
+| `[x]` | Paid gigs | Bookable; small fee framed as cut of payout | `BridgeListing` type `GIG` + `BridgeBooking`; `platformFeePercent` scaffold (settlement later) |
 
-**Decision for implementation:** build a new `(bridge)` module separate from goods marketplace (per brief), unless product explicitly overrides.
+**Decision for implementation:** `(bridge)` module is separate from goods marketplace (per brief).
 
-**Key paths:** `src/main/(marketplace)/`, `src/main/volunteer/`
-
+**Key paths:** `src/main/(bridge)/`, `prisma/schema/bridge.prisma` — do **not** reuse `src/main/(marketplace)/` Product/Order for Bridge.
 ---
 
 ## 7. Profile, dashboards & guest experience
@@ -163,7 +162,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging exists for accepted apps; contribution types / self-report pending+endorsement gate incomplete |
 | `[~]` | 8.9 Recognition leaderboard | Leaderboard-ish metrics exist; contribution ranking & “Other” filters incomplete |
-| `[ ]` | 8.10 The Bridge | No Bridge module |
+| `[x]` | 8.10 The Bridge | `(bridge)` module: expertise / gig / project-help listings + Cap-weighted discover + booking scaffold |
 | `[~]` | 8.11 Explore as a guest | Explore endpoints exist; guest contract incomplete |
 | `[~]` | 8.12 Corporate CSR dashboard | `CorporateMembership` + admin/dashboard pieces; SDG/ESG reporting missing; tier names mismatch |
 | `[x]` | 8.13 Personal dashboard | Dashboard module present |
@@ -212,7 +211,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 2. `[x]` **Calling mentorship dimension** (`callPurpose` / `GENERAL` vs `MENTORSHIP`) + auto-create `VolunteerHour` on verified call end
 3. `[x]` **Mutual-Connect gating** on chat (and general calls) via `FriendRequest` ACCEPTED
 4. `[x]` **Sky Blue rename + parallel track** (`OSTRICH_FEATHER` → Sky Blue; invitation / nomination workflow; Red-rate default until Black volunteering)
-5. `[ ]` **Bridge module decision & scaffold** — new `(bridge)` module (not goods `Product`/`Order`): expertise listings, paid gigs, Cap-weighted visibility
+5. `[x]` **Bridge module decision & scaffold** — new `(bridge)` module (not goods `Product`/`Order`): expertise listings, paid gigs, Cap-weighted visibility
 
 ### Priority B — verification & volunteering depth
 
@@ -245,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority A.5 — Bridge module decision & scaffold (expertise listings, paid gigs, Cap-weighted visibility).
+**Suggested next coding PR:** Priority B.6 — Contribution types + “Other” (and reuse Other pattern on interests / Bridge filters).
 
 ---
 
@@ -253,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-15 | Priority A.5 — `(bridge)` module scaffold: expertise / gig / project-help listings, Cap-weighted discover, booking stub (separate from Product/Order) |
 | 2026-08-15 | Priority A.4 — `CapLevel.SKY_BLUE` rename; invitation nomination + KYC/notability audit trail; Red-rate earning until Black-level hours |
 | 2026-08-15 | Priority A.3 — Mutual-Connect gating: `FriendRequest` ACCEPTED required for private chat + general calls (server-side) |
 | 2026-08-15 | Priority A.2 — `Calling.callPurpose` (`GENERAL`/`MENTORSHIP`) + auto verified `VolunteerHour` on mentorship call end |

@@ -130,6 +130,11 @@ model User {
   skyBlueNominationsReceived SkyBlueNomination[] @relation("SkyBlueNominee")
   skyBlueNominationsMade     SkyBlueNomination[] @relation("SkyBlueNominator")
 
+  // The Bridge (skills / gigs — not goods marketplace)
+  bridgeListingsOwned    BridgeListing[] @relation("BridgeListingOwner")
+  bridgeBookingsAsClient BridgeBooking[] @relation("BridgeBookingClient")
+  bridgeBookingsAsProvider BridgeBooking[] @relation("BridgeBookingProvider")
+
   @@index([email])
   @@index([capLevel])
   @@index([role])

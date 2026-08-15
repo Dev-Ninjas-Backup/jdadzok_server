@@ -1,0 +1,89 @@
+enum BridgeListingType {
+  EXPERTISE
+  GIG
+  PROJECT_HELP
+}
+
+enum BridgeListingStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+  COMPLETED
+  CANCELLED
+}
+
+enum BridgeBookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+/// Skills & opportunity exchange — separate from goods Product/Order marketplace.
+model BridgeListing {
+  id String @id @default(uuid())
+
+  ownerId String
+  owner   User   @relation("BridgeListingOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  type   BridgeListingType
+  status BridgeListingStatus @default(OPEN)
+
+  title       String
+  description String  @db.Text
+  skills      String[]
+  location    String?
+  remoteOk    Boolean @default(true)
+
+  /// Snapshot of owner Cap at publish/update — used for Cap-weighted visibility ranking
+  ownerCapLevel CapLevel @default(NONE)
+
+  // Expertise listing fields
+  hourlyRate       Float?
+  availabilityNote String?
+
+  // Paid gig / project-help fields
+  budgetAmount       Float?
+  currency           String  @default("USD")
+  /// Scaffold for Bridge transaction fee (cut of payout) — applied in later monetisation work
+  platformFeePercent Float   @default(5)
+
+  bookings BridgeBooking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([ownerId])
+  @@index([ownerCapLevel])
+  @@index([createdAt])
+  @@map("bridge_listings")
+}
+
+model BridgeBooking {
+  id String @id @default(uuid())
+
+  listingId String
+  listing   BridgeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   User   @relation("BridgeBookingClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  providerId String
+  provider   User   @relation("BridgeBookingProvider", fields: [providerId], references: [id], onDelete: Cascade)
+
+  status        BridgeBookingStatus @default(PENDING)
+  agreedAmount  Float?
+  note          String?             @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([clientId])
+  @@index([providerId])
+  @@index([status])
+  @@map("bridge_bookings")
+}
