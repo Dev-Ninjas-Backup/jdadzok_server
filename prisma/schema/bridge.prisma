@@ -86,6 +86,8 @@ model BridgeBooking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  mentorshipChat LiveChat?
+
   @@index([listingId])
   @@index([clientId])
   @@index([providerId])

@@ -18,4 +18,6 @@ model VolunteerApplication {
   VolunteerCompletion VolunteerCompletion[]
 
   VolunteerHour VolunteerHour[]
+
+  mentorshipChat LiveChat?
 }

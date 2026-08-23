@@ -2,7 +2,13 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 
 import { HandleError } from "@common/error/handle-error.decorator";
-import { LiveChat } from "@prisma/client";
+import {
+    ApplicationStatus,
+    BridgeBookingStatus,
+    ContributionType,
+    LiveChat,
+    LiveChatContext,
+} from "@prisma/client";
 import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
 import { CreateMessageDto } from "./dto/create.message.dto";
 
@@ -13,19 +19,121 @@ export class ChatService {
         private readonly friendRequestService: FriendRequestService,
     ) {}
 
-    /** Find or create 1-to-1 chat (requires mutual Connect) */
+    /** Find or create 1-to-1 general chat (requires mutual Connect). */
     @HandleError("Failed to get or create chat", "chat")
     async getOrCreatePrivateChat(userA: string, userB: string): Promise<LiveChat> {
-        await this.friendRequestService.assertConnected(userA, userB);
+        return this.getOrCreateIndividualChat(userA, userB, LiveChatContext.GENERAL);
+    }
 
-        const existing = await this.prisma.liveChat.findFirst({
+    /** Auto-open mentorship thread when a volunteer application is accepted. */
+    async openMentorshipChatForApplication(applicationId: string): Promise<LiveChat | null> {
+        const app = await this.prisma.volunteerApplication.findUnique({
+            where: { id: applicationId },
+            include: { project: true, mentorshipChat: true },
+        });
+
+        if (!app || app.status !== ApplicationStatus.ACCEPTED) {
+            return null;
+        }
+
+        if (app.mentorshipChat) {
+            return app.mentorshipChat;
+        }
+
+        return this.createIndividualChat({
+            userA: app.volunteerId,
+            userB: app.project.createdById,
+            context: LiveChatContext.MENTORSHIP,
+            createdById: app.project.createdById,
+            volunteerApplicationId: app.id,
+        });
+    }
+
+    /** Auto-open mentorship thread when a Bridge booking is accepted. */
+    async openMentorshipChatForBridgeBooking(bookingId: string): Promise<LiveChat | null> {
+        const booking = await this.prisma.bridgeBooking.findUnique({
+            where: { id: bookingId },
+            include: { listing: true, mentorshipChat: true },
+        });
+
+        if (!booking || booking.status !== BridgeBookingStatus.ACCEPTED) {
+            return null;
+        }
+
+        const isMentorshipListing =
+            booking.listing.type === "EXPERTISE" ||
+            booking.listing.contributionType === ContributionType.MENTORING ||
+            booking.listing.contributionType === ContributionType.ADVICE;
+
+        if (!isMentorshipListing) {
+            return null;
+        }
+
+        if (booking.mentorshipChat) {
+            return booking.mentorshipChat;
+        }
+
+        return this.createIndividualChat({
+            userA: booking.clientId,
+            userB: booking.providerId,
+            context: LiveChatContext.MENTORSHIP,
+            createdById: booking.providerId,
+            bridgeBookingId: booking.id,
+        });
+    }
+
+    /** Find or create mentorship chat between two users with an active mentorship link. */
+    @HandleError("Failed to get or create mentorship chat", "chat")
+    async getOrCreateMentorshipChat(userA: string, userB: string): Promise<LiveChat> {
+        await this.assertMentorshipLink(userA, userB);
+
+        const existing = await this.findIndividualChat(userA, userB, LiveChatContext.MENTORSHIP);
+        if (existing) {
+            return existing;
+        }
+
+        return this.createIndividualChat({
+            userA,
+            userB,
+            context: LiveChatContext.MENTORSHIP,
+            createdById: userA,
+        });
+    }
+
+    private async getOrCreateIndividualChat(
+        userA: string,
+        userB: string,
+        context: LiveChatContext,
+    ): Promise<LiveChat> {
+        if (context === LiveChatContext.GENERAL) {
+            await this.friendRequestService.assertConnected(userA, userB);
+        } else {
+            await this.assertMentorshipLink(userA, userB);
+        }
+
+        const existing = await this.findIndividualChat(userA, userB, context);
+        if (existing) {
+            return existing;
+        }
+
+        return this.createIndividualChat({
+            userA,
+            userB,
+            context,
+            createdById: userA,
+        });
+    }
+
+    private async findIndividualChat(
+        userA: string,
+        userB: string,
+        context: LiveChatContext,
+    ): Promise<LiveChat | null> {
+        const chats = await this.prisma.liveChat.findMany({
             where: {
                 type: "INDIVIDUAL",
-                participants: {
-                    every: {
-                        userId: { in: [userA, userB] },
-                    },
-                },
+                context,
+                participants: { some: { userId: userA } },
             },
             include: {
                 participants: {
@@ -42,33 +150,48 @@ export class ChatService {
             },
         });
 
-        // Verify it's actually a 1-to-1 between these exact users
-        if (existing) {
-            const participantIds = existing.participants.map((p) => p.userId).sort();
-            const expectedIds = [userA, userB].sort();
+        const expectedIds = [userA, userB].sort();
+        return (
+            chats.find((chat) => {
+                if (chat.participants.length !== 2) return false;
+                const participantIds = chat.participants.map((p) => p.userId).sort();
+                return (
+                    participantIds[0] === expectedIds[0] &&
+                    participantIds[1] === expectedIds[1]
+                );
+            }) ?? null
+        );
+    }
 
-            if (JSON.stringify(participantIds) === JSON.stringify(expectedIds)) {
-                return existing;
-            }
+    private async createIndividualChat(input: {
+        userA: string;
+        userB: string;
+        context: LiveChatContext;
+        createdById: string;
+        volunteerApplicationId?: string;
+        bridgeBookingId?: string;
+    }): Promise<LiveChat> {
+        if (input.userA === input.userB) {
+            throw new ForbiddenException("Cannot create a chat with yourself");
         }
 
         return this.prisma.$transaction(async (tx) => {
             const chat = await tx.liveChat.create({
                 data: {
                     type: "INDIVIDUAL",
-                    createdById: userA,
+                    context: input.context,
+                    createdById: input.createdById,
+                    volunteerApplicationId: input.volunteerApplicationId ?? null,
+                    bridgeBookingId: input.bridgeBookingId ?? null,
                 },
             });
 
-            const participants =
-                userA === userB
-                    ? [{ chatId: chat.id, userId: userA }]
-                    : [
-                          { chatId: chat.id, userId: userA },
-                          { chatId: chat.id, userId: userB },
-                      ];
-
-            await tx.liveChatParticipant.createMany({ data: participants });
+            await tx.liveChatParticipant.createMany({
+                data: [
+                    { chatId: chat.id, userId: input.userA },
+                    { chatId: chat.id, userId: input.userB },
+                ],
+            });
 
             const result = await tx.liveChat.findUnique({
                 where: { id: chat.id },
@@ -93,6 +216,50 @@ export class ChatService {
 
             return result;
         });
+    }
+
+    /** Active mentorship = accepted volunteer application or accepted Bridge mentorship booking. */
+    private async assertMentorshipLink(userA: string, userB: string): Promise<void> {
+        const volunteerLink = await this.prisma.volunteerApplication.findFirst({
+            where: {
+                status: ApplicationStatus.ACCEPTED,
+                OR: [
+                    { volunteerId: userA, project: { createdById: userB } },
+                    { volunteerId: userB, project: { createdById: userA } },
+                ],
+            },
+            select: { id: true },
+        });
+
+        if (volunteerLink) {
+            return;
+        }
+
+        const bridgeLink = await this.prisma.bridgeBooking.findFirst({
+            where: {
+                status: BridgeBookingStatus.ACCEPTED,
+                OR: [
+                    { clientId: userA, providerId: userB },
+                    { clientId: userB, providerId: userA },
+                ],
+                listing: {
+                    OR: [
+                        { type: "EXPERTISE" },
+                        { contributionType: ContributionType.MENTORING },
+                        { contributionType: ContributionType.ADVICE },
+                    ],
+                },
+            },
+            select: { id: true },
+        });
+
+        if (bridgeLink) {
+            return;
+        }
+
+        throw new ForbiddenException(
+            "Mentorship chat requires an accepted volunteer application or Bridge mentorship booking between these members.",
+        );
     }
 
     /** Get chat by ID with verification */
@@ -131,7 +298,6 @@ export class ChatService {
             throw new NotFoundException("Chat not found");
         }
 
-        // Verify user is a participant
         const isParticipant = chat.participants.some((p) => p.userId === userId);
         if (!isParticipant) {
             throw new ForbiddenException("You are not a participant in this chat");
@@ -140,10 +306,8 @@ export class ChatService {
         return chat;
     }
 
-    /**------------- Send message---------------------------- */
     @HandleError("Failed to send message", "message")
     async createMessage(senderId: string, chatId: string, dto: CreateMessageDto) {
-        // Verify sender is participant
         const chat = await this.prisma.liveChat.findUnique({
             where: { id: chatId },
             include: { participants: true },
@@ -158,10 +322,11 @@ export class ChatService {
             throw new ForbiddenException("You are not a participant in this chat");
         }
 
-        // General (individual) chat requires mutual Connect with the other party
-        if (chat.type === "INDIVIDUAL") {
-            const other = chat.participants.find((p) => p.userId !== senderId);
-            if (other) {
+        const other = chat.participants.find((p) => p.userId !== senderId);
+        if (other) {
+            if (chat.context === LiveChatContext.MENTORSHIP) {
+                await this.assertMentorshipLink(senderId, other.userId);
+            } else if (chat.type === "INDIVIDUAL") {
                 await this.friendRequestService.assertConnected(senderId, other.userId);
             }
         }
@@ -205,7 +370,6 @@ export class ChatService {
         });
     }
 
-    /** ----------Mark message as read------------------ */
     @HandleError("Failed to mark message as read", "message")
     async markRead(messageId: string, userId: string) {
         const message = await this.prisma.liveMessage.findUnique({
@@ -217,7 +381,6 @@ export class ChatService {
             throw new NotFoundException("Message not found");
         }
 
-        // Verify user is participant
         const isParticipant = message.chat.participants.some((p) => p.userId === userId);
         if (!isParticipant) {
             throw new ForbiddenException("You are not a participant in this chat");
@@ -234,12 +397,12 @@ export class ChatService {
         });
     }
 
-    /** List my private chats with last message & unread count */
     @HandleError("Failed to get my chats", "chat")
-    async getMyChats(userId: string) {
+    async getMyChats(userId: string, context?: LiveChatContext) {
         const chats = await this.prisma.liveChat.findMany({
             where: {
                 type: "INDIVIDUAL",
+                ...(context ? { context } : {}),
                 participants: { some: { userId } },
             },
             include: {
@@ -282,7 +445,6 @@ export class ChatService {
                     },
                 });
 
-                // Find the other user in the chat
                 const otherUser = chat.participants.find((p) => p.userId !== userId)?.user || null;
 
                 return {
@@ -295,7 +457,6 @@ export class ChatService {
         );
     }
 
-    /** Get paginated messages for a chat */
     @HandleError("Failed to get messages", "chat")
     async getMessages(chatId: string) {
         const messages = await this.prisma.liveMessage.findMany({
@@ -323,7 +484,6 @@ export class ChatService {
         };
     }
 
-    /** Get unread message count for a specific chat */
     @HandleError("Failed to get unread message count", "chat")
     async getUnreadCount(chatId: string, userId: string) {
         const count = await this.prisma.liveMessage.count({
@@ -337,48 +497,9 @@ export class ChatService {
         return { chatId, unreadCount: count };
     }
 
-    // --------------------- getOrCreatePrivateChat-----------------------
     @HandleError("Failed to get or create private chat", "chat")
     async getOrCreatePrivateChatId(userId: string, otherUserId: string) {
-        await this.friendRequestService.assertConnected(userId, otherUserId);
-
-        // Find chats where userId is a participant
-        const chats = await this.prisma.liveChat.findMany({
-            where: {
-                type: "INDIVIDUAL",
-                participants: {
-                    some: { userId },
-                },
-            },
-            include: {
-                participants: {
-                    select: { userId: true },
-                },
-            },
-        });
-
-        // Find the chat with exactly these two users
-        const existingChat = chats.find((chat) => {
-            if (chat.participants.length !== 2) return false;
-            const ids = chat.participants.map((p) => p.userId).sort();
-            return (
-                ids[0] === [userId, otherUserId].sort()[0] &&
-                ids[1] === [userId, otherUserId].sort()[1]
-            );
-        });
-
-        if (existingChat) {
-            return existingChat;
-        }
-
-        // Create new chat
-        return await this.prisma.liveChat.create({
-            data: {
-                type: "INDIVIDUAL",
-                participants: {
-                    create: [{ userId }, { userId: otherUserId }],
-                },
-            },
-        });
+        const chat = await this.getOrCreatePrivateChat(userId, otherUserId);
+        return chat;
     }
 }

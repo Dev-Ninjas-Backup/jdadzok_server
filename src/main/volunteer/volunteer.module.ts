@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ChatModule } from "@module/(sockets)/chats/chats.module";
 import { VolunteerService } from "./volunteer.service";
 import { VolunteerController } from "./volunteer.controller";
 import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.service";
@@ -7,6 +8,7 @@ import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 
 @Module({
+    imports: [ChatModule],
     controllers: [VolunteerController],
     providers: [
         VolunteerService,

@@ -23,6 +23,7 @@ import {
     RespondBridgeBookingDto,
     UpdateBridgeListingDto,
 } from "./dto/bridge.dto";
+import { ChatService } from "@module/(sockets)/chats/chat.service";
 
 /** Higher Caps get more Bridge visibility (descending weight). */
 const CAP_VISIBILITY_WEIGHT: Record<CapLevel, number> = {
@@ -36,7 +37,10 @@ const CAP_VISIBILITY_WEIGHT: Record<CapLevel, number> = {
 
 @Injectable()
 export class BridgeService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly chatService: ChatService,
+    ) {}
 
     async createListing(ownerId: string, dto: CreateBridgeListingDto) {
         this.validateListingPayload(dto);
@@ -301,10 +305,16 @@ export class BridgeService {
                 ? BridgeBookingStatus.ACCEPTED
                 : BridgeBookingStatus.DECLINED;
 
-        return this.prisma.bridgeBooking.update({
+        const updated = await this.prisma.bridgeBooking.update({
             where: { id: bookingId },
             data: { status },
         });
+
+        if (status === BridgeBookingStatus.ACCEPTED) {
+            await this.chatService.openMentorshipChatForBridgeBooking(bookingId);
+        }
+
+        return updated;
     }
 
     async listMyBookings(userId: string) {

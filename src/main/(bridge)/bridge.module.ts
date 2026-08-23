@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
+import { ChatModule } from "@module/(sockets)/chats/chats.module";
 import { BridgeController } from "./bridge.controller";
 import { BridgeService } from "./bridge.service";
 
@@ -8,6 +9,7 @@ import { BridgeService } from "./bridge.service";
  * Intentionally separate from `(marketplace)` goods Product/Order commerce.
  */
 @Module({
+    imports: [ChatModule],
     controllers: [BridgeController],
     providers: [BridgeService, PrismaService],
     exports: [BridgeService],

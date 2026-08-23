@@ -6,6 +6,12 @@ enum LiveChatType {
   GROUP
 }
 
+/// Inbox context — General (mutual Connect) vs Mentorship (verified pairing).
+enum LiveChatContext {
+  GENERAL
+  MENTORSHIP
+}
+
 enum LiveMessageStatus {
   SENT
   DELIVERED
@@ -23,14 +29,23 @@ enum LiveMediaType {
 // 2. CHAT (your "LiveChat")
 // ---------------------------------------------------------------
 model LiveChat {
-  id        String       @id @default(uuid())
-  type      LiveChatType @default(INDIVIDUAL)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id        String          @id @default(uuid())
+  type      LiveChatType    @default(INDIVIDUAL)
+  context   LiveChatContext @default(GENERAL)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   // Who created the chat (optional)
   createdBy   User?   @relation("LiveChatCreator", fields: [createdById], references: [id])
   createdById String?
+
+  /// Linked volunteer application when thread opened on NGO accept.
+  volunteerApplicationId String?              @unique
+  volunteerApplication   VolunteerApplication? @relation(fields: [volunteerApplicationId], references: [id], onDelete: SetNull)
+
+  /// Linked Bridge booking when thread opened on provider accept.
+  bridgeBookingId String?        @unique
+  bridgeBooking   BridgeBooking? @relation(fields: [bridgeBookingId], references: [id], onDelete: SetNull)
 
   // Relations
   participants LiveChatParticipant[]
@@ -39,6 +54,7 @@ model LiveChat {
 
   @@index([createdById])
   @@index([type])
+  @@index([context])
   @@map("live_chats")
 }
 

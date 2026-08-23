@@ -7,9 +7,10 @@ import {
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
-import { ApplicationStatus, ContributionType, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
+import { ApplicationStatus, ContributionType, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
+import { ChatService } from "@module/(sockets)/chats/chat.service";
 import {
     isContributionOther,
     resolveOtherText,
@@ -17,7 +18,10 @@ import {
 import { requiresCounterpartyConfirmation } from "@common/utils/volunteer-hour.util";
 @Injectable()
 export class VolunteerService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private readonly chatService: ChatService,
+    ) {}
 
     async createProject(dto: CreateVolunteerProjectDto, userId: string) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -229,6 +233,10 @@ export class VolunteerService {
                 confirmedById: userId,
             },
         });
+
+        if (dto.status === ApplicationStatus.ACCEPTED) {
+            await this.chatService.openMentorshipChatForApplication(applicationId);
+        }
 
         return updated;
     }

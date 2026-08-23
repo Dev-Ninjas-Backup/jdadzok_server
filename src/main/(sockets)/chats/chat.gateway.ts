@@ -8,6 +8,7 @@ import {
     WebSocketGateway,
 } from "@nestjs/websockets";
 import { Socket } from "socket.io";
+import { LiveChatContext } from "@prisma/client";
 import { BaseSocketGateway } from "../base/abstract-socket.gateway";
 import { SocketAuthGuard } from "../guards/socket-auth.guard";
 import { SocketMiddleware } from "../middleware/socket.middleware";
@@ -41,13 +42,15 @@ export class ChatGateway extends BaseSocketGateway {
     async handleMessage(
         @GetSocketUser() user: SocketUser,
         @ConnectedSocket() client: Socket,
-        @MessageBody() data: { receiverId: string } & CreateMessageDto,
+        @MessageBody() data: { receiverId: string; context?: LiveChatContext } & CreateMessageDto,
     ) {
-        const { receiverId } = data;
+        const { receiverId, context = LiveChatContext.GENERAL } = data;
 
         try {
-            // Find or create 1-to-1 chat (enforces mutual Connect server-side)
-            const chat = await this.chatService.getOrCreatePrivateChat(user.id, receiverId);
+            const chat =
+                context === LiveChatContext.MENTORSHIP
+                    ? await this.chatService.getOrCreateMentorshipChat(user.id, receiverId)
+                    : await this.chatService.getOrCreatePrivateChat(user.id, receiverId);
 
             // Create the message (re-checks Connect for INDIVIDUAL)
             const message = await this.chatService.createMessage(user.id, chat.id, data);

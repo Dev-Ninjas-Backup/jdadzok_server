@@ -1,7 +1,8 @@
 import { GetUser, ValidateAuth } from "@common/jwt/jwt.decorator";
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { LiveChatContext } from "@prisma/client";
 import { ActiveUsersService } from "./active-user.service";
 import { ChatService } from "./chat.service";
 import { CreateMessageDto } from "./dto/create.message.dto";
@@ -20,18 +21,41 @@ export class ChatController {
     @Post("private")
     @ValidateAuth()
     @ApiBearerAuth()
-    @ApiOperation({ summary: "Start or get existing private chat with another user" })
+    @ApiOperation({ summary: "Start or get existing general private chat (mutual Connect required)" })
     async startPrivateChat(@GetUser("userId") userId: string, @Body() dto: StartPrivateChatDto) {
         return this.chatService.getOrCreatePrivateChat(userId, dto.otherUserId);
+    }
+
+    @Post("mentorship/private")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary:
+            "Start or get mentorship chat with another member (accepted volunteer application or Bridge mentorship booking)",
+    })
+    async startMentorshipChat(
+        @GetUser("userId") userId: string,
+        @Body() dto: StartPrivateChatDto,
+    ) {
+        return this.chatService.getOrCreateMentorshipChat(userId, dto.otherUserId);
     }
 
     @Get("my")
     @ValidateAuth()
     @ApiBearerAuth()
     @ApiOperation({ summary: "Get all my chats with unread count and last message" })
+    @ApiQuery({
+        name: "context",
+        required: false,
+        enum: LiveChatContext,
+        description: "Filter inbox: GENERAL or MENTORSHIP",
+    })
     @ApiResponse({ status: 200, description: "List of user chats with metadata" })
-    async getMyChats(@GetUser("userId") userId: string) {
-        return this.chatService.getMyChats(userId);
+    async getMyChats(
+        @GetUser("userId") userId: string,
+        @Query("context") context?: LiveChatContext,
+    ) {
+        return this.chatService.getMyChats(userId, context);
     }
 
     @Get(":chatId")
