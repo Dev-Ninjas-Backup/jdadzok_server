@@ -139,7 +139,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
-| `[~]` | Reputation-passport profile | Cap, impact, hours, mentees, earning level as headlines | `Profile`, `UserMetrics`, `ActivityScore` cover most fields; no aggregated passport endpoint; no mentees count |
+| `[x]` | Reputation-passport profile | Cap, impact, hours, mentees, earning level as headlines | `GET /user-profile/reputation-passport` (+ `/:userId`); mentees = distinct verified MENTORING counterparties; soft earning headline |
 | `[x]` | Personal dashboard | Own ad revenue, pending payout, trends, Cap bar, payout history | `src/main/dashboard/` controllers / services |
 | `[~]` | Recognition leaderboard | Rank by contribution (hours, mentorship, endorsements), not followers | Metrics / revenue leaderboard endpoints exist; contribution-vs-followers ranking not verified end-to-end |
 | `[~]` | Explore as a guest | Unauth browse of opportunities / impact; join prompt; identity actions locked | `src/main/(explore)/explore` exists; no designed guest mode; routes document bearer auth but no dedicated guest contract |
@@ -158,7 +158,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.3 Get started (sign up) | Signup works; Green Cap default via `capLevel`; Community Pledge / Terms agreement flow not fully modelled as spec |
 | `[~]` | 8.4 Areas of interest | `choices` / `user-choice` + **Other** (`slug: other` → `interestOtherText`); volunteer opt-in on `POST /choices` |
 | `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings language is client concern |
-| `[~]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in + cap style/placement; still missing mentees |
+| `[x]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in + cap style/placement + reputation passport |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report starts pending until endorsement | `PATCH /volunteer/log-hours` + endorsement queue APIs |
 | `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
@@ -224,7 +224,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 ### Priority C — profile & social cleanup
 
 11. `[x]` Cap art style + placement on profile
-12. `[ ]` Reputation-passport aggregate endpoint (+ mentees count)
+12. `[x]` Reputation-passport aggregate endpoint (+ mentees count)
 13. `[ ]` Deduplicate `Follow` vs `UserFollow`
 14. `[ ]` Mentorship vs general chat types + auto-open on mentorship accept
 15. `[ ]` Guest explore contract (public routes + locked actions)
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority C.12 — Reputation-passport aggregate endpoint (+ mentees count).
+**Suggested next coding PR:** Priority C.13 — Deduplicate `Follow` vs `UserFollow`.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority C.12 — Reputation passport `GET /user-profile/reputation-passport`; mentees count + soft earning headline |
 | 2026-08-23 | Priority C.11 — Cap art style/placement on `Profile`; `GET/PATCH /user-profile/cap-art-preferences`; default placement beside |
 | 2026-08-23 | Priority B.10 — Lifetime verified hours bank on `UserMetrics`; `GET /volunteer/hours-bank`; Black threshold uses aggregated bank |
 | 2026-08-23 | Priority B.9 — Red→Black admin gate: one-rung promotions, `CapPromotionAudit`, no cron skip to Black; bypass requires reason |

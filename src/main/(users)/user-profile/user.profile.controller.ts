@@ -17,11 +17,15 @@ import { CreateUserProfileDto } from "./dto/user.profile.dto";
 import { VolunteerMentorOptInDto } from "./dto/volunteer-mentor-opt-in.dto";
 import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
 import { UserProfileService } from "./user.profile.service";
+import { ReputationPassportService } from "./reputation-passport.service";
 
 @ApiBearerAuth()
 @Controller("user-profile")
 export class UserProfileController {
-    constructor(private readonly profileService: UserProfileService) {}
+    constructor(
+        private readonly profileService: UserProfileService,
+        private readonly reputationPassportService: ReputationPassportService,
+    ) {}
 
     @Get()
     @UsePipes(ValidationPipe)
@@ -96,6 +100,41 @@ export class UserProfileController {
         try {
             const profile = await this.profileService.setCapArtPreferences(user.id, dto);
             return successResponse(profile, "Cap art preferences updated successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiOperation({
+        summary: "Reputation passport for the authenticated member",
+        description:
+            "Aggregated profile headlines: Cap, impact score, verified volunteer hours, mentees count, and soft-language earning level. Includes private earnings summary on own passport.",
+    })
+    @Get("reputation-passport")
+    @UseGuards(JwtAuthGuard)
+    async getMyReputationPassport(@GetVerifiedUser() user: VerifiedUser) {
+        try {
+            const passport = await this.reputationPassportService.getPassport(user.id, user.id);
+            return successResponse(passport, "Reputation passport retrieved successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiOperation({
+        summary: "Public reputation passport for a member",
+        description:
+            "Cap, impact, verified hours, mentees, and soft-language earning headline. Exact ad-share percentages are omitted.",
+    })
+    @Get("reputation-passport/:userId")
+    @UseGuards(JwtAuthGuard)
+    async getReputationPassport(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Param("userId") userId: string,
+    ) {
+        try {
+            const passport = await this.reputationPassportService.getPassport(userId, user.id);
+            return successResponse(passport, "Reputation passport retrieved successfully");
         } catch (err) {
             return err;
         }
