@@ -1,4 +1,4 @@
-import { ValidateSuperAdmin } from "@common/jwt/jwt.decorator";
+import { ValidateSuperAdmin, GetUser } from "@common/jwt/jwt.decorator";
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { MaintenanceSettingsDto } from "../dto/maintenance.dto";
@@ -49,10 +49,14 @@ export class AdminSettingsController {
     @ValidateSuperAdmin()
     @ApiOperation({ summary: "Promote User cap level remote promote cap level user" })
     @Patch("updateCaplevel/:userId")
-    async updateCaplevel(@Param("userId") userId: string, @Body() dto: UpdateCapLevelQueryDto) {
+    async updateCaplevel(
+        @Param("userId") userId: string,
+        @Body() dto: UpdateCapLevelQueryDto,
+        @GetUser("userId") actorId: string,
+    ) {
         return handleRequest(
-            () => this.adminSettingsService.updateCaplevel(userId, dto),
-            "User Promote successfully",
+            () => this.adminSettingsService.updateCaplevel(actorId, userId, dto),
+            "User Cap level updated",
         );
     }
 }

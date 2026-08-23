@@ -14,7 +14,7 @@ interface CapEligibilityResult {
     volunteerHours: number;
 }
 
-interface UserCapStatus {
+export interface UserCapStatus {
     user: User;
     currentLevel: CapLevel;
     currentRequirements: CapRequirements | null;
@@ -121,40 +121,6 @@ export class CapLevelService {
         let requirements: CapRequirements | null = null;
         const missingRequirements: string[] = [];
 
-        // Check each level starting from current + 1 (ladder only — skip Sky Blue parallel track)
-        const currentLevelIndex = this.capLevelOrder.indexOf(
-            this.parallelCapLevels.has(currentLevel) ? "BLACK" : currentLevel,
-        );
-
-        for (let i = Math.max(currentLevelIndex + 1, 0); i < this.capLevelOrder.length; i++) {
-            const checkLevel = this.capLevelOrder[i];
-            if (this.parallelCapLevels.has(checkLevel)) continue;
-
-            const levelRequirements = await this.repository.getCapRequirements(checkLevel);
-
-            if (!levelRequirements) continue;
-
-            const meetsRequirements = this.checkLevelRequirements(
-                metrics,
-                levelRequirements,
-                missingRequirements,
-            );
-
-            if (meetsRequirements) {
-                eligibleLevel = checkLevel;
-                canPromote = true;
-                requirements = levelRequirements;
-                missingRequirements.length = 0; // Clear missing requirements
-            } else {
-                // Stop at first level we don't meet requirements for
-                if (!requirements) {
-                    requirements = levelRequirements;
-                }
-                break;
-            }
-        }
-
-        // Sky Blue is invitation-only — never auto-eligible via ladder
         if (currentLevel === "SKY_BLUE") {
             return {
                 currentLevel,
@@ -165,6 +131,34 @@ export class CapLevelService {
                 activityScore: metrics.activityScore,
                 volunteerHours: metrics.volunteerHours,
             };
+        }
+
+        const nextLevel = this.getNextCapLevel(currentLevel);
+        if (nextLevel) {
+            const levelRequirements = await this.repository.getCapRequirements(nextLevel);
+            requirements = levelRequirements;
+
+            if (levelRequirements) {
+                const meetsQuantitative = this.checkLevelRequirements(
+                    metrics,
+                    levelRequirements,
+                    missingRequirements,
+                );
+
+                if (meetsQuantitative) {
+                    eligibleLevel = nextLevel;
+                    canPromote =
+                        !levelRequirements.requiresVerification &&
+                        !levelRequirements.requiresNomination;
+                }
+
+                if (levelRequirements.requiresVerification) {
+                    missingRequirements.push("Admin verification required");
+                }
+                if (levelRequirements.requiresNomination) {
+                    missingRequirements.push("Panel nomination required");
+                }
+            }
         }
 
         return {
@@ -205,17 +199,6 @@ export class CapLevelService {
                 `Volunteer Hours: ${metrics.volunteerHours}/${requirements.minVolunteerHours}`,
             );
             meetsAll = false;
-        }
-
-        // Note: Admin verification and nomination checks are handled separately
-        if (requirements.requiresVerification) {
-            missingRequirements.push("Admin verification required");
-            // Don't set meetsAll = false here, as this is handled in promotion logic
-        }
-
-        if (requirements.requiresNomination) {
-            missingRequirements.push("Panel nomination required");
-            // Don't set meetsAll = false here, as this is handled in promotion logic
         }
 
         return meetsAll;

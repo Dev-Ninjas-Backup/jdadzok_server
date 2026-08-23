@@ -99,4 +99,20 @@ export class PromoteUserDto {
     @IsOptional()
     @IsBoolean()
     bypassVerification?: boolean;
+
+    @ApiProperty({
+        description: "Required when bypassVerification is true — recorded in audit trail",
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    bypassReason?: string;
+
+    @ApiProperty({
+        description: "Optional admin review notes (stored in audit trail)",
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    reviewNotes?: string;
 }

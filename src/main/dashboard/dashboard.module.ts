@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { CapLevelModule } from "@module/(core)/cap-level/cap-leve.module";
 import { AdminNotificationController } from "./controller/admin.notification.controller";
 import { AdminSettingsController } from "./controller/admin.settings.controller";
 import { CommunityNgoController } from "./controller/communityNgo.controller";
@@ -21,6 +22,7 @@ import { PayoutManagementController } from "./controller/payout.management.contr
 import { PayoutManagementService } from "./service/payout.management.service";
 
 @Module({
+    imports: [CapLevelModule],
     controllers: [
         DashboardController,
         UserManagementController,

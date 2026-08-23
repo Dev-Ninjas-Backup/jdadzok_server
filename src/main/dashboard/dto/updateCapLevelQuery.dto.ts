@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsEnum } from "class-validator";
+import { IsBoolean, IsEnum, IsOptional, IsString } from "class-validator";
 import { Transform } from "class-transformer";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { CapLevel } from "@prisma/client";
@@ -21,4 +21,16 @@ export class UpdateCapLevelQueryDto {
     @IsBoolean()
     @Transform(({ value }) => value === "true" || value === "1")
     bypassVerification?: boolean = false;
+
+    @ApiPropertyOptional({
+        description: "Required when bypassVerification is true — audit trail",
+    })
+    @IsOptional()
+    @IsString()
+    bypassReason?: string;
+
+    @ApiPropertyOptional({ description: "Admin review notes for audit trail" })
+    @IsOptional()
+    @IsString()
+    reviewNotes?: string;
 }

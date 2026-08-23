@@ -37,8 +37,8 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **20** |
-| Partial / mismatch `[~]` | **8** (6 partial + 2 mismatch) |
+| Implemented `[x]` | **21** |
+| Partial / mismatch `[~]` | **7** (5 partial + 2 mismatch) |
 | Missing `[ ]` | **8** |
 
 > The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
@@ -54,7 +54,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[x]` | Five-level ladder | Green → Yellow → Red → Black → Sky Blue, stored per user with progression rules | `CapLevel` enum + `User.capLevel`, `CapRequirements`, cron promotion under `src/main/(core)/cap-level/` |
 | `[x]` | Top-tier rename (Sky Blue) | Top cap is **Sky Blue**, not “black with ostrich feather” | `CapLevel.SKY_BLUE` (renamed from `OSTRICH_FEATHER`); parallel invitation track |
 | `[x]` | Green → Yellow → Red (score-driven) | Lower rungs driven by Impact / Activity score | `ActivityScore` + cap cron / processor auto-promote when `requiresVerification` is false |
-| `[~]` | Red → Black: hours + admin gate | Must be Red, meet verified-hours threshold, admin review | `CapRequirements.requiresVerification` + `PUT /cap-level/promote/:userId`; order-of-ops (Red first) not fully locked in promotion logic |
+| `[x]` | Red → Black: hours + admin gate | Must be Red, meet verified-hours threshold, admin review | `PUT /cap-level/promote/:userId` + `CapPromotionAudit`; one-rung ladder; no cron skip to Black; bypass requires `bypassReason` |
 | `[x]` | Sky Blue: invitation-only, dual verification | Never applied for; KYC + notability; committee + audit trail; earns at Red rate until Black-level volunteering | `SkyBlueNomination` + events; `/cap-level/sky-blue/*`; ad-share uses Red rate until Black `minVolunteerHours` |
 | `[~]` | Revenue % hidden, configurable | Exact ad-share % never hard-coded in UI copy — business data | `CapRequirements.adSharePercentage` is DB-backed (good); module README still documents fixed 2/10/20/45/60% figures |
 | `[ ]` | Illustrated cap: style & placement | Profile setting: style (structured / soft) and placement (worn / beside; default beside) | No fields on `Profile` or `User` |
@@ -84,7 +84,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[x]` | Partner-verified (NGO) | Vetted partner confirms; hours auto-count | Hours require `ACCEPTED` application; NGO owner confirms via `updateStatus()` |
 | `[x]` | Counterparty confirmation | Mentee / recipient confirms mentoring session | `counterpartyUserId` on MENTORING/ADVICE + mentorship calls; mentee confirms via `/volunteer/hours/:id/confirm-counterparty` before Cap credit / endorsement |
 | `[x]` | Self-reported + endorsement gate | Self-logged hours pending until higher-Cap / admin endorsement | Self-report → `VolunteerHourVerificationStatus.PENDING`; `PATCH /volunteer/hours/:id/endorse` by higher-Cap or admin credits Cap metrics; auto NGO endorsement removed |
-| `[~]` | Admin review at Black threshold | Admin review before highest revenue share | `requiresVerification` + manual promote; enforcement vs bypass needs hardening |
+| `[~]` | Admin review at Black threshold | Admin review before highest revenue share | `requiresVerification` + promote API + audit; bypass only with recorded reason |
 
 **Key paths:** `prisma/schema/calling.prisma`, `prisma/schema/volunteer-hour.prisma`, `prisma/schema/endorsement.prisma`, `src/main/(shared)/calling/`
 
@@ -218,7 +218,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 6. `[x]` **Contribution types + “Other”** (and reuse Other pattern on interests / Bridge filters)
 7. `[x]` **Self-report hours pending until endorsement** (real gate)
 8. `[x]` **Counterparty (mentee) confirmation path**
-9. `[ ]` Harden Red → Black admin gate (no bypass without audit)
+9. `[x]` **Harden Red → Black admin gate** (no bypass without audit)
 10. `[ ]` Lifetime hours bank aggregation toward Black threshold
 
 ### Priority C — profile & social cleanup
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority B.9 — Harden Red → Black admin gate (no bypass without audit).
+**Suggested next coding PR:** Priority B.10 — Lifetime hours bank aggregation toward Black threshold.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority B.9 — Red→Black admin gate: one-rung promotions, `CapPromotionAudit`, no cron skip to Black; bypass requires reason |
 | 2026-08-23 | Priority B.8 — Counterparty (mentee) confirmation for MENTORING/ADVICE + mentorship calls before Cap credit |
 | 2026-08-23 | Priority B.7 — Self-report hours `PENDING` until higher-Cap / admin endorsement; Cap metrics increment only on endorse or mentorship auto-verify |
 | 2026-08-15 | Priority B.6 — `ContributionType` + Other free-text pattern on volunteer hours, interests, and Bridge filters |

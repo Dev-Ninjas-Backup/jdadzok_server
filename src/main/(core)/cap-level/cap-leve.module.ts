@@ -12,6 +12,7 @@ import { CapLevelCronJobService } from "./cron/cap-level.cron-job.service";
 import { CapLevelProcessorService } from "./cron/cap-level.processor.service";
 import { SkyBlueNominationController } from "./sky-blue-nomination.controller";
 import { SkyBlueNominationService } from "./sky-blue-nomination.service";
+import { CapLevelPromotionService } from "./cap-level-promotion.service";
 
 @Module({
     imports: [
@@ -26,11 +27,18 @@ import { SkyBlueNominationService } from "./sky-blue-nomination.service";
         CapLevelCronJobService,
         CapLevelRepository,
         CapLevelService,
+        CapLevelPromotionService,
         CapLevelProcessorService,
         UserMetricsService,
         AdRevenueService,
         SkyBlueNominationService,
     ],
-    exports: [CapLevelService, UserMetricsService, AdRevenueService, SkyBlueNominationService],
+    exports: [
+        CapLevelService,
+        CapLevelPromotionService,
+        UserMetricsService,
+        AdRevenueService,
+        SkyBlueNominationService,
+    ],
 })
 export class CapLevelModule {}
