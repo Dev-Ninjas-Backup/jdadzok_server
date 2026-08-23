@@ -22,6 +22,7 @@ import { CreateUserDto } from "./dto/users.dto";
 import { UserRepository } from "./users.repository";
 import { AllUserQueryDto } from "./dto/all-user-query.dto";
 import { CapLevel, Prisma, Role } from "@prisma/client";
+import { FollowService } from "../follow/follow.service";
 
 @Injectable()
 export class UserService {
@@ -33,6 +34,7 @@ export class UserService {
         private readonly jwtService: JwtServices,
         private readonly otpService: OptService,
         private readonly mailService: MailService,
+        private readonly followService: FollowService,
     ) {}
 
     async register(body: CreateUserDto) {
@@ -180,118 +182,11 @@ export class UserService {
     }
 
     async followUser(followerId: string, followedId: string) {
-        if (followerId === followedId) {
-            throw new ConflictException("Cannot follow userself");
-        }
-
-        const [follower, following] = await Promise.all([
-            this.prisma.user.findUnique({ where: { id: followerId } }),
-            this.prisma.user.findUnique({ where: { id: followedId } }),
-        ]);
-
-        // Check user exis with id
-        if (!follower || !following) {
-            throw new BadRequestException("Invalid user");
-        }
-
-        // Check already follow
-        const userFollow = await this.prisma.userFollow.findUnique({
-            where: {
-                followerId_followedId: {
-                    followerId,
-                    followedId,
-                },
-            },
-        });
-
-        if (userFollow) {
-            throw new ConflictException("You are already following...");
-        }
-
-        return await this.prisma.$transaction([
-            this.prisma.userFollow.create({
-                data: {
-                    followerId,
-                    followedId,
-                },
-                select: {
-                    follower: true,
-                    followed: true,
-                    createdAt: true,
-                },
-            }),
-
-            this.prisma.profile.update({
-                where: { userId: followerId },
-                data: {
-                    followingCount: { increment: 1 },
-                },
-            }),
-
-            this.prisma.profile.update({
-                where: {
-                    userId: followerId,
-                },
-                data: {
-                    followersCount: { increment: 1 },
-                },
-            }),
-        ]);
+        return this.followService.followUser(followerId, followedId);
     }
 
     async unfollowUser(followerId: string, followedId: string) {
-        const userFollow = await this.prisma.userFollow.findUnique({
-            where: {
-                followerId_followedId: {
-                    followerId,
-                    followedId,
-                },
-            },
-        });
-        if (!userFollow) {
-            throw new NotFoundException("You must have to follow the user before unfollow");
-        }
-
-        if (!userFollow?.followedId || !userFollow.followerId)
-            throw new NotFoundException("Follower or following not found!");
-
-        return await this.prisma.$transaction([
-            this.prisma.userFollow.delete({
-                where: {
-                    followerId_followedId: {
-                        followerId,
-                        followedId,
-                    },
-                },
-            }),
-            this.prisma.profile.update({
-                where: {
-                    userId: followerId,
-                },
-                data: {
-                    followingCount: { decrement: 1 },
-                },
-            }),
-            this.prisma.profile.update({
-                where: {
-                    userId: followedId,
-                },
-                data: {
-                    followersCount: { decrement: 1 },
-                },
-            }),
-            // update user profile metrics
-            this.prisma.userMetrics.update({
-                where: {
-                    userId: followerId,
-                },
-                data: {
-                    totalFollowing: {
-                        decrement: 1,
-                    },
-                },
-            }),
-        ]);
+        return this.followService.unfollowUser(followerId, followedId);
     }
 
     async getUserById(id: string) {

@@ -73,12 +73,6 @@ model User {
   followers Follow[] @relation("UserFollowers")
   following Follow[] @relation("UserFollowing")
 
-  // ============== Following sytem ==================
-  // Users this user follows
-  follows    UserFollow[] @relation("follows")
-  // Users following this user
-  followedBy UserFollow[] @relation("followedBy")
-
   // Community interactions
   communityMemberships CommunitiesMembership[]
   likedCommunities     Community[]             @relation("CommunityLikers")

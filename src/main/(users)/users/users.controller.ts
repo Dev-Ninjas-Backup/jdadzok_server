@@ -105,7 +105,7 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     async followUser(@Param("id") id: string, @GetVerifiedUser() user: TUser) {
         try {
-            const follow = await this.service.followUser(id, user.userId);
+            const follow = await this.service.followUser(user.userId, id);
             return successResponse(follow, "You have successfully following");
         } catch (err) {
             return err;
@@ -118,7 +118,7 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     async unfollowUser(@Param("id") id: string, @GetVerifiedUser() user: TUser) {
         try {
-            const follow = await this.service.unfollowUser(id, user.userId);
+            const follow = await this.service.unfollowUser(user.userId, id);
             return successResponse(follow, "You have successfully unfollowing");
         } catch (err) {
             return err;

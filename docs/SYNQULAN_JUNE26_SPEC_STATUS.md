@@ -94,7 +94,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
-| `[~]` | Follow (one-way) | Subscribe to updates; feeds audience / ads; no consent | **Mismatch:** both `Follow` and `UserFollow` exist and are used |
+| `[x]` | Follow (one-way) | Subscribe to updates; feeds audience / ads; no consent | Single `Follow` model (`follows` table) via `FollowService`; legacy `UserFollow` removed |
 | `[x]` | Connect (mutual) | Request both accept; gate for private messaging and general calls | `FriendRequest` ACCEPTED enforced server-side on private chat + `callPurpose=GENERAL` calls |
 | `[x]` | Messaging gated by mutual Connect | Must be enforced **server-side** | `FriendRequestService.assertConnected` on private chat create/send (HTTP + socket) |
 | `[ ]` | General vs Mentorship chat | Two distinct inbox contexts; mentorship thread auto-opens on accept | `LiveChatType` = `INDIVIDUAL` / `GROUP` only |
@@ -171,7 +171,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[ ]` | 8.16 Mentorship chat | Missing type, auto-open, verified-call affordances |
 | `[x]` | 8.17 Verified session call | `callPurpose=MENTORSHIP` + pending `VolunteerHour` on call end; mentee confirms for Cap credit |
 | `[~]` | 8.18 General call | `callPurpose=GENERAL` requires mutual Connect; never counts toward Cap hours |
-| `[~]` | 8.19 Connections & following | Follow + FriendRequest exist; dual Follow models remain; Connect enforced on general chat/calls |
+| `[~]` | 8.19 Connections & following | Follow + FriendRequest exist; Connect enforced on general chat/calls |
 | `[x]` | 8.20 Landing pages | Static assets in June 26 folder; not API-served |
 
 ---
@@ -225,7 +225,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 11. `[x]` Cap art style + placement on profile
 12. `[x]` Reputation-passport aggregate endpoint (+ mentees count)
-13. `[ ]` Deduplicate `Follow` vs `UserFollow`
+13. `[x]` Deduplicate `Follow` vs `UserFollow`
 14. `[ ]` Mentorship vs general chat types + auto-open on mentorship accept
 15. `[ ]` Guest explore contract (public routes + locked actions)
 
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority C.13 — Deduplicate `Follow` vs `UserFollow`.
+**Suggested next coding PR:** Priority C.14 — Mentorship vs general chat types + auto-open on mentorship accept.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority C.13 — Removed duplicate `UserFollow`; canonical `Follow` model + `FollowService`; migration backfill |
 | 2026-08-23 | Priority C.12 — Reputation passport `GET /user-profile/reputation-passport`; mentees count + soft earning headline |
 | 2026-08-23 | Priority C.11 — Cap art style/placement on `Profile`; `GET/PATCH /user-profile/cap-art-preferences`; default placement beside |
 | 2026-08-23 | Priority B.10 — Lifetime verified hours bank on `UserMetrics`; `GET /volunteer/hours-bank`; Black threshold uses aggregated bank |
