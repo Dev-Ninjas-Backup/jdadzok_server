@@ -1,0 +1,16 @@
+/// Audit log for anonymised impact-data exports (NGOs / agencies / corporate subscribers).
+model ImpactDataExportLog {
+  id String @id @default(uuid())
+
+  requestedByUserId String
+  requestedBy         User   @relation("ImpactExportRequester", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+
+  exportType String
+  filters    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([requestedByUserId])
+  @@index([createdAt])
+  @@map("impact_data_export_logs")
+}

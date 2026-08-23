@@ -138,6 +138,8 @@ model User {
   trainingCoursesInstructed TrainingCourse[] @relation("TrainingCourseInstructor")
   trainingEnrollments       TrainingEnrollment[] @relation("TrainingEnrollmentStudent")
 
+  impactDataExportLogs ImpactDataExportLog[] @relation("ImpactExportRequester")
+
   @@index([email])
   @@index([capLevel])
   @@index([role])

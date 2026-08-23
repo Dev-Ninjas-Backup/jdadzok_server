@@ -22,6 +22,7 @@ export const CORPORATE_TIER_CATALOG: Record<
         sponsorshipsLimit: number;
         talentUnlocksLimit: number;
         talentSearchResultLimit: number;
+        impactDataExport: boolean;
         esgReporting: boolean;
     }
 > = {
@@ -32,6 +33,7 @@ export const CORPORATE_TIER_CATALOG: Record<
         sponsorshipsLimit: 1,
         talentUnlocksLimit: 3,
         talentSearchResultLimit: 10,
+        impactDataExport: false,
         esgReporting: false,
     },
     GROWTH: {
@@ -41,6 +43,7 @@ export const CORPORATE_TIER_CATALOG: Record<
         sponsorshipsLimit: 5,
         talentUnlocksLimit: 15,
         talentSearchResultLimit: 25,
+        impactDataExport: true,
         esgReporting: true,
     },
     ENTERPRISE: {
@@ -50,6 +53,7 @@ export const CORPORATE_TIER_CATALOG: Record<
         sponsorshipsLimit: 25,
         talentUnlocksLimit: 100,
         talentSearchResultLimit: 50,
+        impactDataExport: true,
         esgReporting: true,
     },
 };
