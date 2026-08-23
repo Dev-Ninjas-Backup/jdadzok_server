@@ -142,7 +142,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[x]` | Reputation-passport profile | Cap, impact, hours, mentees, earning level as headlines | `GET /user-profile/reputation-passport` (+ `/:userId`); mentees = distinct verified MENTORING counterparties; soft earning headline |
 | `[x]` | Personal dashboard | Own ad revenue, pending payout, trends, Cap bar, payout history | `src/main/dashboard/` controllers / services |
 | `[~]` | Recognition leaderboard | Rank by contribution (hours, mentorship, endorsements), not followers | Metrics / revenue leaderboard endpoints exist; contribution-vs-followers ranking not verified end-to-end |
-| `[~]` | Explore as a guest | Unauth browse of opportunities / impact; join prompt; identity actions locked | `src/main/(explore)/explore` exists; no designed guest mode; routes document bearer auth but no dedicated guest contract |
+| `[x]` | Explore as a guest | Unauth browse of opportunities / impact; join prompt; identity actions locked | `GET /explore/guest/*` + contract; `@MakePublic()` on explore/Bridge browse; `guestMode` envelope + `lockedActions` |
 | `[x]` | Landing pages (individual / business) | Two marketing pages with cross-link, testimonials, pricing | **Static HTML** in June 26 folder (out of API scope). Backend supports related public content via `about-us`, `terms-and-conditions`, `privacy-policy` |
 
 ---
@@ -163,7 +163,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report starts pending until endorsement | `PATCH /volunteer/log-hours` + endorsement queue APIs |
 | `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
 | `[x]` | 8.10 The Bridge | `(bridge)` module: expertise / gig / project-help listings + Cap-weighted discover + booking scaffold |
-| `[~]` | 8.11 Explore as a guest | Explore endpoints exist; guest contract incomplete |
+| `[x]` | 8.11 Explore as a guest | Guest contract + public browse APIs for opportunities, Bridge preview, impact |
 | `[~]` | 8.12 Corporate CSR dashboard | `CorporateMembership` + admin/dashboard pieces; SDG/ESG reporting missing; tier names mismatch |
 | `[x]` | 8.13 Personal dashboard | Dashboard module present |
 | `[x]` | 8.14 Messages (inbox) | Live chat with General vs Mentorship contexts via `LiveChatContext` |
@@ -227,7 +227,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 12. `[x]` Reputation-passport aggregate endpoint (+ mentees count)
 13. `[x]` Deduplicate `Follow` vs `UserFollow`
 14. `[x]` Mentorship vs general chat types + auto-open on mentorship accept
-15. `[ ]` Guest explore contract (public routes + locked actions)
+15. `[x]` Guest explore contract (public routes + locked actions)
 
 ### Priority D — monetisation & Bridge fullness
 
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority C.15 — Guest explore contract (public routes + locked actions).
+**Suggested next coding PR:** Priority D.16 — Corporate tiers rename + SDG / ESG reporting fields.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority C.15 — Guest explore contract; `GET /explore/guest/*`; public browse + locked action manifest |
 | 2026-08-23 | Priority C.14 — `LiveChatContext` GENERAL/MENTORSHIP; inbox filter; auto-open on volunteer/Bridge accept |
 | 2026-08-23 | Priority C.13 — Removed duplicate `UserFollow`; canonical `Follow` model + `FollowService`; migration backfill |
 | 2026-08-23 | Priority C.12 — Reputation passport `GET /user-profile/reputation-passport`; mentees count + soft earning headline |
