@@ -30,5 +30,5 @@ CREATE INDEX "VolunteerHour_verificationStatus_idx" ON "VolunteerHour"("verifica
 CREATE INDEX "VolunteerHour_endorsedByUserId_idx" ON "VolunteerHour"("endorsedByUserId");
 
 -- AddForeignKey
-ALTER TABLE "VolunteerHour" ADD CONSTRAINT "VolunteerHour_endorsedByUserId_fkey" FOREIGN KEY ("endorsedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "VolunteerHour" ADD CONSTRAINT "VolunteerHour_endorsedByUserId_fkey" FOREIGN KEY ("endorsedByUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "endorsements" ADD CONSTRAINT "endorsements_volunteerHourId_fkey" FOREIGN KEY ("volunteerHourId") REFERENCES "VolunteerHour"("id") ON DELETE SET NULL ON UPDATE CASCADE;

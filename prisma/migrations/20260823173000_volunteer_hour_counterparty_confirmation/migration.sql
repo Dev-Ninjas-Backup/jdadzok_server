@@ -13,4 +13,4 @@ WHERE "source" = 'MENTORSHIP_CALL'
 CREATE INDEX "VolunteerHour_counterpartyUserId_idx" ON "VolunteerHour"("counterpartyUserId");
 
 -- AddForeignKey
-ALTER TABLE "VolunteerHour" ADD CONSTRAINT "VolunteerHour_counterpartyUserId_fkey" FOREIGN KEY ("counterpartyUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "VolunteerHour" ADD CONSTRAINT "VolunteerHour_counterpartyUserId_fkey" FOREIGN KEY ("counterpartyUserId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
