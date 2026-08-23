@@ -108,6 +108,7 @@ model User {
   VolunteerCompletion  VolunteerCompletion[]
   VolunteerHour              VolunteerHour[]
   endorsedVolunteerHours     VolunteerHour[]        @relation("VolunteerHourEndorser")
+  counterpartyVolunteerHours VolunteerHour[]        @relation("VolunteerHourCounterparty")
   VolunteerApplication       VolunteerApplication[] @relation("ConfirmedByNgo")
 
  

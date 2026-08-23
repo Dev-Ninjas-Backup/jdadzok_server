@@ -9,8 +9,8 @@ export class MentorshipCallHoursService {
     constructor(private readonly prisma: PrismaService) {}
 
     /**
-     * After a MENTORSHIP call ends, auto-create a verified VolunteerHour from duration.
-     * Credits the opted-in mentor (host preferred, else recipient). Links ACCEPTED application when found.
+     * After a MENTORSHIP call ends, create a pending VolunteerHour from duration.
+     * Cap credit applies only after the mentee (counterparty) confirms the session.
      */
     async maybeLogVerifiedHoursFromCall(callId: string): Promise<void> {
         try {
@@ -80,18 +80,27 @@ export class MentorshipCallHoursService {
             });
 
             await this.prisma.$transaction(async (tx) => {
+                const menteeUserId = this.resolveMenteeUserId(call, mentorUserId);
+                if (!menteeUserId) {
+                    this.logger.warn(
+                        `Skipping mentorship hour log for call ${callId}: no counterparty mentee`,
+                    );
+                    return;
+                }
+
                 await tx.volunteerHour.create({
                     data: {
                         callId: call.id,
                         applicationId: acceptedApp?.id ?? null,
                         loggedByUserId: mentorUserId,
+                        counterpartyUserId: menteeUserId,
                         hours,
-                        isVerified: true,
-                        verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
+                        isVerified: false,
+                        verificationStatus: VolunteerHourVerificationStatus.PENDING,
                         source: VolunteerHourSource.MENTORSHIP_CALL,
                         contributionType: ContributionType.MENTORING,
                         contributionOther: null,
-                        note: `Verified mentorship call ${call.id} (${call.startedAt!.toISOString()} → ${call.endedAt!.toISOString()})`,
+                        note: `Mentorship call ${call.id} (${call.startedAt!.toISOString()} → ${call.endedAt!.toISOString()}) — awaiting mentee confirmation`,
                     },
                 });
 
@@ -101,15 +110,10 @@ export class MentorshipCallHoursService {
                         data: { workedHours: { increment: Math.ceil(hours) } },
                     });
                 }
-
-                await tx.userMetrics.updateMany({
-                    where: { userId: mentorUserId },
-                    data: { volunteerHours: { increment: Math.ceil(hours) } },
-                });
             });
 
             this.logger.log(
-                `Verified VolunteerHour logged for mentorship call ${callId}: ${hours}h → user ${mentorUserId}`,
+                `Mentorship VolunteerHour logged (pending mentee confirmation) for call ${callId}: ${hours}h → mentor ${mentorUserId}`,
             );
         } catch (error) {
             this.logger.error(
@@ -133,5 +137,21 @@ export class MentorshipCallHoursService {
             return call.recipientUserId;
         }
         return null;
+    }
+
+    private resolveMenteeUserId(
+        call: {
+            hostUserId: string;
+            recipientUserId: string | null;
+        },
+        mentorUserId: string,
+    ): string | null {
+        if (call.hostUserId === mentorUserId) {
+            return call.recipientUserId;
+        }
+        if (call.recipientUserId === mentorUserId) {
+            return call.hostUserId;
+        }
+        return call.recipientUserId ?? null;
     }
 }

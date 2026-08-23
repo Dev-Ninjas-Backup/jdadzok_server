@@ -15,6 +15,11 @@ model VolunteerHour {
   endorsedByUser   User?               @relation("VolunteerHourEndorser", fields: [endorsedByUserId], references: [id], onDelete: SetNull)
   endorsedAt     DateTime?
   rejectionNote  String?               @db.Text
+  /// Mentee / recipient who must confirm mentoring or advice sessions before Cap credit.
+  counterpartyUserId String?
+  counterpartyUser   User?             @relation("VolunteerHourCounterparty", fields: [counterpartyUserId], references: [id], onDelete: SetNull)
+  counterpartyConfirmedAt DateTime?
+  counterpartyConfirmationNote String? @db.Text
   /// Mentoring | advice | project | teaching | charity | Other (+ free-text)
   contributionType  ContributionType?
   contributionOther String?            @db.Text
@@ -28,4 +33,5 @@ model VolunteerHour {
   @@index([contributionType])
   @@index([verificationStatus])
   @@index([endorsedByUserId])
+  @@index([counterpartyUserId])
 }

@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { ContributionType } from "@prisma/client";
-import { IsEnum, IsISO8601, IsOptional, IsString, MaxLength, ValidateIf } from "class-validator";
+import { IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from "class-validator";
 
 export class LogHoursDto {
     @ApiProperty({
@@ -46,4 +46,18 @@ export class LogHoursDto {
     @IsString()
     @MaxLength(500)
     contributionOther?: string;
+
+    @ApiProperty({
+        required: false,
+        example: "uuid-of-mentee-user",
+        description:
+            "Required when contributionType is MENTORING or ADVICE — the mentee / recipient who must confirm the session",
+    })
+    @ValidateIf(
+        (o: LogHoursDto) =>
+            o.contributionType === ContributionType.MENTORING ||
+            o.contributionType === ContributionType.ADVICE,
+    )
+    @IsUUID()
+    counterpartyUserId?: string;
 }

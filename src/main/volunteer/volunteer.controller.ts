@@ -14,6 +14,11 @@ import {
     RejectVolunteerHourDto,
 } from "./dto/endorse-volunteer-hour.dto";
 import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.service";
+import { VolunteerHourCounterpartyService } from "./volunteer-hour-counterparty.service";
+import {
+    ConfirmCounterpartyHourDto,
+    RejectCounterpartyHourDto,
+} from "./dto/counterparty-volunteer-hour.dto";
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -22,6 +27,7 @@ export class VolunteerController {
     constructor(
         private readonly volunteerService: VolunteerService,
         private readonly hourEndorsementService: VolunteerHourEndorsementService,
+        private readonly hourCounterpartyService: VolunteerHourCounterpartyService,
     ) {}
 
     @ApiOperation({ summary: "Create new volunteer projects for ngo" })
@@ -143,6 +149,47 @@ export class VolunteerController {
         return handleRequest(
             () => this.hourEndorsementService.rejectHour(hourId, user.id, dto),
             "Volunteer hours rejected",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "List mentoring/advice hours awaiting your confirmation as mentee / recipient",
+    })
+    @Get("hours/pending-counterparty")
+    listPendingCounterparty(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hourCounterpartyService.listPendingCounterpartyConfirmation(user.id),
+            "Pending counterparty confirmation queue retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "Confirm a mentoring/advice session as mentee — unlocks Cap credit (calls) or endorsement queue (self-report)",
+    })
+    @Patch("hours/:hourId/confirm-counterparty")
+    confirmCounterparty(
+        @Param("hourId") hourId: string,
+        @Body() dto: ConfirmCounterpartyHourDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourCounterpartyService.confirmHour(hourId, user.id, dto),
+            "Session confirmed by counterparty",
+        );
+    }
+
+    @ApiOperation({ summary: "Reject a mentoring/advice session as mentee / recipient" })
+    @Patch("hours/:hourId/reject-counterparty")
+    rejectCounterparty(
+        @Param("hourId") hourId: string,
+        @Body() dto: RejectCounterpartyHourDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourCounterpartyService.rejectHour(hourId, user.id, dto),
+            "Session rejected by counterparty",
         );
     }
 

@@ -10,6 +10,7 @@ import {
     RejectVolunteerHourDto,
 } from "./dto/endorse-volunteer-hour.dto";
 import { isCapLevelHigher, isPlatformAdmin } from "@common/utils/cap-level.util";
+import { counterpartyConfirmationComplete } from "@common/utils/volunteer-hour.util";
 import { VolunteerHourVerificationStatus } from "@prisma/client";
 
 @Injectable()
@@ -32,6 +33,12 @@ export class VolunteerHourEndorsementService {
                     select: {
                         id: true,
                         capLevel: true,
+                        profile: { select: { name: true } },
+                    },
+                },
+                counterpartyUser: {
+                    select: {
+                        id: true,
                         profile: { select: { name: true } },
                     },
                 },
@@ -72,11 +79,13 @@ export class VolunteerHourEndorsementService {
         });
 
         if (isPlatformAdmin(endorser.role)) {
-            return pending;
+            return pending.filter((hour) => counterpartyConfirmationComplete(hour));
         }
 
-        return pending.filter((hour) =>
-            isCapLevelHigher(endorser.capLevel, hour.loggedByUser.capLevel),
+        return pending.filter(
+            (hour) =>
+                counterpartyConfirmationComplete(hour) &&
+                isCapLevelHigher(endorser.capLevel, hour.loggedByUser.capLevel),
         );
     }
 
@@ -157,6 +166,12 @@ export class VolunteerHourEndorsementService {
         if (hour.verificationStatus !== VolunteerHourVerificationStatus.PENDING) {
             throw new BadRequestException(
                 `Hour entry is already ${hour.verificationStatus.toLowerCase()}.`,
+            );
+        }
+
+        if (!counterpartyConfirmationComplete(hour)) {
+            throw new BadRequestException(
+                "Mentoring / advice hours require counterparty (mentee) confirmation before endorsement.",
             );
         }
 

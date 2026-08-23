@@ -14,6 +14,7 @@ import {
     isContributionOther,
     resolveOtherText,
 } from "@common/utils/other-option.util";
+import { requiresCounterpartyConfirmation } from "@common/utils/volunteer-hour.util";
 @Injectable()
 export class VolunteerService {
     constructor(private prisma: PrismaService) {}
@@ -158,6 +159,24 @@ export class VolunteerService {
             label: "contributionOther",
         });
 
+        if (requiresCounterpartyConfirmation(dto.contributionType)) {
+            if (!dto.counterpartyUserId?.trim()) {
+                throw new BadRequestException(
+                    "counterpartyUserId (mentee / recipient) is required for MENTORING and ADVICE contributions.",
+                );
+            }
+            if (dto.counterpartyUserId === userId) {
+                throw new BadRequestException("You cannot list yourself as the counterparty.");
+            }
+            const counterparty = await this.prisma.user.findUnique({
+                where: { id: dto.counterpartyUserId },
+                select: { id: true },
+            });
+            if (!counterparty) {
+                throw new NotFoundException("Counterparty user not found");
+            }
+        }
+
         // Calculate hours (rounded to 2 decimals)
         const hoursWorked = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
         const totalHours = app.workedHours + hoursWorked;
@@ -178,6 +197,9 @@ export class VolunteerService {
                 data: {
                     applicationId,
                     loggedByUserId: userId,
+                    counterpartyUserId: requiresCounterpartyConfirmation(dto.contributionType)
+                        ? dto.counterpartyUserId
+                        : null,
                     hours: hoursWorked,
                     contributionType: dto.contributionType,
                     contributionOther,
@@ -223,9 +245,12 @@ export class VolunteerService {
             types: Object.values(ContributionType).map((value) => ({
                 value,
                 requiresOtherText: value === ContributionType.OTHER,
+                requiresCounterparty: requiresCounterpartyConfirmation(value),
             })),
             otherPattern:
                 "When type is OTHER, send free-text in contributionOther (same pattern as interests / Bridge).",
+            counterpartyPattern:
+                "When type is MENTORING or ADVICE, send counterpartyUserId (mentee / recipient). They must confirm before Cap credit.",
         };
     }
 
