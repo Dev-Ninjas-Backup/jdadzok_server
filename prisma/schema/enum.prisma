@@ -41,6 +41,18 @@ enum CapLevel {
   SKY_BLUE
 }
 
+/// Illustrated cap rendering style on member profile (June 26 inclusivity setting).
+enum CapArtStyle {
+  STRUCTURED
+  SOFT
+}
+
+/// Where the illustrated cap appears relative to the avatar (default beside = worn beside photo).
+enum CapArtPlacement {
+  WORN
+  BESIDE
+}
+
 enum ChatType {
   TEXT
   MEDIA

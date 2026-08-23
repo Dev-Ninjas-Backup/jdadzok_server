@@ -2,6 +2,7 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { HelperTx } from "@type/index";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
+import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
 
 @Injectable()
 export class UserProfileRepository {
@@ -126,6 +127,8 @@ export class UserProfileRepository {
                         ...(typeof data.isVolunteerMentorOptIn === "boolean" && {
                             isVolunteerMentorOptIn: data.isVolunteerMentorOptIn,
                         }),
+                        ...(data.capArtStyle && { capArtStyle: data.capArtStyle }),
+                        ...(data.capArtPlacement && { capArtPlacement: data.capArtPlacement }),
                         ...(data.dateOfBirth && { dateOfBirth: new Date(data.dateOfBirth) }),
                         ...(data.gender && { gender: data.gender }),
                         ...(data.experience && { experience: data.experience }),
@@ -152,6 +155,55 @@ export class UserProfileRepository {
                 updatedAt: true,
             },
         });
+    }
+
+    async setCapArtPreferences(userId: string, dto: CapArtPreferencesDto) {
+        if (dto.capArtStyle == null && dto.capArtPlacement == null) {
+            throw new BadRequestException(
+                "At least one of capArtStyle or capArtPlacement is required",
+            );
+        }
+
+        const profile = await this.prisma.profile.findFirst({ where: { userId } });
+        if (!profile) {
+            throw new NotFoundException("User profile not found!");
+        }
+
+        return await this.prisma.profile.update({
+            where: { id: profile.id },
+            data: {
+                ...(dto.capArtStyle != null && { capArtStyle: dto.capArtStyle }),
+                ...(dto.capArtPlacement != null && { capArtPlacement: dto.capArtPlacement }),
+            },
+            select: {
+                id: true,
+                userId: true,
+                capArtStyle: true,
+                capArtPlacement: true,
+                updatedAt: true,
+                user: { select: { capLevel: true } },
+            },
+        });
+    }
+
+    async getCapArtPreferences(userId: string) {
+        const profile = await this.prisma.profile.findFirst({
+            where: { userId },
+            select: {
+                capArtStyle: true,
+                capArtPlacement: true,
+                user: { select: { capLevel: true } },
+            },
+        });
+        if (!profile) {
+            throw new NotFoundException("User profile not found!");
+        }
+
+        return {
+            capLevel: profile.user.capLevel,
+            capArtStyle: profile.capArtStyle,
+            capArtPlacement: profile.capArtPlacement,
+        };
     }
 
     async getUserProfile(userId: string, id: string) {

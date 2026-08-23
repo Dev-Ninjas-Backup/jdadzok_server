@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { TUser, VerifiedUser } from "@type/index";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
 import { VolunteerMentorOptInDto } from "./dto/volunteer-mentor-opt-in.dto";
+import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
 import { UserProfileService } from "./user.profile.service";
 
 @ApiBearerAuth()
@@ -64,6 +65,37 @@ export class UserProfileController {
                 dto.isVolunteerMentorOptIn,
             );
             return successResponse(profile, "Volunteer / mentor opt-in updated successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiOperation({
+        summary: "Update illustrated cap art style and placement",
+        description:
+            "Profile display preferences for Cap art: style (structured / soft) and placement (worn / beside). Default placement is beside.",
+    })
+    @Get("cap-art-preferences")
+    @UseGuards(JwtAuthGuard)
+    async getCapArtPreferences(@GetVerifiedUser() user: VerifiedUser) {
+        try {
+            const prefs = await this.profileService.getCapArtPreferences(user.id);
+            return successResponse(prefs, "Cap art preferences retrieved successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @Patch("cap-art-preferences")
+    @UsePipes(ValidationPipe)
+    @UseGuards(JwtAuthGuard)
+    async setCapArtPreferences(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Body() dto: CapArtPreferencesDto,
+    ) {
+        try {
+            const profile = await this.profileService.setCapArtPreferences(user.id, dto);
+            return successResponse(profile, "Cap art preferences updated successfully");
         } catch (err) {
             return err;
         }

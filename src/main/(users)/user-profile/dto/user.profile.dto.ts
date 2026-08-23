@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, IntersectionType, PartialType } from "@nestjs/swagger";
-import { Gender } from "@prisma/client";
+import { CapArtPlacement, CapArtStyle, Gender } from "@prisma/client";
 import { IsBoolean, IsEnum, IsISO8601, IsOptional, IsString, IsUrl } from "class-validator";
 
 class UserProfile {
@@ -51,6 +51,24 @@ class UserProfile {
     @IsOptional()
     @IsBoolean()
     isVolunteerMentorOptIn?: boolean;
+
+    @ApiPropertyOptional({
+        enum: CapArtStyle,
+        example: CapArtStyle.STRUCTURED,
+        description: "Illustrated cap art style on profile",
+    })
+    @IsOptional()
+    @IsEnum(CapArtStyle)
+    capArtStyle?: CapArtStyle;
+
+    @ApiPropertyOptional({
+        enum: CapArtPlacement,
+        example: CapArtPlacement.BESIDE,
+        description: "Cap placement: worn on avatar or beside photo",
+    })
+    @IsOptional()
+    @IsEnum(CapArtPlacement)
+    capArtPlacement?: CapArtPlacement;
 
     @ApiPropertyOptional({ example: "1995-10-10T00:00:00.000Z" })
     @IsOptional()

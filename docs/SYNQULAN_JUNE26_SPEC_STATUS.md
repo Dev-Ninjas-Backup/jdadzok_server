@@ -57,7 +57,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | `[x]` | Red → Black: hours + admin gate | Must be Red, meet verified-hours threshold, admin review | `PUT /cap-level/promote/:userId` + `CapPromotionAudit`; one-rung ladder; no cron skip to Black; bypass requires `bypassReason` |
 | `[x]` | Sky Blue: invitation-only, dual verification | Never applied for; KYC + notability; committee + audit trail; earns at Red rate until Black-level volunteering | `SkyBlueNomination` + events; `/cap-level/sky-blue/*`; ad-share uses Red rate until Black `minVolunteerHours` |
 | `[~]` | Revenue % hidden, configurable | Exact ad-share % never hard-coded in UI copy — business data | `CapRequirements.adSharePercentage` is DB-backed (good); module README still documents fixed 2/10/20/45/60% figures |
-| `[ ]` | Illustrated cap: style & placement | Profile setting: style (structured / soft) and placement (worn / beside; default beside) | No fields on `Profile` or `User` |
+| `[x]` | Illustrated cap: style & placement | Profile setting: style (structured / soft) and placement (worn / beside; default beside) | `Profile.capArtStyle` + `Profile.capArtPlacement`; `GET/PATCH /user-profile/cap-art-preferences`; also via `PATCH /user-profile` |
 
 **Key paths:** `prisma/schema/enum.prisma`, `prisma/schema/cap-requirements.prisma`, `src/main/(core)/cap-level/`
 
@@ -158,7 +158,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.3 Get started (sign up) | Signup works; Green Cap default via `capLevel`; Community Pledge / Terms agreement flow not fully modelled as spec |
 | `[~]` | 8.4 Areas of interest | `choices` / `user-choice` + **Other** (`slug: other` → `interestOtherText`); volunteer opt-in on `POST /choices` |
 | `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings language is client concern |
-| `[~]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in toggle; still missing cap style/placement, mentees |
+| `[~]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in + cap style/placement; still missing mentees |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report starts pending until endorsement | `PATCH /volunteer/log-hours` + endorsement queue APIs |
 | `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
@@ -223,7 +223,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 ### Priority C — profile & social cleanup
 
-11. `[ ]` Cap art style + placement on profile
+11. `[x]` Cap art style + placement on profile
 12. `[ ]` Reputation-passport aggregate endpoint (+ mentees count)
 13. `[ ]` Deduplicate `Follow` vs `UserFollow`
 14. `[ ]` Mentorship vs general chat types + auto-open on mentorship accept
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority C.11 — Cap art style + placement on profile.
+**Suggested next coding PR:** Priority C.12 — Reputation-passport aggregate endpoint (+ mentees count).
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority C.11 — Cap art style/placement on `Profile`; `GET/PATCH /user-profile/cap-art-preferences`; default placement beside |
 | 2026-08-23 | Priority B.10 — Lifetime verified hours bank on `UserMetrics`; `GET /volunteer/hours-bank`; Black threshold uses aggregated bank |
 | 2026-08-23 | Priority B.9 — Red→Black admin gate: one-rung promotions, `CapPromotionAudit`, no cron skip to Black; bypass requires reason |
 | 2026-08-23 | Priority B.8 — Counterparty (mentee) confirmation for MENTORING/ADVICE + mentorship calls before Cap credit |

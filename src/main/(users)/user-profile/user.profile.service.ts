@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
+import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
 import { UserProfileRepository } from "./user.profile.repository";
 
 @Injectable()
@@ -19,6 +20,14 @@ export class UserProfileService {
             userId,
             isVolunteerMentorOptIn,
         );
+    }
+
+    async setCapArtPreferences(userId: string, dto: CapArtPreferencesDto) {
+        return await this.profileRepository.setCapArtPreferences(userId, dto);
+    }
+
+    async getCapArtPreferences(userId: string) {
+        return await this.profileRepository.getCapArtPreferences(userId);
     }
 
     async getUserProfile(userId: string, id: string) {

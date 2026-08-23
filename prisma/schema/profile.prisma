@@ -17,6 +17,10 @@ model Profile {
   isToggleNotification Boolean   @default(true)
   // Volunteer / mentor opt-in — independent of Cap; gates mentoring tools & verified-hour logging
   isVolunteerMentorOptIn Boolean @default(false)
+  /// Illustrated cap art style (structured vs soft rendering)
+  capArtStyle            CapArtStyle     @default(STRUCTURED)
+  /// Cap placement on profile avatar area; default beside for inclusivity
+  capArtPlacement        CapArtPlacement @default(BESIDE)
   /// Free-text when user selects the “Other” interest (app-wide Other pattern)
   interestOtherText      String?  @db.Text
   // personal information
