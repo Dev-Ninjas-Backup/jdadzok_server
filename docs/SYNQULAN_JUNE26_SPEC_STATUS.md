@@ -14,7 +14,7 @@ Living checklist of what **To Borhan – June 26** asks for, mapped to the curre
 - `To Borhan - June 26/Synqulan-Concept-and-Design.docx`
 - `To Borhan - June 26/prototype.html`
 - `To Borhan - June 26/synqulan-individual (1).html` · `synqulan-business.html`
-- `To Borhan - June 26/synqulan-audit.html` (row claims verified against code; **summary strip in that HTML is wrong** — see counts below)
+- `To Borhan - June 26/synqulan-audit.html` (sections 1–7 synced from this document on 2026-08-23)
 - Code: `prisma/schema/*`, `src/main/*`
 
 ---
@@ -37,11 +37,11 @@ Among the **36** product-feature rows below (Cap through Profile/guest):
 
 | Status | Count |
 | --- | --- |
-| Implemented `[x]` | **21** |
-| Partial / mismatch `[~]` | **7** (5 partial + 2 mismatch) |
-| Missing `[ ]` | **8** |
+| Implemented `[x]` | **34** |
+| Partial / mismatch `[~]` | **2** |
+| Missing `[ ]` | **0** |
 
-> The audit HTML header (`14 / 11 / 13 / 3`) does **not** match its own tables. Prefer this document.
+> `synqulan-audit.html` summary strip and sections 1–7 feature tables were synced from this document on 2026-08-23 (`scripts/sync-audit-html-from-spec.py`). Prefer this document as source of truth.
 
 Marketing landing pages are static HTML in the June 26 folder (not served by this API). Backend public CMS endpoints (about / terms / privacy) exist separately.
 
@@ -242,9 +242,9 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 ### Priority E — polish
 
 23. `[x]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
-24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
+24. `[x]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority E.24 — Sync `synqulan-audit.html` summary strip with this document (optional).
+**Suggested next coding PR:** Priority E backlog complete — pick from section 8 screen-by-screen partials or new product scope.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority E.24 — Synced `synqulan-audit.html` sections 1–7 + summary strip (34 / 2 / 0); added `scripts/sync-audit-html-from-spec.py` |
 | 2026-08-23 | Priority E.23 — Soft-language earnings contract; `privateEarnings` on Cap status; sanitize third-party metrics |
 | 2026-08-23 | Priority D.22 — Contribution leaderboard `GET /leaderboard/contribution` (hours, mentorship, endorsements; not followers) |
 | 2026-08-23 | Priority D.21 — Anonymised impact export with k-anonymity; `/impact/export/*` for NGOs and Growth+ corporate |
