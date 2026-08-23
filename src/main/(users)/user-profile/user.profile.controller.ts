@@ -16,6 +16,7 @@ import { TUser, VerifiedUser } from "@type/index";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
 import { VolunteerMentorOptInDto } from "./dto/volunteer-mentor-opt-in.dto";
 import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
+import { TalentSearchVisibilityDto } from "./dto/talent-search-visibility.dto";
 import { UserProfileService } from "./user.profile.service";
 import { ReputationPassportService } from "./reputation-passport.service";
 
@@ -100,6 +101,40 @@ export class UserProfileController {
         try {
             const profile = await this.profileService.setCapArtPreferences(user.id, dto);
             return successResponse(profile, "Cap art preferences updated successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiOperation({
+        summary: "Talent search visibility preference",
+        description:
+            "Opt in or out of employer talent-sourcing searches (reputation-ranked candidate discovery).",
+    })
+    @Get("talent-search-visibility")
+    @UseGuards(JwtAuthGuard)
+    async getTalentSearchVisibility(@GetVerifiedUser() user: VerifiedUser) {
+        try {
+            const prefs = await this.profileService.getTalentSearchVisibility(user.id);
+            return successResponse(prefs, "Talent search visibility retrieved successfully");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @Patch("talent-search-visibility")
+    @UsePipes(ValidationPipe)
+    @UseGuards(JwtAuthGuard)
+    async setTalentSearchVisibility(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Body() dto: TalentSearchVisibilityDto,
+    ) {
+        try {
+            const profile = await this.profileService.setTalentSearchOptIn(
+                user.id,
+                dto.isTalentSearchOptIn,
+            );
+            return successResponse(profile, "Talent search visibility updated successfully");
         } catch (err) {
             return err;
         }

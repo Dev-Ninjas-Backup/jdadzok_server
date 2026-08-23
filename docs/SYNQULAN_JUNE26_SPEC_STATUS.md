@@ -109,7 +109,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | Status | Feature | Spec requirement | Current backend state |
 | --- | --- | --- | --- |
 | `[x]` | Advertising revenue-share | Advertisers → member share by Cap | `AdRevenueShare`, monthly calc, payout / withdraw / Stripe rails |
-| `[ ]` | Recruitment / talent-sourcing | Employers pay for reputation-ranked candidates | No employer talent-search models |
+| `[x]` | Recruitment / talent-sourcing | Employers pay for reputation-ranked candidates | `GET /corporate/talent/search`; `POST /corporate/talent/unlocks`; `Profile.isTalentSearchOptIn`; tier unlock quotas |
 | `[x]` | Corporate / CSR subscriptions | Orgs pay; tiers + impact reporting | `CorporateMembership` tiers **Starter / Growth / Enterprise**; SDG/ESG fields + `PATCH /corporate/memberships/:id/esg-report`; `GET /corporate/tiers` |
 | `[ ]` | Training & course marketplace | Course buyers; cohorts / completion | `Product` is generic goods (stock, price, digital URLs) — no course concept |
 | `[x]` | Sponsored opportunities & projects | Orgs sponsor Bridge / volunteer opportunities | `SponsoredOpportunity` → `VolunteerProject` / `BridgeListing`; `GET /sponsored/opportunities`; `POST /corporate/sponsorships` (not Product↔Post `DedicatedAd`) |
@@ -234,7 +234,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 16. `[x]` Corporate tiers rename + SDG / ESG reporting fields
 17. `[x]` Sponsored opportunities targeting `VolunteerProject` / Bridge items
 18. `[x]` Paid gigs + Bridge transaction fee
-19. `[ ]` Recruitment / talent-sourcing employer APIs
+19. `[x]` Recruitment / talent-sourcing employer APIs
 20. `[ ]` Training / course marketplace (or Bridge course type)
 21. `[ ]` Anonymised impact-data export
 22. `[ ]` Leaderboard ranked strictly by contribution (hours / mentorship / endorsements)
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority D.19 — Recruitment / talent-sourcing employer APIs.
+**Suggested next coding PR:** Priority D.20 — Training / course marketplace (or Bridge course type).
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority D.19 — Employer talent search + unlock APIs; reputation-ranked candidates; member opt-in |
 | 2026-08-23 | Priority D.18 — Bridge gig transaction fee on bookings; `GET /bridge/fee-policy`; complete booking → payout ready |
 | 2026-08-23 | Priority D.17 — `SponsoredOpportunity` for volunteer/Bridge CSR sponsorships; public `/sponsored/opportunities` |
 | 2026-08-23 | Priority D.16 — Corporate tiers Starter/Growth/Enterprise; SDG/ESG fields + `/corporate` CSR APIs |

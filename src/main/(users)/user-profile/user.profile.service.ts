@@ -22,6 +22,14 @@ export class UserProfileService {
         );
     }
 
+    async setTalentSearchOptIn(userId: string, isTalentSearchOptIn: boolean) {
+        return await this.profileRepository.setTalentSearchOptIn(userId, isTalentSearchOptIn);
+    }
+
+    async getTalentSearchVisibility(userId: string) {
+        return await this.profileRepository.getTalentSearchVisibility(userId);
+    }
+
     async setCapArtPreferences(userId: string, dto: CapArtPreferencesDto) {
         return await this.profileRepository.setCapArtPreferences(userId, dto);
     }

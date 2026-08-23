@@ -157,6 +157,35 @@ export class UserProfileRepository {
         });
     }
 
+    async setTalentSearchOptIn(userId: string, isTalentSearchOptIn: boolean) {
+        const profile = await this.prisma.profile.findFirst({ where: { userId } });
+        if (!profile) {
+            throw new NotFoundException("User profile not found!");
+        }
+
+        return await this.prisma.profile.update({
+            where: { id: profile.id },
+            data: { isTalentSearchOptIn },
+            select: {
+                id: true,
+                userId: true,
+                isTalentSearchOptIn: true,
+                updatedAt: true,
+            },
+        });
+    }
+
+    async getTalentSearchVisibility(userId: string) {
+        const profile = await this.prisma.profile.findFirst({
+            where: { userId },
+            select: { isTalentSearchOptIn: true },
+        });
+        if (!profile) {
+            throw new NotFoundException("User profile not found!");
+        }
+        return { isTalentSearchOptIn: profile.isTalentSearchOptIn };
+    }
+
     async setCapArtPreferences(userId: string, dto: CapArtPreferencesDto) {
         if (dto.capArtStyle == null && dto.capArtPlacement == null) {
             throw new BadRequestException(

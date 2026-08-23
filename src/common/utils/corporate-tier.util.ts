@@ -20,6 +20,8 @@ export const CORPORATE_TIER_CATALOG: Record<
         legacyLabel: string;
         dailyAdsLimit: number;
         sponsorshipsLimit: number;
+        talentUnlocksLimit: number;
+        talentSearchResultLimit: number;
         esgReporting: boolean;
     }
 > = {
@@ -28,6 +30,8 @@ export const CORPORATE_TIER_CATALOG: Record<
         legacyLabel: "Silver",
         dailyAdsLimit: 5,
         sponsorshipsLimit: 1,
+        talentUnlocksLimit: 3,
+        talentSearchResultLimit: 10,
         esgReporting: false,
     },
     GROWTH: {
@@ -35,6 +39,8 @@ export const CORPORATE_TIER_CATALOG: Record<
         legacyLabel: "Gold",
         dailyAdsLimit: 20,
         sponsorshipsLimit: 5,
+        talentUnlocksLimit: 15,
+        talentSearchResultLimit: 25,
         esgReporting: true,
     },
     ENTERPRISE: {
@@ -42,6 +48,8 @@ export const CORPORATE_TIER_CATALOG: Record<
         legacyLabel: "Platinum",
         dailyAdsLimit: 100,
         sponsorshipsLimit: 25,
+        talentUnlocksLimit: 100,
+        talentSearchResultLimit: 50,
         esgReporting: true,
     },
 };

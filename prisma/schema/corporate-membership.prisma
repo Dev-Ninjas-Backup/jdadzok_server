@@ -16,6 +16,7 @@ model CorporateMembership {
   // Benefits tracking (operational usage)
   dailyAdsUsed     Int @default(0)
   sponsorshipsUsed Int @default(0)
+  talentUnlocksUsed Int @default(0)
 
   // SDG alignment — UN Sustainable Development Goals (1–17)
   sdgAlignmentGoals Int[]   @default([])
@@ -37,6 +38,7 @@ model CorporateMembership {
   updatedAt DateTime @updatedAt
 
   sponsoredOpportunities SponsoredOpportunity[]
+  talentCandidateUnlocks TalentCandidateUnlock[]
 
   @@index([tier])
   @@index([isActive])

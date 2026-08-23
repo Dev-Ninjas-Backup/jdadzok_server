@@ -133,6 +133,7 @@ model User {
   bridgeListingsOwned    BridgeListing[] @relation("BridgeListingOwner")
   bridgeBookingsAsClient BridgeBooking[] @relation("BridgeBookingClient")
   bridgeBookingsAsProvider BridgeBooking[] @relation("BridgeBookingProvider")
+  talentCandidateUnlocks TalentCandidateUnlock[] @relation("TalentCandidateUnlocks")
 
   @@index([email])
   @@index([capLevel])

@@ -182,11 +182,14 @@ export class CorporateService {
             tierLimits: {
                 dailyAdsLimit: catalog.dailyAdsLimit,
                 sponsorshipsLimit: catalog.sponsorshipsLimit,
+                talentUnlocksLimit: catalog.talentUnlocksLimit,
+                talentSearchResultLimit: catalog.talentSearchResultLimit,
                 esgReporting: catalog.esgReporting,
             },
             usage: {
                 dailyAdsUsed: (membership as { dailyAdsUsed?: number }).dailyAdsUsed ?? 0,
                 sponsorshipsUsed: (membership as { sponsorshipsUsed?: number }).sponsorshipsUsed ?? 0,
+                talentUnlocksUsed: (membership as { talentUnlocksUsed?: number }).talentUnlocksUsed ?? 0,
             },
         };
     }

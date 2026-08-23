@@ -1,0 +1,17 @@
+/// Employer unlock of a member profile for paid talent-sourcing (corporate membership).
+model TalentCandidateUnlock {
+  id String @id @default(uuid())
+
+  corporateMembershipId String
+  corporateMembership   CorporateMembership @relation(fields: [corporateMembershipId], references: [id], onDelete: Cascade)
+
+  candidateUserId String
+  candidate       User   @relation("TalentCandidateUnlocks", fields: [candidateUserId], references: [id], onDelete: Cascade)
+
+  unlockedAt DateTime @default(now())
+
+  @@unique([corporateMembershipId, candidateUserId])
+  @@index([corporateMembershipId])
+  @@index([candidateUserId])
+  @@map("talent_candidate_unlocks")
+}
