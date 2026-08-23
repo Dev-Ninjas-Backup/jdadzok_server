@@ -107,6 +107,11 @@ export const GUEST_PUBLIC_ROUTES: GuestPublicRoute[] = [
     },
     {
         method: "GET",
+        path: "/contracts/soft-earnings",
+        description: "Soft-language Cap earnings API contract (no hard % on public views)",
+    },
+    {
+        method: "GET",
         path: "/leaderboard/contribution",
         description: "Recognition leaderboard ranked by verified hours, mentoring, and endorsements",
     },

@@ -157,7 +157,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[x]` | 8.2 Sign in | Auth: email/password + providers under `src/main/(started)/auth/` |
 | `[~]` | 8.3 Get started (sign up) | Signup works; Green Cap default via `capLevel`; Community Pledge / Terms agreement flow not fully modelled as spec |
 | `[~]` | 8.4 Areas of interest | `choices` / `user-choice` + **Other** (`slug: other` → `interestOtherText`); volunteer opt-in on `POST /choices` |
-| `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings language is client concern |
+| `[~]` | 8.5 Member home | Feed, metrics, volunteer projects exist; home composition (Cap path + opportunities-first) is client-side; soft earnings via `earningLevel.headline` + `GET /contracts/soft-earnings` |
 | `[x]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in + cap style/placement + reputation passport |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report starts pending until endorsement | `PATCH /volunteer/log-hours` + endorsement queue APIs |
@@ -241,10 +241,10 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 ### Priority E — polish
 
-23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
+23. `[x]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority E.23 — Soft-language API contracts for public Cap earnings.
+**Suggested next coding PR:** Priority E.24 — Sync `synqulan-audit.html` summary strip with this document (optional).
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority E.23 — Soft-language earnings contract; `privateEarnings` on Cap status; sanitize third-party metrics |
 | 2026-08-23 | Priority D.22 — Contribution leaderboard `GET /leaderboard/contribution` (hours, mentorship, endorsements; not followers) |
 | 2026-08-23 | Priority D.21 — Anonymised impact export with k-anonymity; `/impact/export/*` for NGOs and Growth+ corporate |
 | 2026-08-23 | Priority D.20 — `(training)` course marketplace with cohorts, enrollment, and completion APIs |

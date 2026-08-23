@@ -1,9 +1,14 @@
 import { GetUser, ValidateAdmin, ValidateAuth } from "@common/jwt/jwt.decorator";
 import { successResponse } from "@common/utils/response.util";
+import {
+    mapCapStatusForAdmin,
+    mapCapStatusForPersonalDashboard,
+} from "@common/utils/soft-earnings.util";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import { Body, Controller, Get, Param, Put, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { AdRevenueService } from "../ad-revenue/ad-revenue.service";
 import { CapLevelPromotionService } from "./cap-level-promotion.service";
 import { CapLevelService } from "./cap-lavel.service";
 import { PromoteUserDto } from "./dto/cap-leve.dto";
@@ -16,21 +21,36 @@ export class CapLevelController {
     constructor(
         private readonly service: CapLevelService,
         private readonly promotionService: CapLevelPromotionService,
+        private readonly adRevenueService: AdRevenueService,
     ) {}
 
     @Get("status/me")
     @ValidateAuth()
-    @ApiOperation({ summary: "Get my Cap ladder status, eligibility, and earning info" })
+    @ApiOperation({
+        summary: "Get my Cap ladder status (soft headlines + privateEarnings exact figures)",
+    })
     async getMyStatus(@GetUser("userId") userId: string): Promise<ReturnType<typeof successResponse>> {
-        const data = await this.promotionService.getMyCapStatus(userId);
+        const status = await this.promotionService.getMyCapStatus(userId);
+        const data = mapCapStatusForPersonalDashboard(status);
         return successResponse(data, "Cap status retrieved");
+    }
+
+    @Get("earnings/me")
+    @ValidateAuth()
+    @ApiOperation({
+        summary: "Personal dashboard — exact ad-revenue earnings history and totals",
+    })
+    async getMyEarnings(@GetUser("userId") userId: string) {
+        const data = await this.adRevenueService.getUserRevenueSummary(userId);
+        return successResponse(data, "Personal earnings retrieved");
     }
 
     @Get("status/:userId")
     @ValidateAdmin()
-    @ApiOperation({ summary: "Get a member Cap status (admin)" })
+    @ApiOperation({ summary: "Get a member Cap status (admin — includes raw share %)" })
     async getUserStatus(@Param("userId") userId: string): Promise<ReturnType<typeof successResponse>> {
-        const data = await this.promotionService.getMyCapStatus(userId);
+        const status = await this.promotionService.getMyCapStatus(userId);
+        const data = mapCapStatusForAdmin(status);
         return successResponse(data, "Cap status retrieved");
     }
 
