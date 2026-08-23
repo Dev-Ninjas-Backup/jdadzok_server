@@ -151,9 +151,9 @@ enum MembershipStatus {
 }
 
 enum MembershipTier {
-  SILVER
-  GOLD
-  PLATINUM
+  STARTER
+  GROWTH
+  ENTERPRISE
 }
 
 enum MessageStatus {

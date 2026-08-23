@@ -5,17 +5,29 @@ model CorporateMembership {
   companyName  String
   contactEmail String @unique
 
-  // Membership tier (Silver, Gold, Platinum)
-  tier MembershipTier @default(SILVER) // "SILVER", "GOLD", "PLATINUM"
+  // Membership tier (June 26 landings: Starter / Growth / Enterprise)
+  tier MembershipTier @default(STARTER)
 
   // Membership details
   isActive  Boolean   @default(true)
   startDate DateTime  @default(now())
   endDate   DateTime? // When membership expires
 
-  // Benefits tracking
+  // Benefits tracking (operational usage)
   dailyAdsUsed     Int @default(0)
   sponsorshipsUsed Int @default(0)
+
+  // SDG alignment — UN Sustainable Development Goals (1–17)
+  sdgAlignmentGoals Int[]   @default([])
+  sdgImpactSummary  String? @db.Text
+
+  // ESG reporting (CSR dashboard)
+  esgReportPeriod            String?
+  esgReportUrl               String?
+  reportedVolunteerHours     Float     @default(0)
+  reportedCommunityInvestment Float    @default(0)
+  reportedCarbonOffsetTonnes Float?
+  lastEsgReportSubmittedAt   DateTime?
 
   // Contact person
   contactPersonId String?

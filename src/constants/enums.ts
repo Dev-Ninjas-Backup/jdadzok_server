@@ -148,7 +148,7 @@ export type PostForm = (typeof postFrom)[number];
 export const verificationStatus = ["PENDING", "APPROVED", "REJECTED"] as const;
 export type VerificationStatus = (typeof verificationStatus)[number];
 
-export const membershipTier = ["SILVER", "GOLD", "PLATINUM"] as const;
+export const membershipTier = ["STARTER", "GROWTH", "ENTERPRISE"] as const;
 export type MembershipTier = (typeof membershipTier)[number];
 
 export const gender = [

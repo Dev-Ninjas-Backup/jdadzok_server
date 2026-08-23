@@ -110,7 +110,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | --- | --- | --- | --- |
 | `[x]` | Advertising revenue-share | Advertisers → member share by Cap | `AdRevenueShare`, monthly calc, payout / withdraw / Stripe rails |
 | `[ ]` | Recruitment / talent-sourcing | Employers pay for reputation-ranked candidates | No employer talent-search models |
-| `[~]` | Corporate / CSR subscriptions | Orgs pay; tiers + impact reporting | `CorporateMembership` exists with **Silver / Gold / Platinum** (spec landings: Starter / Growth / Enterprise); tracks ad/sponsorship usage, not SDG / ESG reports |
+| `[x]` | Corporate / CSR subscriptions | Orgs pay; tiers + impact reporting | `CorporateMembership` tiers **Starter / Growth / Enterprise**; SDG/ESG fields + `PATCH /corporate/memberships/:id/esg-report`; `GET /corporate/tiers` |
 | `[ ]` | Training & course marketplace | Course buyers; cohorts / completion | `Product` is generic goods (stock, price, digital URLs) — no course concept |
 | `[ ]` | Sponsored opportunities & projects | Orgs sponsor Bridge / volunteer opportunities | `DedicatedAd` ties `Product` ↔ `Post`, not `VolunteerProject` |
 | `[ ]` | Bridge gig transaction fee | Cut of money flowing to gig workers | Depends on Bridge (missing) |
@@ -164,7 +164,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
 | `[x]` | 8.10 The Bridge | `(bridge)` module: expertise / gig / project-help listings + Cap-weighted discover + booking scaffold |
 | `[x]` | 8.11 Explore as a guest | Guest contract + public browse APIs for opportunities, Bridge preview, impact |
-| `[~]` | 8.12 Corporate CSR dashboard | `CorporateMembership` + admin/dashboard pieces; SDG/ESG reporting missing; tier names mismatch |
+| `[x]` | 8.12 Corporate CSR dashboard | Corporate module + SDG/ESG report APIs; tier catalog |
 | `[x]` | 8.13 Personal dashboard | Dashboard module present |
 | `[x]` | 8.14 Messages (inbox) | Live chat with General vs Mentorship contexts via `LiveChatContext` |
 | `[x]` | 8.15 General chat | Private chat create/send gated by mutual Connect (`FriendRequest` ACCEPTED) |
@@ -231,7 +231,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 ### Priority D — monetisation & Bridge fullness
 
-16. `[ ]` Corporate tiers rename + SDG / ESG reporting fields
+16. `[x]` Corporate tiers rename + SDG / ESG reporting fields
 17. `[ ]` Sponsored opportunities targeting `VolunteerProject` / Bridge items
 18. `[ ]` Paid gigs + Bridge transaction fee
 19. `[ ]` Recruitment / talent-sourcing employer APIs
@@ -244,7 +244,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority D.16 — Corporate tiers rename + SDG / ESG reporting fields.
+**Suggested next coding PR:** Priority D.17 — Sponsored opportunities targeting VolunteerProject / Bridge items.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority D.16 — Corporate tiers Starter/Growth/Enterprise; SDG/ESG fields + `/corporate` CSR APIs |
 | 2026-08-23 | Priority C.15 — Guest explore contract; `GET /explore/guest/*`; public browse + locked action manifest |
 | 2026-08-23 | Priority C.14 — `LiveChatContext` GENERAL/MENTORSHIP; inbox filter; auto-open on volunteer/Bridge accept |
 | 2026-08-23 | Priority C.13 — Removed duplicate `UserFollow`; canonical `Follow` model + `FollowService`; migration backfill |
