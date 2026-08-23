@@ -21,6 +21,13 @@ enum BridgeBookingStatus {
   CANCELLED
 }
 
+enum BridgeBookingSettlementStatus {
+  NONE
+  PENDING
+  READY
+  SETTLED
+}
+
 /// Skills & opportunity exchange — separate from goods Product/Order marketplace.
 model BridgeListing {
   id String @id @default(uuid())
@@ -51,10 +58,12 @@ model BridgeListing {
   // Paid gig / project-help fields
   budgetAmount       Float?
   currency           String  @default("USD")
-  /// Scaffold for Bridge transaction fee (cut of payout) — applied in later monetisation work
+  /// Platform transaction fee % (cut of gig worker payout) — snapshotted on booking
   platformFeePercent Float   @default(5)
 
   bookings BridgeBooking[]
+
+  sponsoredOpportunities SponsoredOpportunity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -82,6 +91,14 @@ model BridgeBooking {
   status        BridgeBookingStatus @default(PENDING)
   agreedAmount  Float?
   note          String?             @db.Text
+
+  /// Snapshot of listing fee at booking time (GIG / PROJECT_HELP payouts)
+  platformFeePercent     Float?
+  platformFeeAmount      Float?
+  providerPayoutAmount   Float?
+  currency               String?
+  settlementStatus       BridgeBookingSettlementStatus @default(NONE)
+  completedAt            DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

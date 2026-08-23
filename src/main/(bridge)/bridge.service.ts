@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import {
     BridgeBookingStatus,
+    BridgeBookingSettlementStatus,
     BridgeListingStatus,
     BridgeListingType,
     CapLevel,
@@ -16,6 +17,10 @@ import {
     isContributionOther,
     resolveOtherText,
 } from "@common/utils/other-option.util";
+import {
+    computeBridgeGigFee,
+    DEFAULT_BRIDGE_GIG_FEE_PERCENT,
+} from "@common/utils/bridge-gig-fee.util";
 import {
     BridgeListQueryDto,
     CreateBridgeBookingDto,
@@ -76,7 +81,7 @@ export class BridgeService {
                 availabilityNote: dto.availabilityNote,
                 budgetAmount: dto.budgetAmount,
                 currency: dto.currency ?? "USD",
-                platformFeePercent: dto.platformFeePercent ?? 5,
+                platformFeePercent: dto.platformFeePercent ?? DEFAULT_BRIDGE_GIG_FEE_PERCENT,
             },
             include: this.listingInclude(),
         });
@@ -257,33 +262,75 @@ export class BridgeService {
             throw new BadRequestException("agreedAmount is required when listing has no budget");
         }
 
+        const grossAmount = dto.agreedAmount ?? listing.budgetAmount ?? listing.hourlyRate;
+        const feeFields = this.resolveBookingFeeFields(listing, grossAmount);
+
         return this.prisma.bridgeBooking.create({
             data: {
                 listingId,
                 clientId,
                 providerId: listing.ownerId,
-                agreedAmount: dto.agreedAmount ?? listing.budgetAmount ?? listing.hourlyRate,
+                agreedAmount: grossAmount,
                 note: dto.note,
                 status: BridgeBookingStatus.PENDING,
+                ...feeFields,
             },
-            include: {
-                listing: true,
-                client: {
-                    select: {
-                        id: true,
-                        email: true,
-                        profile: { select: { name: true, avatarUrl: true } },
-                    },
-                },
-                provider: {
-                    select: {
-                        id: true,
-                        email: true,
-                        profile: { select: { name: true, avatarUrl: true } },
-                    },
-                },
-            },
+            include: this.bookingInclude(),
+        }).then((booking) => this.enrichBooking(booking));
+    }
+
+    async completeBooking(userId: string, bookingId: string) {
+        const booking = await this.prisma.bridgeBooking.findUnique({
+            where: { id: bookingId },
+            include: { listing: true },
         });
+        if (!booking) {
+            throw new NotFoundException("Booking not found");
+        }
+        if (booking.clientId !== userId && booking.providerId !== userId) {
+            throw new ForbiddenException("Not allowed to complete this booking");
+        }
+        if (booking.status !== BridgeBookingStatus.ACCEPTED) {
+            throw new BadRequestException("Only accepted bookings can be marked completed");
+        }
+
+        const updated = await this.prisma.bridgeBooking.update({
+            where: { id: bookingId },
+            data: {
+                status: BridgeBookingStatus.COMPLETED,
+                completedAt: new Date(),
+                settlementStatus:
+                    booking.settlementStatus === BridgeBookingSettlementStatus.NONE
+                        ? BridgeBookingSettlementStatus.NONE
+                        : BridgeBookingSettlementStatus.READY,
+            },
+            include: this.bookingInclude(),
+        });
+
+        return this.enrichBooking(updated);
+    }
+
+    getFeePolicy() {
+        return {
+            defaultPlatformFeePercent: DEFAULT_BRIDGE_GIG_FEE_PERCENT,
+            description:
+                "Synqulan takes a small cut of paid Bridge gig payouts; the remainder goes to the worker.",
+            appliesTo: [BridgeListingType.GIG, BridgeListingType.PROJECT_HELP],
+        };
+    }
+
+    async getBooking(userId: string, bookingId: string) {
+        const booking = await this.prisma.bridgeBooking.findUnique({
+            where: { id: bookingId },
+            include: this.bookingInclude(),
+        });
+        if (!booking) {
+            throw new NotFoundException("Booking not found");
+        }
+        if (booking.clientId !== userId && booking.providerId !== userId) {
+            throw new ForbiddenException("Not allowed to view this booking");
+        }
+        return this.enrichBooking(booking);
     }
 
     async respondBooking(providerId: string, bookingId: string, dto: RespondBridgeBookingDto) {
@@ -308,37 +355,25 @@ export class BridgeService {
         const updated = await this.prisma.bridgeBooking.update({
             where: { id: bookingId },
             data: { status },
+            include: this.bookingInclude(),
         });
 
         if (status === BridgeBookingStatus.ACCEPTED) {
             await this.chatService.openMentorshipChatForBridgeBooking(bookingId);
         }
 
-        return updated;
+        return this.enrichBooking(updated);
     }
 
     async listMyBookings(userId: string) {
-        return this.prisma.bridgeBooking.findMany({
+        const rows = await this.prisma.bridgeBooking.findMany({
             where: {
                 OR: [{ clientId: userId }, { providerId: userId }],
             },
-            include: {
-                listing: true,
-                client: {
-                    select: {
-                        id: true,
-                        profile: { select: { name: true, avatarUrl: true } },
-                    },
-                },
-                provider: {
-                    select: {
-                        id: true,
-                        profile: { select: { name: true, avatarUrl: true } },
-                    },
-                },
-            },
+            include: this.bookingInclude(),
             orderBy: { createdAt: "desc" },
         });
+        return rows.map((row) => this.enrichBooking(row));
     }
 
     private async requireOwnedListing(ownerId: string, listingId: string) {
@@ -366,6 +401,9 @@ export class BridgeService {
         if (dto.type === BridgeListingType.EXPERTISE && dto.hourlyRate == null) {
             // soft: expertise can omit rate; OK for scaffold
         }
+        if (dto.type === BridgeListingType.GIG && dto.budgetAmount == null) {
+            throw new BadRequestException("budgetAmount is required for GIG listings");
+        }
         if (
             (dto.type === BridgeListingType.GIG || dto.type === BridgeListingType.PROJECT_HELP) &&
             dto.budgetAmount != null &&
@@ -386,5 +424,80 @@ export class BridgeService {
                 },
             },
         } as const;
+    }
+
+    private bookingInclude() {
+        return {
+            listing: true,
+            client: {
+                select: {
+                    id: true,
+                    email: true,
+                    profile: { select: { name: true, avatarUrl: true } },
+                },
+            },
+            provider: {
+                select: {
+                    id: true,
+                    email: true,
+                    profile: { select: { name: true, avatarUrl: true } },
+                },
+            },
+        } as const;
+    }
+
+    private resolveBookingFeeFields(
+        listing: {
+            type: BridgeListingType;
+            platformFeePercent: number;
+            currency: string;
+        },
+        grossAmount: number | null | undefined,
+    ) {
+        const isPaidGig =
+            listing.type === BridgeListingType.GIG ||
+            listing.type === BridgeListingType.PROJECT_HELP;
+
+        if (!isPaidGig || grossAmount == null || grossAmount <= 0) {
+            return {
+                platformFeePercent: null,
+                platformFeeAmount: null,
+                providerPayoutAmount: null,
+                currency: null,
+                settlementStatus: BridgeBookingSettlementStatus.NONE,
+            };
+        }
+
+        const breakdown = computeBridgeGigFee(
+            grossAmount,
+            listing.platformFeePercent,
+            listing.currency,
+        );
+
+        return {
+            platformFeePercent: breakdown.platformFeePercent,
+            platformFeeAmount: breakdown.platformFeeAmount,
+            providerPayoutAmount: breakdown.providerPayoutAmount,
+            currency: breakdown.currency,
+            settlementStatus: BridgeBookingSettlementStatus.PENDING,
+        };
+    }
+
+    private enrichBooking<T extends Record<string, unknown>>(booking: T) {
+        const feeBreakdown =
+            booking.platformFeeAmount != null && booking.providerPayoutAmount != null
+                ? {
+                      grossAmount: booking.agreedAmount,
+                      platformFeePercent: booking.platformFeePercent,
+                      platformFeeAmount: booking.platformFeeAmount,
+                      providerPayoutAmount: booking.providerPayoutAmount,
+                      currency: booking.currency,
+                  }
+                : null;
+
+        return {
+            ...booking,
+            feeBreakdown,
+        };
     }
 }

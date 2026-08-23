@@ -37,6 +37,17 @@ export class BridgeController {
         return successResponse(data, "Your Bridge listings retrieved");
     }
 
+    @Get("fee-policy")
+    @MakePublic()
+    @ApiOperation({
+        summary: "Bridge paid-gig platform fee policy",
+        description: "Small cut of gig worker payout (default 5%). Stripe settlement is separate.",
+    })
+    async feePolicy() {
+        const data = this.bridgeService.getFeePolicy();
+        return successResponse(data, "Bridge fee policy");
+    }
+
     @Get("bookings/me")
     @ValidateAuth()
     @ApiBearerAuth()
@@ -44,6 +55,32 @@ export class BridgeController {
     async myBookings(@GetUser("userId") userId: string) {
         const data = await this.bridgeService.listMyBookings(userId);
         return successResponse(data, "Your Bridge bookings retrieved");
+    }
+
+    @Get("bookings/:bookingId")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Get a Bridge booking with fee breakdown" })
+    async getBooking(
+        @GetUser("userId") userId: string,
+        @Param("bookingId") bookingId: string,
+    ) {
+        const data = await this.bridgeService.getBooking(userId, bookingId);
+        return successResponse(data, "Bridge booking retrieved");
+    }
+
+    @Patch("bookings/:bookingId/complete")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: "Mark an accepted Bridge booking completed (sets payout ready for settlement)",
+    })
+    async complete(
+        @GetUser("userId") userId: string,
+        @Param("bookingId") bookingId: string,
+    ) {
+        const data = await this.bridgeService.completeBooking(userId, bookingId);
+        return successResponse(data, "Bridge booking completed");
     }
 
     @Patch("bookings/:bookingId/respond")
@@ -74,7 +111,7 @@ export class BridgeController {
     @ValidateAuth()
     @ApiBearerAuth()
     @ApiOperation({
-        summary: "Request a booking on a Bridge gig / expertise listing (fee settlement later)",
+        summary: "Request a booking on a Bridge gig / expertise listing",
     })
     async book(
         @GetUser("userId") userId: string,

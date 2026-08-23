@@ -22,4 +22,6 @@ model VolunteerProject {
   updatedAt DateTime @updatedAt
 
   Endorsement Endorsement[]
+
+  sponsoredOpportunities SponsoredOpportunity[]
 }

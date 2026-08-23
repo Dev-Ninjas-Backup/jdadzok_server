@@ -1,0 +1,37 @@
+enum SponsoredTargetType {
+  VOLUNTEER_PROJECT
+  BRIDGE_LISTING
+}
+
+/// Corporate sponsorship of volunteer projects or Bridge listings (not Product↔Post DedicatedAd).
+model SponsoredOpportunity {
+  id String @id @default(uuid())
+
+  corporateMembershipId String
+  corporateMembership   CorporateMembership @relation(fields: [corporateMembershipId], references: [id], onDelete: Cascade)
+
+  targetType SponsoredTargetType
+
+  volunteerProjectId String?
+  volunteerProject   VolunteerProject? @relation(fields: [volunteerProjectId], references: [id], onDelete: Cascade)
+
+  bridgeListingId String?
+  bridgeListing   BridgeListing? @relation(fields: [bridgeListingId], references: [id], onDelete: Cascade)
+
+  title        String?
+  message      String? @db.Text
+  budgetAmount Float?
+
+  active   Boolean   @default(true)
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([corporateMembershipId])
+  @@index([targetType, active])
+  @@index([volunteerProjectId])
+  @@index([bridgeListingId])
+  @@map("sponsored_opportunities")
+}

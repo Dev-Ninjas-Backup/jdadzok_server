@@ -36,6 +36,8 @@ model CorporateMembership {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  sponsoredOpportunities SponsoredOpportunity[]
+
   @@index([tier])
   @@index([isActive])
   @@index([contactEmail])

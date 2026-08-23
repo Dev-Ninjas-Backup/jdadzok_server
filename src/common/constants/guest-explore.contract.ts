@@ -97,6 +97,16 @@ export const GUEST_PUBLIC_ROUTES: GuestPublicRoute[] = [
     },
     {
         method: "GET",
+        path: "/sponsored/opportunities",
+        description: "Discover corporate-sponsored volunteer projects and Bridge listings",
+    },
+    {
+        method: "GET",
+        path: "/sponsored/opportunities/:id",
+        description: "Sponsored opportunity detail",
+    },
+    {
+        method: "GET",
         path: "/explore/trending",
         description: "Trending NGOs, communities, and profiles",
     },

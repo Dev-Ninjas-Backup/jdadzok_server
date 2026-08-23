@@ -98,7 +98,7 @@ export class CreateBridgeListingDto {
     currency?: string;
 
     @ApiPropertyOptional({
-        description: "Scaffold platform fee % (cut of payout) — default 5",
+        description: "Platform fee % (cut of worker payout) — default 5",
         default: 5,
     })
     @IsOptional()

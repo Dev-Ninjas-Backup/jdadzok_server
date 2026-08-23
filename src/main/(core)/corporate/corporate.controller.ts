@@ -9,11 +9,16 @@ import {
     UpdateCorporateEsgReportDto,
     UpdateCorporateMembershipDto,
 } from "./dto/corporate-membership.dto";
+import { CreateSponsoredOpportunityDto } from "./dto/sponsored-opportunity.dto";
+import { SponsoredOpportunityService } from "./sponsored-opportunity.service";
 
 @ApiTags("Corporate CSR")
 @Controller("corporate")
 export class CorporateController {
-    constructor(private readonly corporateService: CorporateService) {}
+    constructor(
+        private readonly corporateService: CorporateService,
+        private readonly sponsoredService: SponsoredOpportunityService,
+    ) {}
 
     @Get("tiers")
     @MakePublic()
@@ -87,5 +92,47 @@ export class CorporateController {
         const isAdmin = role === Role.ADMIN || role === Role.SUPER_ADMIN;
         const data = await this.corporateService.updateEsgReport(id, userId, dto, isAdmin);
         return successResponse(data, "ESG report updated");
+    }
+
+    @Post("sponsorships")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: "Sponsor a volunteer project or Bridge listing",
+        description:
+            "Corporate CSR sponsorship — distinct from marketplace Product↔Post DedicatedAd.",
+    })
+    async createSponsorship(
+        @GetUser("userId") userId: string,
+        @GetUser("role") role: Role,
+        @Body() dto: CreateSponsoredOpportunityDto,
+    ) {
+        const data = await this.sponsoredService.create(userId, role, dto);
+        return successResponse(data, "Sponsored opportunity created");
+    }
+
+    @Get("sponsorships/me")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "List sponsorships for my corporate membership" })
+    async listMySponsorships(
+        @GetUser("userId") userId: string,
+        @GetUser("role") role: Role,
+    ) {
+        const data = await this.sponsoredService.listForMembership(userId, role);
+        return successResponse(data, "Sponsorships retrieved");
+    }
+
+    @Patch("sponsorships/:id/deactivate")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Deactivate a sponsorship" })
+    async deactivateSponsorship(
+        @Param("id") id: string,
+        @GetUser("userId") userId: string,
+        @GetUser("role") role: Role,
+    ) {
+        const data = await this.sponsoredService.deactivate(id, userId, role);
+        return successResponse(data, "Sponsorship deactivated");
     }
 }
