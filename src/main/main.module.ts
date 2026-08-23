@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AdminModule } from "src/(admin)/adminGroup.module";
 import { BridgeGroupModule } from "./(bridge)/bridge.group.module";
+import { TrainingGroupModule } from "./(training)/training.group.module";
 import { BuillQueueModule } from "./(buill-queue)/buill-queue.module";
 import { CoreGroupModule } from "./(core)/core.group.module";
 import { ExploreGroupModule } from "./(explore)/explore.group.module";
@@ -31,6 +32,7 @@ import { DonationModule } from "./donation/donation.module";
         PostsGroupModule,
         MarketplacesGroupModule,
         BridgeGroupModule,
+        TrainingGroupModule,
         ExploreGroupModule,
         PayGroupModule,
         BuillQueueModule,

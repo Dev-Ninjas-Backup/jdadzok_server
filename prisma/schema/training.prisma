@@ -1,0 +1,93 @@
+enum TrainingCourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TrainingCohortStatus {
+  OPEN
+  FULL
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingEnrollmentStatus {
+  PENDING
+  ENROLLED
+  COMPLETED
+  WITHDRAWN
+  CANCELLED
+}
+
+/// Course / workshop listings — separate from generic goods Product/Order.
+model TrainingCourse {
+  id String @id @default(uuid())
+
+  instructorId String
+  instructor   User   @relation("TrainingCourseInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String               @db.Text
+  skills      String[]
+  price       Float
+  currency    String                 @default("USD")
+  status      TrainingCourseStatus   @default(DRAFT)
+
+  cohorts TrainingCohort[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([instructorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("training_courses")
+}
+
+model TrainingCohort {
+  id String @id @default(uuid())
+
+  courseId String
+  course   TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  title      String?
+  startsAt   DateTime
+  endsAt     DateTime?
+  capacity   Int
+  enrolledCount Int @default(0)
+  status     TrainingCohortStatus @default(OPEN)
+
+  enrollments TrainingEnrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+  @@index([startsAt])
+  @@map("training_cohorts")
+}
+
+model TrainingEnrollment {
+  id String @id @default(uuid())
+
+  cohortId String
+  cohort   TrainingCohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("TrainingEnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  status      TrainingEnrollmentStatus @default(PENDING)
+  pricePaid   Float?
+  enrolledAt  DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cohortId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("training_enrollments")
+}

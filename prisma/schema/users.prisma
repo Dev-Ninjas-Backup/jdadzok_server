@@ -135,6 +135,9 @@ model User {
   bridgeBookingsAsProvider BridgeBooking[] @relation("BridgeBookingProvider")
   talentCandidateUnlocks TalentCandidateUnlock[] @relation("TalentCandidateUnlocks")
 
+  trainingCoursesInstructed TrainingCourse[] @relation("TrainingCourseInstructor")
+  trainingEnrollments       TrainingEnrollment[] @relation("TrainingEnrollmentStudent")
+
   @@index([email])
   @@index([capLevel])
   @@index([role])
