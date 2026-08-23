@@ -141,7 +141,7 @@ Marketing landing pages are static HTML in the June 26 folder (not served by thi
 | --- | --- | --- | --- |
 | `[x]` | Reputation-passport profile | Cap, impact, hours, mentees, earning level as headlines | `GET /user-profile/reputation-passport` (+ `/:userId`); mentees = distinct verified MENTORING counterparties; soft earning headline |
 | `[x]` | Personal dashboard | Own ad revenue, pending payout, trends, Cap bar, payout history | `src/main/dashboard/` controllers / services |
-| `[~]` | Recognition leaderboard | Rank by contribution (hours, mentorship, endorsements), not followers | Metrics / revenue leaderboard endpoints exist; contribution-vs-followers ranking not verified end-to-end |
+| `[x]` | Recognition leaderboard | Rank by contribution (hours, mentorship, endorsements), not followers | `GET /leaderboard/contribution`; sorts verified hours, mentoring hours, endorsements; excludes followers/activity/revenue |
 | `[x]` | Explore as a guest | Unauth browse of opportunities / impact; join prompt; identity actions locked | `GET /explore/guest/*` + contract; `@MakePublic()` on explore/Bridge browse; `guestMode` envelope + `lockedActions` |
 | `[x]` | Landing pages (individual / business) | Two marketing pages with cross-link, testimonials, pricing | **Static HTML** in June 26 folder (out of API scope). Backend supports related public content via `about-us`, `terms-and-conditions`, `privacy-policy` |
 
@@ -161,7 +161,7 @@ Backend readiness for each app screen. Frontend layout lives in `prototype.html`
 | `[x]` | 8.6 Member profile | Profile CRUD + metrics + volunteer/mentor opt-in + cap style/placement + reputation passport |
 | `[x]` | 8.7 Opportunity detail | Volunteer project detail + apply flow |
 | `[~]` | 8.8 Log a contribution | Hour logging requires `contributionType` (+ `contributionOther` when OTHER); self-report starts pending until endorsement | `PATCH /volunteer/log-hours` + endorsement queue APIs |
-| `[~]` | 8.9 Recognition leaderboard | Metrics exist; can filter hours by contribution type; contribution-vs-followers ranking still incomplete |
+| `[x]` | 8.9 Recognition leaderboard | `GET /leaderboard/contribution` — contribution-only ranking (hours, mentorship, endorsements) |
 | `[x]` | 8.10 The Bridge | `(bridge)` module: expertise / gig / project-help listings + Cap-weighted discover + booking scaffold |
 | `[x]` | 8.11 Explore as a guest | Guest contract + public browse APIs for opportunities, Bridge preview, impact |
 | `[x]` | 8.12 Corporate CSR dashboard | Corporate module + SDG/ESG report APIs; tier catalog |
@@ -237,14 +237,14 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 19. `[x]` Recruitment / talent-sourcing employer APIs
 20. `[x]` Training / course marketplace (or Bridge course type)
 21. `[x]` Anonymised impact-data export
-22. `[ ]` Leaderboard ranked strictly by contribution (hours / mentorship / endorsements)
+22. `[x]` Leaderboard ranked strictly by contribution (hours / mentorship / endorsements)
 
 ### Priority E — polish
 
 23. `[ ]` Soft-language API contracts for public Cap earnings (no hard % in consumer-facing payloads where brief forbids them; allow exact figures only on personal dashboard)
 24. `[ ]` Sync `synqulan-audit.html` summary strip with this document (optional)
 
-**Suggested next coding PR:** Priority D.22 — Leaderboard ranked strictly by contribution.
+**Suggested next coding PR:** Priority E.23 — Soft-language API contracts for public Cap earnings.
 
 ---
 
@@ -252,6 +252,7 @@ Ship in this order unless product re-prioritises. After each item: update checkb
 
 | Date | Change |
 | --- | --- |
+| 2026-08-23 | Priority D.22 — Contribution leaderboard `GET /leaderboard/contribution` (hours, mentorship, endorsements; not followers) |
 | 2026-08-23 | Priority D.21 — Anonymised impact export with k-anonymity; `/impact/export/*` for NGOs and Growth+ corporate |
 | 2026-08-23 | Priority D.20 — `(training)` course marketplace with cohorts, enrollment, and completion APIs |
 | 2026-08-23 | Priority D.19 — Employer talent search + unlock APIs; reputation-ranked candidates; member opt-in |

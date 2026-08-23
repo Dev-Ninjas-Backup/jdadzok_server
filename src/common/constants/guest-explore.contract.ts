@@ -107,6 +107,11 @@ export const GUEST_PUBLIC_ROUTES: GuestPublicRoute[] = [
     },
     {
         method: "GET",
+        path: "/leaderboard/contribution",
+        description: "Recognition leaderboard ranked by verified hours, mentoring, and endorsements",
+    },
+    {
+        method: "GET",
         path: "/explore/trending",
         description: "Trending NGOs, communities, and profiles",
     },
