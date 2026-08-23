@@ -3,6 +3,7 @@ import { CapRequirements, User, UserMetrics } from "@prisma/client";
 import { UserMetricsService } from "../../(users)/profile-metrics/user-metrics.service";
 import { CapLevel } from "../../../constants/enums";
 import { CapLevelRepository } from "./cap-lavel.repository";
+import { effectiveVolunteerHours } from "@common/utils/volunteer-hour.util";
 
 interface CapEligibilityResult {
     currentLevel: CapLevel;
@@ -85,7 +86,7 @@ export class CapLevelService {
 
         const earning = await this.getEffectiveAdSharePercentage(
             userWithMetrics.capLevel,
-            metrics!.volunteerHours,
+            effectiveVolunteerHours(metrics!),
         );
 
         return {
@@ -129,7 +130,7 @@ export class CapLevelService {
                 requirements: await this.repository.getCapRequirements("SKY_BLUE"),
                 missingRequirements: [],
                 activityScore: metrics.activityScore,
-                volunteerHours: metrics.volunteerHours,
+                volunteerHours: effectiveVolunteerHours(metrics),
             };
         }
 
@@ -168,7 +169,7 @@ export class CapLevelService {
             requirements,
             missingRequirements,
             activityScore: metrics.activityScore,
-            volunteerHours: metrics.volunteerHours,
+            volunteerHours: effectiveVolunteerHours(metrics),
         };
     }
 
@@ -178,6 +179,7 @@ export class CapLevelService {
         missingRequirements: string[],
     ): boolean {
         let meetsAll = true;
+        const bankHours = effectiveVolunteerHours(metrics);
 
         // Check activity score requirement
         if (
@@ -193,10 +195,10 @@ export class CapLevelService {
         // Check volunteer hours requirement
         if (
             requirements.minVolunteerHours &&
-            metrics.volunteerHours < requirements.minVolunteerHours
+            bankHours < requirements.minVolunteerHours
         ) {
             missingRequirements.push(
-                `Volunteer Hours: ${metrics.volunteerHours}/${requirements.minVolunteerHours}`,
+                `Verified Volunteer Hours (lifetime bank): ${Math.ceil(bankHours)}/${requirements.minVolunteerHours}`,
             );
             meetsAll = false;
         }
@@ -290,11 +292,12 @@ export class CapLevelService {
             progress += activityProgress;
         }
 
-        // Volunteer hours progress
+        // Volunteer hours progress (lifetime verified bank)
         if (nextRequirements.minVolunteerHours) {
             totalRequirements++;
+            const bankHours = effectiveVolunteerHours(metrics);
             const volunteerProgress = Math.min(
-                (metrics.volunteerHours / nextRequirements.minVolunteerHours) * 100,
+                (bankHours / nextRequirements.minVolunteerHours) * 100,
                 100,
             );
             progress += volunteerProgress;

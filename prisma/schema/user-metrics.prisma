@@ -18,8 +18,10 @@ model UserMetrics {
   currentMonthEarnings Float @default(0.0)
 
   // Volunteer metrics
-  volunteerHours    Int @default(0)
-  completedProjects Int @default(0)
+  volunteerHours    Int   @default(0)
+  /// Lifetime bank of verified hours aggregated across all projects / calls (feeds Black threshold).
+  lifetimeVerifiedVolunteerHours Float @default(0)
+  completedProjects Int   @default(0)
 
   // Activity score for cap level calculation
   activityScore Float @default(0.0)

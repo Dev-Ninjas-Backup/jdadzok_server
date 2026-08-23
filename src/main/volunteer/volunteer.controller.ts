@@ -15,6 +15,7 @@ import {
 } from "./dto/endorse-volunteer-hour.dto";
 import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.service";
 import { VolunteerHourCounterpartyService } from "./volunteer-hour-counterparty.service";
+import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 import {
     ConfirmCounterpartyHourDto,
     RejectCounterpartyHourDto,
@@ -28,6 +29,7 @@ export class VolunteerController {
         private readonly volunteerService: VolunteerService,
         private readonly hourEndorsementService: VolunteerHourEndorsementService,
         private readonly hourCounterpartyService: VolunteerHourCounterpartyService,
+        private readonly hoursBankService: VolunteerHoursBankService,
     ) {}
 
     @ApiOperation({ summary: "Create new volunteer projects for ngo" })
@@ -108,6 +110,18 @@ export class VolunteerController {
         return handleRequest(
             () => this.hourEndorsementService.listMyHours(user.id),
             "Volunteer hours retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "Lifetime verified hours bank (aggregated across projects) + Black threshold progress",
+    })
+    @Get("hours-bank")
+    getHoursBank(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hoursBankService.getBankStatus(user.id),
+            "Lifetime volunteer hours bank retrieved",
         );
     }
 

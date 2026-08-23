@@ -12,10 +12,14 @@ import {
 import { isCapLevelHigher, isPlatformAdmin } from "@common/utils/cap-level.util";
 import { counterpartyConfirmationComplete } from "@common/utils/volunteer-hour.util";
 import { VolunteerHourVerificationStatus } from "@prisma/client";
+import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 
 @Injectable()
 export class VolunteerHourEndorsementService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly hoursBankService: VolunteerHoursBankService,
+    ) {}
 
     async listMyHours(userId: string) {
         return this.prisma.volunteerHour.findMany({
@@ -93,10 +97,8 @@ export class VolunteerHourEndorsementService {
         const hour = await this.loadPendingSelfReportHour(hourId);
         await this.assertCanEndorse(endorserUserId, hour.loggedByUserId, hour.loggedByUser);
 
-        const capCreditHours = Math.ceil(hour.hours);
-
-        return this.prisma.$transaction(async (tx) => {
-            const updated = await tx.volunteerHour.update({
+        const updated = await this.prisma.$transaction(async (tx) => {
+            const row = await tx.volunteerHour.update({
                 where: { id: hourId },
                 data: {
                     verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
@@ -119,13 +121,11 @@ export class VolunteerHourEndorsementService {
                 },
             });
 
-            await tx.userMetrics.updateMany({
-                where: { userId: hour.loggedByUserId },
-                data: { volunteerHours: { increment: capCreditHours } },
-            });
-
-            return updated;
+            return row;
         });
+
+        await this.hoursBankService.syncLifetimeBank(hour.loggedByUserId);
+        return updated;
     }
 
     async rejectHour(hourId: string, endorserUserId: string, dto: RejectVolunteerHourDto) {

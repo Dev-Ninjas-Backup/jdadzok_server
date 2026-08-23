@@ -17,10 +17,14 @@ import {
     VolunteerHourSource,
     VolunteerHourVerificationStatus,
 } from "@prisma/client";
+import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 
 @Injectable()
 export class VolunteerHourCounterpartyService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly hoursBankService: VolunteerHoursBankService,
+    ) {}
 
     async listPendingCounterpartyConfirmation(counterpartyUserId: string) {
         return this.prisma.volunteerHour.findMany({
@@ -63,27 +67,20 @@ export class VolunteerHourCounterpartyService {
         const hour = await this.loadAwaitingCounterpartyHour(hourId, counterpartyUserId);
 
         const now = new Date();
-        const capCreditHours = Math.ceil(hour.hours);
 
         if (hour.source === VolunteerHourSource.MENTORSHIP_CALL) {
-            return this.prisma.$transaction(async (tx) => {
-                const updated = await tx.volunteerHour.update({
-                    where: { id: hourId },
-                    data: {
-                        counterpartyConfirmedAt: now,
-                        counterpartyConfirmationNote: dto.confirmationNote?.trim() || null,
-                        verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
-                        isVerified: true,
-                    },
-                });
-
-                await tx.userMetrics.updateMany({
-                    where: { userId: hour.loggedByUserId },
-                    data: { volunteerHours: { increment: capCreditHours } },
-                });
-
-                return updated;
+            const updated = await this.prisma.volunteerHour.update({
+                where: { id: hourId },
+                data: {
+                    counterpartyConfirmedAt: now,
+                    counterpartyConfirmationNote: dto.confirmationNote?.trim() || null,
+                    verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
+                    isVerified: true,
+                },
             });
+
+            await this.hoursBankService.syncLifetimeBank(hour.loggedByUserId);
+            return updated;
         }
 
         return this.prisma.volunteerHour.update({

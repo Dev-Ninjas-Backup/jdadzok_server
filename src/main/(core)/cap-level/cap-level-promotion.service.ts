@@ -16,6 +16,7 @@ import { EVENT_TYPES } from "@common/interface/events-name";
 import { CapLevelEvent } from "@common/interface/events-payload";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { CapLevel, CapPromotionAction, Role } from "@prisma/client";
+import { effectiveVolunteerHours } from "@common/utils/volunteer-hour.util";
 
 @Injectable()
 export class CapLevelPromotionService {
@@ -43,7 +44,11 @@ export class CapLevelPromotionService {
                 metrics: {
                     is: {
                         ...(blackReq.minVolunteerHours != null
-                            ? { volunteerHours: { gte: blackReq.minVolunteerHours } }
+                            ? {
+                                  lifetimeVerifiedVolunteerHours: {
+                                      gte: blackReq.minVolunteerHours,
+                                  },
+                              }
                             : {}),
                         ...(blackReq.minActivityScore != null
                             ? { activityScore: { gte: blackReq.minActivityScore } }
@@ -120,6 +125,10 @@ export class CapLevelPromotionService {
 
         await this.userMetricsServiceEnsure(userId);
         const metrics = await this.capLevelService.calculateCapEligibility(userId);
+        const bankHours = effectiveVolunteerHours({
+            lifetimeVerifiedVolunteerHours: user.metrics?.lifetimeVerifiedVolunteerHours,
+            volunteerHours: metrics.volunteerHours,
+        });
 
         if (!bypass) {
             this.assertSequentialOrDowngrade(fromLevel, targetLevel);
@@ -136,7 +145,11 @@ export class CapLevelPromotionService {
                 );
             }
 
-            this.assertMeetsRequirements(metrics, requirements, targetLevel);
+            this.assertMeetsRequirements(
+                { ...metrics, volunteerHours: bankHours },
+                requirements,
+                targetLevel,
+            );
 
             if (requirements.requiresVerification && !this.isAdminRole(actorRole)) {
                 throw new ForbiddenException(
@@ -158,7 +171,7 @@ export class CapLevelPromotionService {
             bypassVerification: bypass,
             bypassReason: dto.bypassReason?.trim() || null,
             reviewNotes: dto.reviewNotes?.trim() || null,
-            volunteerHours: metrics.volunteerHours,
+            volunteerHours: bankHours,
             activityScore: metrics.activityScore,
         });
     }

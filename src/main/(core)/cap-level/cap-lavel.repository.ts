@@ -55,9 +55,9 @@ export class CapLevelRepository {
             };
         }
 
-        // Add volunteer hours filter if required
+        // Add volunteer hours filter if required (lifetime verified bank)
         if (capRequirement.minVolunteerHours) {
-            whereConditions.metrics.volunteerHours = {
+            whereConditions.metrics.lifetimeVerifiedVolunteerHours = {
                 gte: capRequirement.minVolunteerHours,
             };
         }
