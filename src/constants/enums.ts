@@ -30,6 +30,12 @@ export const contributionType = [
 ] as const;
 export type ContributionType = (typeof contributionType)[number];
 
+export const volunteerHourVerificationStatus = ["PENDING", "VERIFIED", "REJECTED"] as const;
+export type VolunteerHourVerificationStatus = (typeof volunteerHourVerificationStatus)[number];
+
+export const volunteerHourSource = ["SELF_REPORT", "MENTORSHIP_CALL"] as const;
+export type VolunteerHourSource = (typeof volunteerHourSource)[number];
+
 export const orderStatus = [
     "PENDING",
     "PAID",

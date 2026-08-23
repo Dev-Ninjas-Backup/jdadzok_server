@@ -9,12 +9,20 @@ import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
+import {
+    EndorseVolunteerHourDto,
+    RejectVolunteerHourDto,
+} from "./dto/endorse-volunteer-hour.dto";
+import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.service";
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller("volunteer")
 export class VolunteerController {
-    constructor(private readonly volunteerService: VolunteerService) {}
+    constructor(
+        private readonly volunteerService: VolunteerService,
+        private readonly hourEndorsementService: VolunteerHourEndorsementService,
+    ) {}
 
     @ApiOperation({ summary: "Create new volunteer projects for ngo" })
     @Post("projects")
@@ -84,7 +92,57 @@ export class VolunteerController {
     ) {
         return handleRequest(
             () => this.volunteerService.logHours(id, dto, user.id),
-            "Updated Working Hour successfully",
+            "Self-reported hours logged (pending endorsement — not counted toward Cap until verified)",
+        );
+    }
+
+    @ApiOperation({ summary: "List your volunteer hour entries and verification status" })
+    @Get("my-hours")
+    getMyHours(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hourEndorsementService.listMyHours(user.id),
+            "Volunteer hours retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "List pending self-reported hours you can endorse (higher Cap than logger, or admin)",
+    })
+    @Get("hours/pending-endorsement")
+    listPendingEndorsement(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hourEndorsementService.listPendingForEndorsement(user.id),
+            "Pending endorsement queue retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "Endorse pending self-reported hours (higher-Cap member or admin) — credits Cap metrics",
+    })
+    @Patch("hours/:hourId/endorse")
+    endorseHours(
+        @Param("hourId") hourId: string,
+        @Body() dto: EndorseVolunteerHourDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourEndorsementService.endorseHour(hourId, user.id, dto),
+            "Volunteer hours endorsed and counted toward Cap",
+        );
+    }
+
+    @ApiOperation({ summary: "Reject pending self-reported hours" })
+    @Patch("hours/:hourId/reject")
+    rejectHours(
+        @Param("hourId") hourId: string,
+        @Body() dto: RejectVolunteerHourDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourEndorsementService.rejectHour(hourId, user.id, dto),
+            "Volunteer hours rejected",
         );
     }
 

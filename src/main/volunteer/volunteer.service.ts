@@ -7,7 +7,7 @@ import {
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
-import { ApplicationStatus, ContributionType, Role } from "@prisma/client";
+import { ApplicationStatus, ContributionType, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
 import {
@@ -182,6 +182,9 @@ export class VolunteerService {
                     contributionType: dto.contributionType,
                     contributionOther,
                     note: `Worked from ${checkIn.toISOString()} to ${checkOut.toISOString()}`,
+                    source: VolunteerHourSource.SELF_REPORT,
+                    verificationStatus: VolunteerHourVerificationStatus.PENDING,
+                    isVerified: false,
                 },
             }),
         ]);
@@ -204,18 +207,6 @@ export class VolunteerService {
                 confirmedById: userId,
             },
         });
-
-        // Auto endorsement after COMPLETED
-        if (dto.status === ApplicationStatus.ACCEPTED) {
-            await this.prisma.endorsement.create({
-                data: {
-                    fromUserId: userId,
-                    toUserId: app.volunteerId,
-                    message: dto.completionNote || "Excellent volunteer work!",
-                    projectId: app.projectId,
-                },
-            });
-        }
 
         return updated;
     }

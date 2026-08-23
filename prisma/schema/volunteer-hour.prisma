@@ -8,13 +8,24 @@ model VolunteerHour {
   loggedByUser   User                  @relation(fields: [loggedByUserId], references: [id])
   hours          Float
   isVerified     Boolean               @default(false)
+  /// Self-reported hours start PENDING; Cap metrics increment only after endorsement or mentorship auto-verify.
+  verificationStatus VolunteerHourVerificationStatus @default(PENDING)
+  source         VolunteerHourSource   @default(SELF_REPORT)
+  endorsedByUserId String?
+  endorsedByUser   User?               @relation("VolunteerHourEndorser", fields: [endorsedByUserId], references: [id], onDelete: SetNull)
+  endorsedAt     DateTime?
+  rejectionNote  String?               @db.Text
   /// Mentoring | advice | project | teaching | charity | Other (+ free-text)
   contributionType  ContributionType?
   contributionOther String?            @db.Text
   note           String?               @db.Text
   createdAt      DateTime              @default(now())
 
+  endorsement Endorsement?
+
   @@index([loggedByUserId])
   @@index([applicationId])
   @@index([contributionType])
+  @@index([verificationStatus])
+  @@index([endorsedByUserId])
 }

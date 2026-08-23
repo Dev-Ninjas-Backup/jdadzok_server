@@ -237,6 +237,17 @@ enum VolunteerStatus {
   COMPLETED
 }
 
+enum VolunteerHourVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VolunteerHourSource {
+  SELF_REPORT
+  MENTORSHIP_CALL
+}
+
 enum WithdrawStatus {
   PENDING
   PROCESSING

@@ -16,6 +16,10 @@ model Endorsement {
   projectId String?
   project   VolunteerProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
+  /// When set, this endorsement verified a self-reported VolunteerHour for Cap credit
+  volunteerHourId String?        @unique
+  volunteerHour   VolunteerHour? @relation(fields: [volunteerHourId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

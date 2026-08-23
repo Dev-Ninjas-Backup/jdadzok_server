@@ -106,8 +106,9 @@ model User {
   NotificationToggle   NotificationToggle[]
   userNotifications    UserNotification[]
   VolunteerCompletion  VolunteerCompletion[]
-  VolunteerHour        VolunteerHour[]
-  VolunteerApplication VolunteerApplication[] @relation("ConfirmedByNgo")
+  VolunteerHour              VolunteerHour[]
+  endorsedVolunteerHours     VolunteerHour[]        @relation("VolunteerHourEndorser")
+  VolunteerApplication       VolunteerApplication[] @relation("ConfirmedByNgo")
 
  
   // activityScores ActivityScore[]
