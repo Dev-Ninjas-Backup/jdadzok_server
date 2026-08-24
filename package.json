@@ -32,6 +32,7 @@
         "prisma:format": "npx prisma format",
         "prod": "bash ./scripts.sh",
         "db:seed": "tsx prisma/seed.ts",
+        "db:seed:demo": "tsx prisma/seed-demo.ts",
         "seed:cap": "tsx src/scripts/seed-cap-requirements.ts",
         "postinstall": "npx prisma generate"
     },
