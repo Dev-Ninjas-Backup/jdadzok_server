@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 import path from "path";
+import { DemoDummySeed } from "./seeds/demo-dummy.seed";
 import { Seeds } from "./seeds/multiverse-seeds";
 
 // Explicitly load environment variables
@@ -18,6 +19,7 @@ async function main() {
     await seed.aboutUs();
     await seed.privacyPolicy();
     await seed.termsAndConditions();
+    await new DemoDummySeed(prisma).run();
     // ============LIST OF SEED END============= //
 
     console.info("===============🌱 Database Seed successfully 😍===============");
