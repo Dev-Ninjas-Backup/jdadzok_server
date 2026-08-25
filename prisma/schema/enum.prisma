@@ -267,4 +267,18 @@ enum WithdrawStatus {
   FAILED
 }
 
+/// Account-fraud vendor decision (plug-in Sift / SEON / Castle — Issue #28).
+enum FraudDecision {
+  ALLOW
+  CHALLENGE
+  QUEUE
+  REJECT
+}
+
+enum FraudEventType {
+  STRIPE_ONBOARDING
+  PAYOUT
+  ACCOUNT_CHECK
+}
+
 // ENUMS_END

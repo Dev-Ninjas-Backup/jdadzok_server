@@ -140,6 +140,9 @@ model User {
 
   impactDataExportLogs ImpactDataExportLog[] @relation("ImpactExportRequester")
 
+  // Account-fraud vendor checks (Sift / SEON / Castle — optional P3)
+  fraudChecks FraudCheck[]
+
   @@index([email])
   @@index([capLevel])
   @@index([role])

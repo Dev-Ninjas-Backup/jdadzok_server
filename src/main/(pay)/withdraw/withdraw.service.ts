@@ -1,7 +1,13 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { QUEUE_JOB_NAME } from "@module/(buill-queue)/constants";
+import { FraudService } from "@module/(abuse)/fraud/fraud.service";
 import { InjectQueue } from "@nestjs/bullmq";
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    Optional,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
 import Stripe from "stripe";
@@ -15,6 +21,7 @@ export class WithdrawService {
         private config: ConfigService,
         @InjectQueue(QUEUE_JOB_NAME.WITHDRAW.WITHDRAW_QUEUE)
         private withdrawQueue: Queue,
+        @Optional() private readonly fraudService?: FraudService,
     ) {
         const secretKey = process.env.STRIPE_SECRET;
         if (!secretKey) throw new Error("STRIPE_SECRET not configured");
@@ -77,6 +84,7 @@ export class WithdrawService {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             select: {
+                email: true,
                 stripeAccountId: true,
                 profile: {
                     select: {
@@ -88,6 +96,19 @@ export class WithdrawService {
 
         if (!user?.stripeAccountId) {
             throw new BadRequestException("User has no Stripe Express Account");
+        }
+
+        // P3 payout fraud check (no-op when ABUSE_FRAUD_PROVIDER=off)
+        if (this.fraudService && user.email) {
+            try {
+                await this.fraudService.evaluatePayout({
+                    userId,
+                    email: user.email,
+                    amountCents: Math.round(dto.amount * 100),
+                });
+            } catch (err) {
+                if (err instanceof ForbiddenException) throw err;
+            }
         }
 
         // // Check minimum balance

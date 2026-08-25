@@ -1,0 +1,31 @@
+/// Vendor fraud assessment history (Sift / SEON / Castle plug-in scores).
+/// Postgres remains system of record; vendors never replace Cap / Connect.
+model FraudCheck {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventType FraudEventType
+  provider  String
+  /// Normalized 0–100 risk (higher = riskier). Vendor raw scores are mapped in adapters.
+  score     Float
+  decision  FraudDecision
+
+  vendorRef String?
+  /// Non-PII vendor labels / reason codes only (no full payloads with secrets).
+  labels    Json?
+  reason    String?
+
+  /// Admin override path (clear / acknowledge queue).
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([decision])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("fraud_checks")
+}

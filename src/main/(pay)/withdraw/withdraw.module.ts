@@ -1,4 +1,5 @@
 import { QUEUE_JOB_NAME } from "@module/(buill-queue)/constants";
+import { FraudModule } from "@module/(abuse)/fraud/fraud.module";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { WithdrawController } from "./withdraw.controller";
@@ -8,6 +9,7 @@ import { WithdrawService } from "./withdraw.service";
 
 @Module({
     imports: [
+        FraudModule,
         BullModule.registerQueue({
             name: QUEUE_JOB_NAME.WITHDRAW.WITHDRAW_QUEUE,
         }),

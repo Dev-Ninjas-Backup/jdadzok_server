@@ -1,10 +1,18 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+    ForbiddenException,
+    Injectable,
+    Logger,
+    NotFoundException,
+    Optional,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Stripe from "stripe";
 
 import { PaymentStatus } from "@prisma/client";
 import { ApiResponse } from "./utils/api-response";
+import { FraudService } from "@module/(abuse)/fraud/fraud.service";
+
 @Injectable()
 export class StripeService {
     private readonly logger = new Logger(StripeService.name);
@@ -14,13 +22,14 @@ export class StripeService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
+        @Optional() private readonly fraudService?: FraudService,
     ) {
         const stripeSecret = this.configService.getOrThrow<string>("STRIPE_SECRET");
         this.webhookSecret = this.configService.getOrThrow<string>("STRIPE_WEBHOOK_SECRET");
         this.stripe = new Stripe(stripeSecret);
     }
 
-    async createExpressAccount(userId: string) {
+    async createExpressAccount(userId: string, ip?: string) {
         try {
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
@@ -31,6 +40,20 @@ export class StripeService {
             });
 
             if (!user) throw new NotFoundException("User not found");
+
+            // P3 account-fraud vendor check (no-op when ABUSE_FRAUD_PROVIDER=off)
+            if (this.fraudService) {
+                try {
+                    await this.fraudService.evaluateStripeOnboarding({
+                        userId: user.id,
+                        email: user.email,
+                        ip,
+                    });
+                } catch (err) {
+                    if (err instanceof ForbiddenException) throw err;
+                    this.logger.warn(`Fraud check skipped due to error: ${String(err)}`);
+                }
+            }
 
             const account = await this.stripe.accounts.create({
                 type: "express",
@@ -57,6 +80,7 @@ export class StripeService {
 
             return ApiResponse.success("Stripe account created", { url: link.url });
         } catch (error) {
+            if (error instanceof ForbiddenException) throw error;
             this.logger.error(error);
             return ApiResponse.error(
                 "Stripe account creation failed",

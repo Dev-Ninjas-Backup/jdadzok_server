@@ -158,7 +158,7 @@ Request → NestJS guard/interceptor → Vendor API (score)
 Admin dashboard → list flagged users/content → ban / clear
 ```
 
-Feature flags: `ABUSE_BOT_PROVIDER`, `ABUSE_EMAIL_PROVIDER`, `ABUSE_CONTENT_PROVIDER`.
+Feature flags: `ABUSE_BOT_PROVIDER`, `ABUSE_EMAIL_PROVIDER`, `ABUSE_CONTENT_PROVIDER`, `ABUSE_FRAUD_PROVIDER`.
 
 ### 3.6 What the client must provide / approve
 
@@ -195,6 +195,8 @@ Expect **monthly SaaS fees** that scale with search operations and moderation AP
 | **P2** | Index Bridge / orgs; AI ranking SKU if purchased; guest-safe search | Bridge data model; privacy sign-off |
 | **P3** | Stronger fraud vendor if payout abuse appears | Monetisation volume |
 
+**P3 engineering (2026-08-25, Issue #28):** Feature-flagged NestJS fraud module with **Sift / SEON / Castle / off / memory** adapters. Hooks: Stripe Express onboarding (`POST /stripe/create-account`) and withdraw (`requestWithdraw`). Persists `FraudCheck` rows for admin review (`GET /abuse/fraud/checks`). Default `ABUSE_FRAUD_PROVIDER=off` until client keys + volume warrant enabling. Recommended first commercial pick: **SEON** (swap Sift/Castle if preferred). No custom ML.
+
 No phase requires training a custom Synqulan ML model.
 
 ---
@@ -217,6 +219,14 @@ Engineering notes (2026-08-25): see `updates/2026-08-25-search-vendor-issue-26.m
 - [ ] Spam-like post/message is blocked or queued per policy  
 - [ ] Admin can see risk score / moderation labels and ban  
 - [ ] Mutual Connect requirement unchanged (still enforced server-side when that backlog item ships)
+
+### Account fraud (P3 — optional)
+
+- [x] Feature-flagged fraud vendor adapters (Sift / SEON / Castle / off / memory) — Issue #28  
+- [x] Stripe onboarding + withdraw evaluate vendor score; REJECT can block (`ABUSE_FRAUD_AUTO_REJECT`)  
+- [x] Scores persisted (`FraudCheck`); admin list + clear override path  
+- [ ] Client chooses commercial vendor + keys when monetisation volume warrants enabling  
+- [ ] Product signs off auto-block vs queue thresholds (`ABUSE_FRAUD_*_SCORE`)
 
 ---
 
@@ -245,6 +255,7 @@ Until (1)–(3) are chosen, engineering can only stub feature-flagged adapters.
 
 | Date | Change |
 | --- | --- |
+| 2026-08-25 | P3 engineering: Sift/SEON/Castle/memory/off fraud adapters; Stripe onboarding + withdraw hooks; `FraudCheck` + admin APIs (Issue #28) |
 | 2026-08-25 | Unified search expanded: Bridge + NGOs + communities + public posts (all entity types by default) |
 | 2026-08-25 | P1 engineering: Typesense/Algolia/memory/off adapters; member + opportunity sync; `GET /search` + admin reindex (Issue #26) |
 | 2026-07-27 | Initial client doc: AI search + spam/fake-account detection via plug-in services only |

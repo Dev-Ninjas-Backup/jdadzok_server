@@ -1,0 +1,27 @@
+
+> jdadzok_server@1.6.0 test:fraud
+> tsx "src/main/(abuse)/fraud/__tests__/fraud.issue-28.test.ts"
+
+
+Issue #28 — Fraud vendor P3 self-test
+
+  PASS  factory: ABUSE_FRAUD_PROVIDER=off → OffFraudProvider (0ms)
+[Nest] 103433  - 08/25/2026, 10:55:23 AM    WARN [FraudProviderFactory] ABUSE_FRAUD_PROVIDER=sift but SIFT_API_KEY missing — falling back to off
+  PASS  factory: sift without key falls back to off (1ms)
+[Nest] 103433  - 08/25/2026, 10:55:23 AM    WARN [FraudProviderFactory] ABUSE_FRAUD_PROVIDER=seon but SEON_API_KEY missing — falling back to off
+  PASS  factory: seon without key falls back to off (0ms)
+[Nest] 103433  - 08/25/2026, 10:55:23 AM    WARN [FraudProviderFactory] ABUSE_FRAUD_PROVIDER=castle but CASTLE_API_SECRET missing — falling back to off
+  PASS  factory: castle without key falls back to off (0ms)
+[Nest] 103433  - 08/25/2026, 10:55:23 AM     LOG [FraudProviderFactory] Using in-memory fraud provider (local/CI)
+  PASS  factory: memory → MemoryFraudProvider (0ms)
+[Nest] 103433  - 08/25/2026, 10:55:23 AM    WARN [FraudProviderFactory] Unknown ABUSE_FRAUD_PROVIDER="custom-ml" — using off
+  PASS  factory: unknown provider → off (0ms)
+  PASS  policy: score maps to ALLOW / CHALLENGE / QUEUE / REJECT (0ms)
+  PASS  off provider always returns score 0 (0ms)
+  PASS  memory: low-risk email stays low (0ms)
+  PASS  memory: fraud email maps to reject band (0ms)
+  PASS  memory: risky email maps to queue band (0ms)
+  PASS  memory: large payout elevates score (0ms)
+  PASS  no custom ML — only plug-in provider names exist (1ms)
+
+13/13 passed

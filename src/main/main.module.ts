@@ -20,6 +20,7 @@ import { VolunteerModule } from "./volunteer/volunteer.module";
 import { StripeModule } from "./stripe/stripe.module";
 import { DonationModule } from "./donation/donation.module";
 import { SearchModule } from "./(search)/search.module";
+import { FraudModule } from "./(abuse)/fraud/fraud.module";
 
 @Global()
 @Module({
@@ -41,6 +42,7 @@ import { SearchModule } from "./(search)/search.module";
         MetricsGroupModule,
         VolunteerModule,
         SearchModule,
+        FraudModule,
         AdminModule,
         StripeModule,
         DonationModule,

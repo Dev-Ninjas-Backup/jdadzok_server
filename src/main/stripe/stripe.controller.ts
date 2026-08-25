@@ -7,12 +7,15 @@ import {
     Headers,
     HttpCode,
     HttpStatus,
+    Ip,
     Post,
+    Req,
     UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { VerifiedUser } from "@type/shared.types";
 import { StripeService } from "./stripe.service";
+import { Request } from "express";
 
 @Controller("stripe")
 export class StripeController {
@@ -21,8 +24,10 @@ export class StripeController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @Post("create-account")
-    createAccount(@GetVerifiedUser() user: VerifiedUser) {
-        return this.stripeService.createExpressAccount(user.id);
+    createAccount(@GetVerifiedUser() user: VerifiedUser, @Req() req: Request, @Ip() ip: string) {
+        const clientIp =
+            (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || ip || undefined;
+        return this.stripeService.createExpressAccount(user.id, clientIp);
     }
 
     @ApiBearerAuth()
