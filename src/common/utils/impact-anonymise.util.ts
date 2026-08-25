@@ -1,11 +1,11 @@
 /** Minimum distinct subjects in a bucket before it may appear in exports (k-anonymity). */
 export const DEFAULT_IMPACT_K_ANONYMITY = 5;
 
-export type ImpactBucket = {
+export interface ImpactBucket {
     key: string;
     hours: number;
     subjectCount: number;
-};
+}
 
 export type AnonymisedImpactBucket =
     | {
@@ -63,7 +63,7 @@ function roundHours(value: number): number {
 }
 
 export function aggregateHoursByKey<T extends string>(
-    rows: Array<{ key: T; hours: number; subjectId: string }>,
+    rows: { key: T; hours: number; subjectId: string }[],
 ): ImpactBucket[] {
     const map = new Map<string, { hours: number; subjects: Set<string> }>();
 
@@ -86,7 +86,7 @@ export function aggregateHoursByKey<T extends string>(
 export function aggregateSdgGoals(
     goalSets: number[][],
     minSize = DEFAULT_IMPACT_K_ANONYMITY,
-): Array<{ goal: number; alignedOrgCount: number | "suppressed" }> {
+): { goal: number; alignedOrgCount: number | "suppressed" }[] {
     const counts = new Map<number, number>();
     for (const goals of goalSets) {
         for (const goal of goals) {

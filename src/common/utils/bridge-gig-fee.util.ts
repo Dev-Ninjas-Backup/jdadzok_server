@@ -1,13 +1,13 @@
 /** Default platform cut on Bridge paid gigs (June 26 — small fee on worker payout). */
 export const DEFAULT_BRIDGE_GIG_FEE_PERCENT = 5;
 
-export type BridgeGigFeeBreakdown = {
+export interface BridgeGigFeeBreakdown {
     grossAmount: number;
     platformFeePercent: number;
     platformFeeAmount: number;
     providerPayoutAmount: number;
     currency: string;
-};
+}
 
 export function computeBridgeGigFee(
     grossAmount: number,

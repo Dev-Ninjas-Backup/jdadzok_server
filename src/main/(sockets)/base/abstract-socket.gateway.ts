@@ -228,7 +228,7 @@ export abstract class BaseSocketGateway
     protected async joinUserSocketsToRoom(userId: string, roomId: string): Promise<void> {
         const userSockets = this.clients.get(userId);
         if (!userSockets || userSockets.size === 0) return;
-        await Promise.all([...userSockets].map((socket) => socket.join(roomId)));
+        await Promise.all([...userSockets].map(async (socket) => socket.join(roomId)));
     }
 
     protected emitToRoom(roomId: string, event: string, data: any, excludeSocketId?: string): void {

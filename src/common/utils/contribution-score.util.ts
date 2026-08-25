@@ -1,8 +1,8 @@
-export type ContributionSignals = {
+export interface ContributionSignals {
     verifiedHours: number;
     verifiedMentoringHours: number;
     endorsementsReceived: number;
-};
+}
 
 export type ContributionSortField = "combined" | "hours" | "mentorship" | "endorsements";
 

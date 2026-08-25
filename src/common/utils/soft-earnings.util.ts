@@ -4,14 +4,14 @@ import {
     capEarningLevelHeadline,
 } from "@common/utils/cap-earning-headline.util";
 
-type CapEarningSnapshot = {
+interface CapEarningSnapshot {
     effectiveSharePercentage: number;
     nominalSharePercentage: number;
     earningAtRedRate: boolean;
     blackVolunteerHoursRequired: number | null;
-};
+}
 
-type CapStatusForSoftMapping = {
+interface CapStatusForSoftMapping {
     user: { id: string };
     currentLevel: CapLevel;
     nextLevel: CapLevel | null;
@@ -21,7 +21,7 @@ type CapStatusForSoftMapping = {
     currentRequirements: CapRequirements | null;
     nextRequirements: CapRequirements | null;
     metrics: UserMetrics | null;
-};
+}
 
 export function sanitizeCapRequirementsForPublic(
     requirements: CapRequirements | null,
