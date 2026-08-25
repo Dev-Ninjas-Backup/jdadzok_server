@@ -8,6 +8,7 @@ import {
     ContributionType,
     LiveChat,
     LiveChatContext,
+    LiveMessageStatus,
 } from "@prisma/client";
 import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
 import { CreateMessageDto } from "./dto/create.message.dto";
@@ -331,43 +332,67 @@ export class ChatService {
             }
         }
 
-        return this.prisma.liveMessage.create({
-            data: {
-                chatId,
-                senderId,
-                content: dto.content,
-                mediaUrl: dto.mediaUrl,
-                mediaType: dto.mediaType,
-            },
-            include: {
-                sender: {
-                    select: {
-                        id: true,
-                        email: true,
-                        role: true,
-                        isVerified: true,
-                        profile: { select: { name: true, avatarUrl: true } },
-                    },
+        const clientMessageId = dto.clientMessageId?.trim() || undefined;
+        const messageInclude = {
+            sender: {
+                select: {
+                    id: true,
+                    email: true,
+                    role: true,
+                    isVerified: true,
+                    profile: { select: { name: true, avatarUrl: true } },
                 },
-                chat: {
-                    include: {
-                        participants: {
-                            include: {
-                                user: {
-                                    select: {
-                                        id: true,
-                                        email: true,
-                                        role: true,
-                                        isVerified: true,
-                                        profile: { select: { name: true, avatarUrl: true } },
-                                    },
+            },
+            chat: {
+                include: {
+                    participants: {
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    role: true,
+                                    isVerified: true,
+                                    profile: { select: { name: true, avatarUrl: true } },
                                 },
                             },
                         },
                     },
                 },
             },
-        });
+        } as const;
+
+        if (clientMessageId) {
+            const existing = await this.prisma.liveMessage.findFirst({
+                where: { chatId, senderId, clientMessageId },
+                include: messageInclude,
+            });
+            if (existing) return existing;
+        }
+
+        try {
+            return await this.prisma.liveMessage.create({
+                data: {
+                    chatId,
+                    senderId,
+                    content: dto.content,
+                    mediaUrl: dto.mediaUrl,
+                    mediaType: dto.mediaType,
+                    clientMessageId,
+                },
+                include: messageInclude,
+            });
+        } catch (err) {
+            const code = (err as { code?: string })?.code;
+            if (clientMessageId && code === "P2002") {
+                const existing = await this.prisma.liveMessage.findFirst({
+                    where: { chatId, senderId, clientMessageId },
+                    include: messageInclude,
+                });
+                if (existing) return existing;
+            }
+            throw err;
+        }
     }
 
     @HandleError("Failed to mark message as read", "message")
@@ -394,6 +419,14 @@ export class ChatService {
                 liveChatId: message.chatId,
             },
             update: { readAt: new Date() },
+        });
+    }
+
+    @HandleError("Failed to mark message delivered", "message")
+    async markDelivered(messageId: string) {
+        return this.prisma.liveMessage.updateMany({
+            where: { id: messageId, status: LiveMessageStatus.SENT },
+            data: { status: LiveMessageStatus.DELIVERED },
         });
     }
 
@@ -458,11 +491,42 @@ export class ChatService {
     }
 
     @HandleError("Failed to get messages", "chat")
-    async getMessages(chatId: string) {
-        const messages = await this.prisma.liveMessage.findMany({
-            where: { chatId },
-            orderBy: { createdAt: "desc" },
+    async getMessages(chatId: string, userId: string, opts?: { cursor?: string; limit?: number }) {
+        const chat = await this.prisma.liveChat.findUnique({
+            where: { id: chatId },
+            select: { id: true, participants: { select: { userId: true } } },
+        });
 
+        if (!chat) {
+            throw new NotFoundException("Chat not found");
+        }
+
+        const isParticipant = chat.participants.some((p) => p.userId === userId);
+        if (!isParticipant) {
+            throw new ForbiddenException("You are not a participant in this chat");
+        }
+
+        const take = Math.min(Math.max(opts?.limit ?? 50, 1), 100);
+        let cursorCreatedAt: Date | undefined;
+
+        if (opts?.cursor) {
+            const cursorMessage = await this.prisma.liveMessage.findUnique({
+                where: { id: opts.cursor },
+                select: { id: true, chatId: true, createdAt: true },
+            });
+            if (!cursorMessage || cursorMessage.chatId !== chatId) {
+                throw new NotFoundException("Cursor message not found in this chat");
+            }
+            cursorCreatedAt = cursorMessage.createdAt;
+        }
+
+        const rows = await this.prisma.liveMessage.findMany({
+            where: {
+                chatId,
+                ...(cursorCreatedAt ? { createdAt: { lt: cursorCreatedAt } } : {}),
+            },
+            orderBy: { createdAt: "desc" },
+            take: take + 1,
             include: {
                 sender: {
                     select: {
@@ -479,8 +543,15 @@ export class ChatService {
                 },
             },
         });
+
+        const hasMore = rows.length > take;
+        const messages = hasMore ? rows.slice(0, take) : rows;
+        const nextCursor = hasMore ? messages[messages.length - 1]?.id ?? null : null;
+
         return {
             messages,
+            nextCursor,
+            limit: take,
         };
     }
 

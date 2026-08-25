@@ -461,8 +461,10 @@ Use `privateEarnings` / `privateSummary` blocks from cap status for exact figure
 | Inbox | `GET /chat/my?context=GENERAL` or `MENTORSHIP` |
 | Start general chat | `POST /chat/private` |
 | Start mentorship chat | `POST /chat/mentorship/private` |
-| Messages | `GET /chat/:chatId/messages` |
-| Send (HTTP fallback) | `POST /chat/:chatId/messages` |
+| Messages | `GET /chat/:chatId/messages?cursor=&limit=` (default `limit=50`, max 100; `cursor` = last message id) |
+| Send (HTTP fallback) | `POST /chat/:chatId/messages` body may include `clientMessageId` for idempotent retries |
+
+HTTP send also emits the same socket events as live send (`chat:message_receive`, `chat:message_sent`, and `chat:message_delivered` when the receiver is connected).
 
 **WebSocket (real-time):**
 
@@ -473,10 +475,19 @@ Auth: auth: { token: '<jwt>' }
       OR Authorization: Bearer <jwt>
 ```
 
-**Events:**
+**Event names use underscores after the namespace prefix** (`chat:message_send`), **not extra colons** (`chat:message:send`).
 
-- Emit: `chat:message_send`
-- Listen: `chat:message_receive`, `chat:message_sent`, `error`
+| Direction | Event | When |
+|-----------|--------|------|
+| Emit | `chat:message_send` | Send (payload: `receiverId`, optional `context`, `content` / media, optional `clientMessageId`) |
+| Listen | `chat:message_receive` | Incoming message on the receiver device |
+| Listen | `chat:message_sent` | Ack to sender (HTTP and socket paths) |
+| Listen | `chat:message_delivered` | Receiver device was online and got the message |
+| Emit / listen | `chat:message_read` | Mark / notify read |
+| Emit / listen | `chat:typing_start` / `chat:typing_stop` | Typing indicators |
+| Emit | `user:get_status` / `user:set_status` | Presence |
+| Listen | `user:status` / `user:status_changed` | Presence |
+| Listen | `error` | Send failures |
 
 Uncomment `initServices()` / `SocketService` in `main.dart` when implementing.
 

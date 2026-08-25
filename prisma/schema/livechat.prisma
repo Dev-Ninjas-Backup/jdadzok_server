@@ -101,6 +101,9 @@ model LiveMessage {
   mediaUrl  String?
   mediaType LiveMediaType?
 
+  /// Client-generated id for idempotent mobile retries (unique per chat+sender when set).
+  clientMessageId String?
+
   status LiveMessageStatus @default(SENT)
 
   readBy LiveMessageRead[]
@@ -111,6 +114,7 @@ model LiveMessage {
   @@index([chatId])
   @@index([senderId])
   @@index([createdAt])
+  @@index([chatId, senderId, clientMessageId])
   @@map("live_messages")
 }
 

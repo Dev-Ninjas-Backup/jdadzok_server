@@ -21,7 +21,11 @@ export interface SocketEventMap {
     // Chat Events
     [SOCKET_EVENTS.CHAT.MESSAGE_SEND]: ChatMessage;
     [SOCKET_EVENTS.CHAT.MESSAGE_RECEIVE]: ChatMessage;
+    [SOCKET_EVENTS.CHAT.MESSAGE_SENT]: ChatMessage;
+    [SOCKET_EVENTS.CHAT.MESSAGE_DELIVERED]: ChatMessage;
     [SOCKET_EVENTS.CHAT.MESSAGE_TYPING]: ChatTyping;
+    [SOCKET_EVENTS.CHAT.TYPING_START]: ChatTyping;
+    [SOCKET_EVENTS.CHAT.TYPING_STOP]: ChatTyping;
 
     // Post Events
     [SOCKET_EVENTS.POST.CREATE]: PostEvent;

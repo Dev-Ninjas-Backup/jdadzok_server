@@ -191,6 +191,11 @@ export abstract class BaseSocketGateway
         return true;
     }
 
+    protected userHasSockets(userId: string): boolean {
+        const userSockets = this.clients.get(userId);
+        return Boolean(userSockets && userSockets.size > 0);
+    }
+
     protected async emitToUserViaClientsMap(
         userId: string,
         event: string,

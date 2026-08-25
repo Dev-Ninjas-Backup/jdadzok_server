@@ -8,15 +8,19 @@ export const SOCKET_EVENTS = {
         USER_STATUS: "user:status",
     },
 
-    // Chat Events
+    // Chat Events — underscores after the namespace (chat:message_send), not extra colons
     CHAT: {
-        MESSAGE_SEND: "chat:message:send",
-        MESSAGE_RECEIVE: "chat:message:receive",
+        MESSAGE_SEND: "chat:message_send",
+        MESSAGE_RECEIVE: "chat:message_receive",
+        MESSAGE_SENT: "chat:message_sent",
+        MESSAGE_DELIVERED: "chat:message_delivered",
         MESSAGE_TYPING: "chat:typing",
-        MESSAGE_READ: "chat:message:read",
-        MESSAGE_DELETE: "chat:message:delete",
-        MESSAGE_EDIT: "chat:message:edit",
-        NEW_MESSAGE: "chat:message:new-message",
+        TYPING_START: "chat:typing_start",
+        TYPING_STOP: "chat:typing_stop",
+        MESSAGE_READ: "chat:message_read",
+        MESSAGE_DELETE: "chat:message_delete",
+        MESSAGE_EDIT: "chat:message_edit",
+        NEW_MESSAGE: "chat:message_new",
         MESSAGE: "chat:message",
     },
 

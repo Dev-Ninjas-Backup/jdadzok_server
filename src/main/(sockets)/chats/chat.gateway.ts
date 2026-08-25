@@ -9,6 +9,7 @@ import {
 } from "@nestjs/websockets";
 import { Socket } from "socket.io";
 import { LiveChatContext } from "@prisma/client";
+import { SOCKET_EVENTS } from "../constants/socket-events.constant";
 import { BaseSocketGateway } from "../base/abstract-socket.gateway";
 import { SocketAuthGuard } from "../guards/socket-auth.guard";
 import { SocketMiddleware } from "../middleware/socket.middleware";
@@ -19,6 +20,21 @@ import { CreateMessageDto } from "./dto/create.message.dto";
 
 interface SocketUser {
     id: string;
+}
+
+type CreatedChatMessage = Awaited<ReturnType<ChatService["createMessage"]>>;
+
+export interface ChatRealtimePayload {
+    id: string;
+    chatId: string;
+    content: string | null;
+    mediaUrl: string | null;
+    mediaType: CreatedChatMessage["mediaType"];
+    status: CreatedChatMessage["status"];
+    clientMessageId: string | null;
+    sender: CreatedChatMessage["sender"];
+    receiver: CreatedChatMessage["chat"]["participants"][number]["user"] | null;
+    createdAt: Date;
 }
 
 @WebSocketGateway({
@@ -38,7 +54,57 @@ export class ChatGateway extends BaseSocketGateway {
         super(redisService, socketMiddleware);
     }
 
-    @SubscribeMessage("chat:message_send")
+    async handleConnection(client: Socket): Promise<Socket | undefined> {
+        const result = await super.handleConnection(client);
+        const userId = client.data?.user?.id as string | undefined;
+        if (!userId) return result;
+
+        await this.activeUsersService.setUserOnline(userId, client.id);
+        await this.joinUserChatRooms(client, userId);
+        return result;
+    }
+
+    async handleDisconnect(client: Socket) {
+        const redisUser = await this.redisService.getConnectedUser(client.id);
+        const userId = (client.data?.user?.id as string | undefined) ?? redisUser?.id;
+
+        await super.handleDisconnect(client);
+
+        if (userId && !this.userHasSockets(userId)) {
+            await this.activeUsersService.setUserOffline(userId);
+        }
+    }
+
+    /**
+     * Used by both socket `chat:message_send` and HTTP POST /chat/:chatId/messages.
+     */
+    async notifyMessageCreated(message: CreatedChatMessage): Promise<ChatRealtimePayload> {
+        const payload = this.buildPayload(message);
+        const receiverId = payload.receiver?.id;
+
+        if (receiverId) {
+            const delivered = await this.emitToUserViaClientsMap(
+                receiverId,
+                SOCKET_EVENTS.CHAT.MESSAGE_RECEIVE,
+                payload,
+            );
+            if (delivered) {
+                await this.chatService.markDelivered(message.id);
+                payload.status = "DELIVERED" as ChatRealtimePayload["status"];
+                await this.emitToUserViaClientsMap(message.senderId, SOCKET_EVENTS.CHAT.MESSAGE_DELIVERED, {
+                    messageId: message.id,
+                    chatId: message.chatId,
+                    deliveredTo: receiverId,
+                    clientMessageId: message.clientMessageId ?? null,
+                });
+            }
+        }
+
+        await this.emitToUserViaClientsMap(message.senderId, SOCKET_EVENTS.CHAT.MESSAGE_SENT, payload);
+        return payload;
+    }
+
+    @SubscribeMessage(SOCKET_EVENTS.CHAT.MESSAGE_SEND)
     async handleMessage(
         @GetSocketUser() user: SocketUser,
         @ConnectedSocket() client: Socket,
@@ -52,35 +118,15 @@ export class ChatGateway extends BaseSocketGateway {
                     ? await this.chatService.getOrCreateMentorshipChat(user.id, receiverId)
                     : await this.chatService.getOrCreatePrivateChat(user.id, receiverId);
 
-            // Create the message (re-checks Connect for INDIVIDUAL)
             const message = await this.chatService.createMessage(user.id, chat.id, data);
-
-            // Build payload
-            const payload = {
-                id: message.id,
-                chatId: message.chatId,
-                content: message.content,
-                mediaUrl: message.mediaUrl,
-                mediaType: message.mediaType,
-                sender: message.sender,
-                receiver:
-                    message.chat.participants
-                        .map((p) => p.user)
-                        .find((u) => u.id !== message.senderId) ?? null,
-                createdAt: message.createdAt,
-            };
-
-            // Emit message to both users (sender & receiver)
-            this.emitToUserViaClientsMap(receiverId, "chat:message_receive", payload);
-            this.emitToUserViaClientsMap(user.id, "chat:message_sent", payload);
+            await this.notifyMessageCreated(message);
         } catch (err) {
-            const message =
-                err instanceof Error ? err.message : "Failed to send message";
+            const message = err instanceof Error ? err.message : "Failed to send message";
             return client.emit("error", { message });
         }
     }
 
-    @SubscribeMessage("chat:message_read")
+    @SubscribeMessage(SOCKET_EVENTS.CHAT.MESSAGE_READ)
     async handleRead(
         @GetSocketUser() user: SocketUser,
         @MessageBody() { messageId }: { messageId: string },
@@ -93,36 +139,34 @@ export class ChatGateway extends BaseSocketGateway {
         });
 
         if (msg && msg.senderId !== user.id) {
-            this.server
-                .to(msg.chatId)
-                .except(user.id)
-                .emit("chat:message_read", { messageId, readBy: user.id });
+            this.server.to(msg.chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.MESSAGE_READ, {
+                messageId,
+                readBy: user.id,
+            });
         }
     }
 
-    @SubscribeMessage("chat:typing_start")
+    @SubscribeMessage(SOCKET_EVENTS.CHAT.TYPING_START)
     async handleTypingStart(
         @GetSocketUser() user: SocketUser,
         @MessageBody() { chatId }: { chatId: string },
     ) {
         await this.activeUsersService.setUserTyping(chatId, user.id);
 
-        // Notify other participants
-        this.server.to(chatId).except(user.id).emit("chat:typing_start", {
+        this.server.to(chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.TYPING_START, {
             userId: user.id,
             chatId,
         });
     }
 
-    @SubscribeMessage("chat:typing_stop")
+    @SubscribeMessage(SOCKET_EVENTS.CHAT.TYPING_STOP)
     async handleTypingStop(
         @GetSocketUser() user: SocketUser,
         @MessageBody() { chatId }: { chatId: string },
     ) {
         await this.activeUsersService.removeUserTyping(chatId, user.id);
 
-        // Notify other participants
-        this.server.to(chatId).except(user.id).emit("chat:typing_stop", {
+        this.server.to(chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.TYPING_STOP, {
             userId: user.id,
             chatId,
         });
@@ -149,11 +193,36 @@ export class ChatGateway extends BaseSocketGateway {
     ) {
         await this.activeUsersService.setUserStatus(user.id, status);
 
-        // Broadcast status change
         this.server.emit("user:status_changed", {
             userId: user.id,
             status,
             timestamp: new Date(),
         });
+    }
+
+    private buildPayload(message: CreatedChatMessage): ChatRealtimePayload {
+        return {
+            id: message.id,
+            chatId: message.chatId,
+            content: message.content,
+            mediaUrl: message.mediaUrl,
+            mediaType: message.mediaType,
+            status: message.status,
+            clientMessageId: message.clientMessageId ?? null,
+            sender: message.sender,
+            receiver:
+                message.chat.participants
+                    .map((p) => p.user)
+                    .find((u) => u.id !== message.senderId) ?? null,
+            createdAt: message.createdAt,
+        };
+    }
+
+    private async joinUserChatRooms(client: Socket, userId: string) {
+        const memberships = await this.prisma.liveChatParticipant.findMany({
+            where: { userId, leftAt: null },
+            select: { chatId: true },
+        });
+        await Promise.all(memberships.map(async (m) => client.join(m.chatId)));
     }
 }
