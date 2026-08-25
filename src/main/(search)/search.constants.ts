@@ -11,10 +11,29 @@ export enum SearchProviderName {
 export enum SearchEntityType {
     MEMBER = "member",
     OPPORTUNITY = "opportunity",
+    BRIDGE = "bridge",
+    NGO = "ngo",
+    COMMUNITY = "community",
+    POST = "post",
 }
 
-export const SEARCH_COLLECTION_MEMBERS = "members";
-export const SEARCH_COLLECTION_OPPORTUNITIES = "opportunities";
+export const ALL_SEARCH_ENTITY_TYPES: SearchEntityType[] = [
+    SearchEntityType.MEMBER,
+    SearchEntityType.OPPORTUNITY,
+    SearchEntityType.BRIDGE,
+    SearchEntityType.NGO,
+    SearchEntityType.COMMUNITY,
+    SearchEntityType.POST,
+];
+
+export const SEARCH_COLLECTION_BY_TYPE: Record<SearchEntityType, string> = {
+    [SearchEntityType.MEMBER]: "members",
+    [SearchEntityType.OPPORTUNITY]: "opportunities",
+    [SearchEntityType.BRIDGE]: "bridge_listings",
+    [SearchEntityType.NGO]: "ngos",
+    [SearchEntityType.COMMUNITY]: "communities",
+    [SearchEntityType.POST]: "posts",
+};
 
 /** Cap-weighted visibility hint (higher = prefer in vendor ranking). */
 export const CAP_RANK: Record<string, number> = {

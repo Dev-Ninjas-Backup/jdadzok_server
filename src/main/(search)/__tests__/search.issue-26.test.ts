@@ -13,7 +13,7 @@ import {
     SearchEntityType,
     SearchProviderName,
 } from "../search.constants";
-import { MemberSearchDocument, OpportunitySearchDocument } from "../search-document.types";
+import { MemberSearchDocument, CatalogSearchDocument } from "../search-document.types";
 import { ConfigService } from "@nestjs/config";
 
 interface TestCase {
@@ -59,8 +59,8 @@ function memberDoc(overrides: Partial<MemberSearchDocument> = {}): MemberSearchD
 }
 
 function opportunityDoc(
-    overrides: Partial<OpportunitySearchDocument> = {},
-): OpportunitySearchDocument {
+    overrides: Partial<CatalogSearchDocument> = {},
+): CatalogSearchDocument {
     return {
         id: "opp-1",
         entityType: SearchEntityType.OPPORTUNITY,
@@ -68,6 +68,9 @@ function opportunityDoc(
         descriptionSnippet: "Support community clinics remotely",
         orgName: "Health NGO Accra",
         location: "Remote",
+        skills: [],
+        tags: [],
+        listingType: "VOLUNTEER_PROJECT",
         verifiedPartner: true,
         isActive: true,
         isPublic: true,

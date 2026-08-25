@@ -6,16 +6,21 @@ import {
     BadRequestException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
 import { CreateCommunityDto, UpdateCommunityDto } from "./dto/communities.dto";
 
 @Injectable()
 export class CommunitiesService {
+    private readonly logger = new Logger(CommunitiesService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly searchSync: SearchSyncService,
     ) {}
 
     // create new community......
@@ -135,7 +140,16 @@ export class CommunitiesService {
             JSON.stringify(payload, null, 2),
         );
 
+        await this.safeSearchUpsert(newCommunity.id);
         return newCommunity;
+    }
+
+    private async safeSearchUpsert(communityId: string) {
+        try {
+            await this.searchSync.upsertCommunity(communityId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for community ${communityId}: ${String(err)}`);
+        }
     }
     // my community
     async myCommunity(userId: string) {

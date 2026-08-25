@@ -3,6 +3,7 @@ import {
     BadRequestException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from "@nestjs/common";
 import {
@@ -13,10 +14,7 @@ import {
     CapLevel,
     Prisma,
 } from "@prisma/client";
-import {
-    isContributionOther,
-    resolveOtherText,
-} from "@common/utils/other-option.util";
+import { isContributionOther, resolveOtherText } from "@common/utils/other-option.util";
 import {
     computeBridgeGigFee,
     DEFAULT_BRIDGE_GIG_FEE_PERCENT,
@@ -28,6 +26,7 @@ import {
     RespondBridgeBookingDto,
     UpdateBridgeListingDto,
 } from "./dto/bridge.dto";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
 import { ChatService } from "@module/(sockets)/chats/chat.service";
 
 /** Higher Caps get more Bridge visibility (descending weight). */
@@ -42,9 +41,12 @@ const CAP_VISIBILITY_WEIGHT: Record<CapLevel, number> = {
 
 @Injectable()
 export class BridgeService {
+    private readonly logger = new Logger(BridgeService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly chatService: ChatService,
+        private readonly searchSync: SearchSyncService,
     ) {}
 
     async createListing(ownerId: string, dto: CreateBridgeListingDto) {
@@ -64,7 +66,7 @@ export class BridgeService {
             throw new NotFoundException("User not found");
         }
 
-        return this.prisma.bridgeListing.create({
+        const created = await this.prisma.bridgeListing.create({
             data: {
                 ownerId,
                 type: dto.type,
@@ -85,6 +87,8 @@ export class BridgeService {
             },
             include: this.listingInclude(),
         });
+        await this.safeSearchUpsert(created.id);
+        return created;
     }
 
     async updateListing(ownerId: string, listingId: string, dto: UpdateBridgeListingDto) {
@@ -121,33 +125,46 @@ export class BridgeService {
                   })
                 : undefined;
 
-        return this.prisma.bridgeListing.update({
-            where: { id: listingId },
-            data: {
-                ...(dto.title !== undefined && { title: dto.title }),
-                ...(dto.description !== undefined && { description: dto.description }),
-                ...(dto.skills !== undefined && { skills: dto.skills }),
-                ...(dto.location !== undefined && { location: dto.location }),
-                ...(dto.remoteOk !== undefined && { remoteOk: dto.remoteOk }),
-                ...(dto.status !== undefined && { status: dto.status }),
-                ...(dto.hourlyRate !== undefined && { hourlyRate: dto.hourlyRate }),
-                ...(dto.availabilityNote !== undefined && {
-                    availabilityNote: dto.availabilityNote,
-                }),
-                ...(dto.budgetAmount !== undefined && { budgetAmount: dto.budgetAmount }),
-                ...(dto.currency !== undefined && { currency: dto.currency }),
-                ...(dto.platformFeePercent !== undefined && {
-                    platformFeePercent: dto.platformFeePercent,
-                }),
-                ...(dto.contributionType !== undefined && {
-                    contributionType: dto.contributionType,
-                }),
-                ...(contributionOther !== undefined && { contributionOther }),
-                // Refresh Cap snapshot so ranking stays current
-                ownerCapLevel: owner?.capLevel ?? listing.ownerCapLevel,
-            },
-            include: this.listingInclude(),
-        });
+        return this.prisma.bridgeListing
+            .update({
+                where: { id: listingId },
+                data: {
+                    ...(dto.title !== undefined && { title: dto.title }),
+                    ...(dto.description !== undefined && { description: dto.description }),
+                    ...(dto.skills !== undefined && { skills: dto.skills }),
+                    ...(dto.location !== undefined && { location: dto.location }),
+                    ...(dto.remoteOk !== undefined && { remoteOk: dto.remoteOk }),
+                    ...(dto.status !== undefined && { status: dto.status }),
+                    ...(dto.hourlyRate !== undefined && { hourlyRate: dto.hourlyRate }),
+                    ...(dto.availabilityNote !== undefined && {
+                        availabilityNote: dto.availabilityNote,
+                    }),
+                    ...(dto.budgetAmount !== undefined && { budgetAmount: dto.budgetAmount }),
+                    ...(dto.currency !== undefined && { currency: dto.currency }),
+                    ...(dto.platformFeePercent !== undefined && {
+                        platformFeePercent: dto.platformFeePercent,
+                    }),
+                    ...(dto.contributionType !== undefined && {
+                        contributionType: dto.contributionType,
+                    }),
+                    ...(contributionOther !== undefined && { contributionOther }),
+                    // Refresh Cap snapshot so ranking stays current
+                    ownerCapLevel: owner?.capLevel ?? listing.ownerCapLevel,
+                },
+                include: this.listingInclude(),
+            })
+            .then(async (updated) => {
+                await this.safeSearchUpsert(updated.id);
+                return updated;
+            });
+    }
+
+    private async safeSearchUpsert(listingId: string) {
+        try {
+            await this.searchSync.upsertBridge(listingId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for bridge ${listingId}: ${String(err)}`);
+        }
     }
 
     async getListing(listingId: string) {
@@ -265,18 +282,20 @@ export class BridgeService {
         const grossAmount = dto.agreedAmount ?? listing.budgetAmount ?? listing.hourlyRate;
         const feeFields = this.resolveBookingFeeFields(listing, grossAmount);
 
-        return this.prisma.bridgeBooking.create({
-            data: {
-                listingId,
-                clientId,
-                providerId: listing.ownerId,
-                agreedAmount: grossAmount,
-                note: dto.note,
-                status: BridgeBookingStatus.PENDING,
-                ...feeFields,
-            },
-            include: this.bookingInclude(),
-        }).then((booking) => this.enrichBooking(booking));
+        return this.prisma.bridgeBooking
+            .create({
+                data: {
+                    listingId,
+                    clientId,
+                    providerId: listing.ownerId,
+                    agreedAmount: grossAmount,
+                    note: dto.note,
+                    status: BridgeBookingStatus.PENDING,
+                    ...feeFields,
+                },
+                include: this.bookingInclude(),
+            })
+            .then((booking) => this.enrichBooking(booking));
     }
 
     async completeBooking(userId: string, bookingId: string) {
@@ -348,9 +367,7 @@ export class BridgeService {
         }
 
         const status =
-            dto.action === "ACCEPTED"
-                ? BridgeBookingStatus.ACCEPTED
-                : BridgeBookingStatus.DECLINED;
+            dto.action === "ACCEPTED" ? BridgeBookingStatus.ACCEPTED : BridgeBookingStatus.DECLINED;
 
         const updated = await this.prisma.bridgeBooking.update({
             where: { id: bookingId },

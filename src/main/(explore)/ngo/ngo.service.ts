@@ -6,16 +6,21 @@ import {
     BadRequestException,
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
 import { CreateNgoDto, UpdateNgoDto } from "./dto/ngo.dto";
 
 @Injectable()
 export class NgoService {
+    private readonly logger = new Logger(NgoService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly searchSync: SearchSyncService,
     ) {}
 
     // create new ngo......
@@ -153,7 +158,16 @@ export class NgoService {
 
         this.eventEmitter.emit(EVENT_TYPES.NGO_CREATE, payload);
 
+        await this.safeSearchUpsert(createdNgo.id);
         return createdNgo;
+    }
+
+    private async safeSearchUpsert(ngoId: string) {
+        try {
+            await this.searchSync.upsertNgo(ngoId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for ngo ${ngoId}: ${String(err)}`);
+        }
     }
     // find ngo data....
     async findAll() {

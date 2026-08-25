@@ -1,0 +1,32 @@
+{
+  "issue": 26,
+  "title": "Live Typesense search verification",
+  "ranAt": "2026-08-25T04:20:08Z",
+  "host": "212.85.26.187",
+  "provider": "typesense",
+  "index": {
+    "members": 419,
+    "opportunities": 2
+  },
+  "passed": 15,
+  "failed": 0,
+  "total": 15,
+  "verdict": "PASS",
+  "results": [
+    { "name": "typesense_container", "ok": true, "detail": "status=running" },
+    { "name": "app_container", "ok": true, "detail": "status=running" },
+    { "name": "typesense_health", "ok": true, "detail": "{\"ok\":true}" },
+    { "name": "index_members", "ok": true, "detail": "num_documents=419" },
+    { "name": "index_opportunities", "ok": true, "detail": "num_documents=2" },
+    { "name": "api_search_status", "ok": true, "detail": "provider=typesense enabled=true" },
+    { "name": "query_volunteer", "ok": true, "detail": "found>=1 guestSafe no private fields" },
+    { "name": "query_remote_health_opportunities", "ok": true, "detail": "opportunity-only hits" },
+    { "name": "query_members_only", "ok": true, "detail": "member-only public shape" },
+    { "name": "query_location_accra", "ok": true, "detail": "success" },
+    { "name": "guest_safe_flag", "ok": true, "detail": "guestSafe=true" },
+    { "name": "empty_query_handled", "ok": true, "detail": "success" },
+    { "name": "pagination", "ok": true, "detail": "limit=2 respected" },
+    { "name": "admin_reindex", "ok": true, "detail": "members=419 opportunities=2" },
+    { "name": "http_bind_search", "ok": true, "detail": "reachable on :5056" }
+  ]
+}

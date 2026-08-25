@@ -51,7 +51,7 @@ This doc defines **what the client needs to procure and approve** so engineering
 | Status | Notes |
 | --- | --- |
 | P1 adapter shipped | Feature-flagged NestJS search module: Typesense / Algolia / off / memory |
-| Sync + `/search` | Members + volunteer opportunities indexed; `GET /search` hydrates from Postgres |
+| Sync + `/search` | Indexes **members, opportunities, Bridge, NGOs, communities, posts**; `GET /search` hydrates from Postgres |
 | Vendor keys still client-owned | Set `SEARCH_PROVIDER` + vendor credentials in staging/production |
 
 ### 2.3 Recommended approach (plug-in only)
@@ -245,5 +245,6 @@ Until (1)–(3) are chosen, engineering can only stub feature-flagged adapters.
 
 | Date | Change |
 | --- | --- |
+| 2026-08-25 | Unified search expanded: Bridge + NGOs + communities + public posts (all entity types by default) |
 | 2026-08-25 | P1 engineering: Typesense/Algolia/memory/off adapters; member + opportunity sync; `GET /search` + admin reindex (Issue #26) |
 | 2026-07-27 | Initial client doc: AI search + spam/fake-account detection via plug-in services only |

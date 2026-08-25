@@ -20,8 +20,9 @@ export class SearchQueryDto {
     q?: string;
 
     @ApiPropertyOptional({
-        description: "Comma-separated: member,opportunity",
-        example: "member,opportunity",
+        description:
+            "Comma-separated entity types: member,opportunity,bridge,ngo,community,post (default: all)",
+        example: "member,opportunity,bridge,ngo,community,post",
     })
     @IsOptional()
     @IsString()

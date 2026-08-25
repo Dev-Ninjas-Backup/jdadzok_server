@@ -7,26 +7,32 @@ import {
     ForbiddenException,
     HttpException,
     Injectable,
+    Logger,
     NotFoundException,
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
 import { CreatePostDto, UpdatePostDto } from "./dto/create.post.dto";
 import { PostRepository } from "./posts.repository";
 import { PostQueryDto } from "./dto/posts.query.dto";
 
 @Injectable()
 export class PostService {
+    private readonly logger = new Logger(PostService.name);
+
     constructor(
         private readonly repository: PostRepository,
         private readonly followService: FollowService,
         private prisma: PrismaService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly searchSync: SearchSyncService,
     ) {}
 
     async create(input: CreatePostDto) {
         const post = await this.repository.store(input); // call store (DB transaction)
         if (!post) throw new BadRequestException("Fail to create post");
 
+        await this.safeSearchUpsert(post.id);
         const authorId = post.authorId;
         const followersRes = await this.followService.getFollowers(authorId);
         const followers = followersRes.data.map((f) => f.followerId);
@@ -169,10 +175,15 @@ export class PostService {
             throw new ForbiddenException("You are not authorized to update this post");
         }
 
-        return await this.repository.update(id, {
-            ...updateData,
-            authorId: userId,
-        });
+        return await this.repository
+            .update(id, {
+                ...updateData,
+                authorId: userId,
+            })
+            .then(async (updated) => {
+                await this.safeSearchUpsert(id);
+                return updated;
+            });
     }
 
     async delete(id: string, userId: string) {
@@ -182,7 +193,25 @@ export class PostService {
             throw new ForbiddenException("You are not authorized to delete this post");
         }
 
-        return await this.repository.delete(id);
+        const deleted = await this.repository.delete(id);
+        await this.safeSearchDelete(id);
+        return deleted;
+    }
+
+    private async safeSearchUpsert(postId: string) {
+        try {
+            await this.searchSync.upsertPost(postId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for post ${postId}: ${String(err)}`);
+        }
+    }
+
+    private async safeSearchDelete(postId: string) {
+        try {
+            await this.searchSync.deletePost(postId);
+        } catch (err) {
+            this.logger.warn(`Search delete failed for post ${postId}: ${String(err)}`);
+        }
     }
 
     private validateAuthorId(authorId?: string) {

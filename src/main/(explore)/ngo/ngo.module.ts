@@ -3,9 +3,10 @@ import { NgoController } from "./ngo.controller";
 import { NgoRepository } from "./ngo.repository";
 import { NgoService } from "./ngo.service";
 import { NgoVerificationModule } from "./ngoVerification/ngo-verification.module";
+import { SearchModule } from "@module/(search)/search.module";
 
 @Module({
-    imports: [NgoVerificationModule],
+    imports: [NgoVerificationModule, SearchModule],
     controllers: [NgoController],
     providers: [NgoRepository, NgoService],
     exports: [],

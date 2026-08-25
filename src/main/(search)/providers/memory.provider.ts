@@ -7,14 +7,9 @@ import {
 } from "../search-document.types";
 import { SearchProvider } from "./search-provider.interface";
 
-/**
- * In-memory Typesense/Algolia stand-in for local/CI tests.
- * Same adapter contract — no custom ML ranking.
- */
 @Injectable()
 export class MemorySearchProvider implements SearchProvider {
     readonly name = SearchProviderName.MEMORY;
-
     private readonly store = new Map<string, SearchDocument>();
 
     async ensureSchema(): Promise<void> {
@@ -36,19 +31,15 @@ export class MemorySearchProvider implements SearchProvider {
         const typeSet = new Set(params.types);
 
         let docs = [...this.store.values()].filter((d) => typeSet.has(d.entityType));
-
-        if (params.guestSafe) {
-            docs = docs.filter((d) => d.isPublic);
-        }
-
+        if (params.guestSafe) docs = docs.filter((d) => d.isPublic);
         if (params.location) {
             const loc = params.location.toLowerCase();
             docs = docs.filter((d) => (d.location || "").toLowerCase().includes(loc));
         }
-
         if (params.capLevel) {
             docs = docs.filter(
-                (d) => d.entityType === SearchEntityType.MEMBER && d.capLevel === params.capLevel,
+                (d) =>
+                    d.entityType === SearchEntityType.MEMBER && d.capLevel === params.capLevel,
             );
         }
 
@@ -59,7 +50,6 @@ export class MemorySearchProvider implements SearchProvider {
 
         const start = (params.page - 1) * params.limit;
         const page = scored.slice(start, start + params.limit);
-
         return {
             found: scored.length,
             hits: page.map((x) => ({
@@ -70,12 +60,10 @@ export class MemorySearchProvider implements SearchProvider {
         };
     }
 
-    /** Test helper — clear store between cases. */
     clear(): void {
         this.store.clear();
     }
 
-    /** Test helper — inspect indexed docs. */
     all(): SearchDocument[] {
         return [...this.store.values()];
     }
@@ -86,10 +74,8 @@ export class MemorySearchProvider implements SearchProvider {
 
     private score(doc: SearchDocument, q: string): number {
         if (!q) return doc.capRank;
-
         const haystack = this.haystack(doc).toLowerCase();
         if (haystack.includes(q)) return 100 + doc.capRank;
-
         const tokens = q.split(/\s+/).filter(Boolean);
         let hits = 0;
         for (const t of tokens) {
@@ -109,6 +95,14 @@ export class MemorySearchProvider implements SearchProvider {
                 ...doc.skills,
             ].join(" ");
         }
-        return [doc.title, doc.descriptionSnippet, doc.orgName, doc.location].join(" ");
+        return [
+            doc.title,
+            doc.descriptionSnippet,
+            doc.orgName,
+            doc.location,
+            doc.listingType,
+            ...doc.skills,
+            ...doc.tags,
+        ].join(" ");
     }
 }
