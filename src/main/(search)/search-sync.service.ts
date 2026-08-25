@@ -93,7 +93,7 @@ export class SearchSyncService {
 
         cursor = undefined;
         for (;;) {
-            const projects: Array<{ id: string }> = await this.prisma.volunteerProject.findMany({
+            const projects: { id: string }[] = await this.prisma.volunteerProject.findMany({
                 select: { id: true },
                 take: BATCH_SIZE,
                 ...(cursor
@@ -151,9 +151,7 @@ export class SearchSyncService {
         };
     }
 
-    async buildOpportunityDocument(
-        projectId: string,
-    ): Promise<OpportunitySearchDocument | null> {
+    async buildOpportunityDocument(projectId: string): Promise<OpportunitySearchDocument | null> {
         const project = await this.prisma.volunteerProject.findUnique({
             where: { id: projectId },
             include: {

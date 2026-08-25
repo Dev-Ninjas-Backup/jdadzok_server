@@ -1,11 +1,7 @@
 import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { capDisplayLabel } from "@common/utils/cap-earning-headline.util";
-import {
-    SEARCH_PROVIDER_TOKEN,
-    SearchEntityType,
-    SearchProviderName,
-} from "./search.constants";
+import { SEARCH_PROVIDER_TOKEN, SearchEntityType, SearchProviderName } from "./search.constants";
 import { SearchProvider } from "./providers/search-provider.interface";
 import { SearchQueryDto } from "./dto/search.dto";
 import { SearchSyncService } from "./search-sync.service";
@@ -99,12 +95,10 @@ export class SearchService {
         const parts = raw.split(",").map((s) => s.trim().toLowerCase());
         const types: SearchEntityType[] = [];
         for (const p of parts) {
-            if (p === SearchEntityType.MEMBER) types.push(SearchEntityType.MEMBER);
-            if (p === SearchEntityType.OPPORTUNITY) types.push(SearchEntityType.OPPORTUNITY);
+            if (p === "member") types.push(SearchEntityType.MEMBER);
+            if (p === "opportunity") types.push(SearchEntityType.OPPORTUNITY);
         }
-        return types.length
-            ? types
-            : [SearchEntityType.MEMBER, SearchEntityType.OPPORTUNITY];
+        return types.length ? types : [SearchEntityType.MEMBER, SearchEntityType.OPPORTUNITY];
     }
 
     private async hydrateMembers(ids: string[], guestSafe: boolean) {
@@ -148,9 +142,7 @@ export class SearchService {
                     displayName: profile.name,
                     username: profile.username,
                     title: profile.title,
-                    bio: guestSafe
-                        ? (profile.bio || "").slice(0, 280)
-                        : profile.bio,
+                    bio: guestSafe ? (profile.bio || "").slice(0, 280) : profile.bio,
                     avatarUrl: profile.avatarUrl,
                     location: profile.location,
                     cap: {
@@ -198,9 +190,7 @@ export class SearchService {
             .map((p) => ({
                 id: p!.id,
                 title: p!.title,
-                description: guestSafe
-                    ? (p!.description || "").slice(0, 400)
-                    : p!.description,
+                description: guestSafe ? (p!.description || "").slice(0, 400) : p!.description,
                 location: p!.location,
                 startDate: p!.startDate,
                 endDate: p!.endDate,

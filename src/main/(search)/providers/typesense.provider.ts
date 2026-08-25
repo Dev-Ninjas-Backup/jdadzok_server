@@ -7,11 +7,7 @@ import {
     SearchEntityType,
     SearchProviderName,
 } from "../search.constants";
-import {
-    SearchDocument,
-    VendorSearchParams,
-    VendorSearchResult,
-} from "../search-document.types";
+import { SearchDocument, VendorSearchParams, VendorSearchResult } from "../search-document.types";
 import { SearchProvider } from "./search-provider.interface";
 
 @Injectable()
@@ -111,10 +107,10 @@ export class TypesenseSearchProvider implements SearchProvider {
         });
 
         const { data } = await this.client.post("/multi_search", { searches });
-        const results = (data?.results ?? []) as Array<{
+        const results = (data?.results ?? []) as {
             found?: number;
-            hits?: Array<{ document: Record<string, unknown>; text_match?: number }>;
-        }>;
+            hits?: { document: Record<string, unknown>; text_match?: number }[];
+        }[];
 
         const hits = results.flatMap((r, idx) => {
             const entityType = params.types[idx];
@@ -131,10 +127,7 @@ export class TypesenseSearchProvider implements SearchProvider {
         return { hits: hits.slice(0, params.limit), found };
     }
 
-    private async ensureCollection(
-        name: string,
-        fields: Array<Record<string, unknown>>,
-    ): Promise<void> {
+    private async ensureCollection(name: string, fields: Record<string, unknown>[]): Promise<void> {
         try {
             await this.client.get(`/collections/${name}`);
         } catch (err: unknown) {

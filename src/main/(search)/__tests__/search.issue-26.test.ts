@@ -13,15 +13,15 @@ import {
     SearchEntityType,
     SearchProviderName,
 } from "../search.constants";
-import {
-    MemberSearchDocument,
-    OpportunitySearchDocument,
-} from "../search-document.types";
+import { MemberSearchDocument, OpportunitySearchDocument } from "../search-document.types";
 import { ConfigService } from "@nestjs/config";
 
-type TestCase = { name: string; run: () => Promise<void> | void };
+interface TestCase {
+    name: string;
+    run: () => Promise<void> | void;
+}
 
-const results: Array<{ name: string; ok: boolean; error?: string; ms: number }> = [];
+const results: { name: string; ok: boolean; error?: string; ms: number }[] = [];
 
 async function runCase(tc: TestCase) {
     const started = Date.now();
@@ -372,9 +372,7 @@ async function main() {
         JSON.stringify(report, null, 2),
         "utf8",
     );
-    console.log(
-        "\nWrote updates/2026-08-25-search-vendor-issue-26-test-report.json",
-    );
+    console.log("\nWrote updates/2026-08-25-search-vendor-issue-26-test-report.json");
 }
 
 main().catch((err) => {

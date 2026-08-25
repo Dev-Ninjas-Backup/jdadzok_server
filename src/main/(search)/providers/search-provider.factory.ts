@@ -7,13 +7,31 @@ import { TypesenseSearchProvider } from "./typesense.provider";
 import { AlgoliaSearchProvider } from "./algolia.provider";
 import { SearchProvider } from "./search-provider.interface";
 
+function parseProviderName(raw: string): SearchProviderName {
+    switch (raw) {
+        case "typesense":
+            return SearchProviderName.TYPESENSE;
+        case "algolia":
+            return SearchProviderName.ALGOLIA;
+        case "memory":
+            return SearchProviderName.MEMORY;
+        case "off":
+            return SearchProviderName.OFF;
+        default:
+            return SearchProviderName.OFF;
+    }
+}
+
 export function createSearchProvider(config: ConfigService): SearchProvider {
     const logger = new Logger("SearchProviderFactory");
-    const raw = (config.get<string>("SEARCH_PROVIDER") || SearchProviderName.OFF)
-        .trim()
-        .toLowerCase();
+    const raw = (config.get<string>("SEARCH_PROVIDER") || "off").trim().toLowerCase();
+    const name = parseProviderName(raw);
 
-    switch (raw) {
+    if (raw !== "off" && name === SearchProviderName.OFF) {
+        logger.warn(`Unknown SEARCH_PROVIDER="${raw}" — using off`);
+    }
+
+    switch (name) {
         case SearchProviderName.TYPESENSE: {
             const host = config.get<string>("TYPESENSE_HOST");
             const key = config.get<string>("TYPESENSE_API_KEY");
@@ -41,9 +59,6 @@ export function createSearchProvider(config: ConfigService): SearchProvider {
             return new MemorySearchProvider();
         case SearchProviderName.OFF:
         default:
-            if (raw !== SearchProviderName.OFF) {
-                logger.warn(`Unknown SEARCH_PROVIDER="${raw}" — using off`);
-            }
             return new OffSearchProvider();
     }
 }

@@ -7,11 +7,7 @@ import {
     SearchEntityType,
     SearchProviderName,
 } from "../search.constants";
-import {
-    SearchDocument,
-    VendorSearchParams,
-    VendorSearchResult,
-} from "../search-document.types";
+import { SearchDocument, VendorSearchParams, VendorSearchResult } from "../search-document.types";
 import { SearchProvider } from "./search-provider.interface";
 
 @Injectable()
@@ -107,9 +103,7 @@ export class AlgoliaSearchProvider implements SearchProvider {
 
     async delete(entityType: SearchEntityType, id: string): Promise<void> {
         const index =
-            entityType === SearchEntityType.MEMBER
-                ? this.membersIndex
-                : this.opportunitiesIndex;
+            entityType === SearchEntityType.MEMBER ? this.membersIndex : this.opportunitiesIndex;
         try {
             await this.writeClient.delete(`/indexes/${index}/${id}`);
         } catch (err: unknown) {
@@ -123,9 +117,7 @@ export class AlgoliaSearchProvider implements SearchProvider {
     async search(params: VendorSearchParams): Promise<VendorSearchResult> {
         const requests = params.types.map((type) => {
             const indexName =
-                type === SearchEntityType.MEMBER
-                    ? this.membersIndex
-                    : this.opportunitiesIndex;
+                type === SearchEntityType.MEMBER ? this.membersIndex : this.opportunitiesIndex;
 
             const filters: string[] = [];
             if (params.guestSafe) filters.push("isPublic:true");
@@ -150,10 +142,10 @@ export class AlgoliaSearchProvider implements SearchProvider {
         });
 
         const { data } = await this.searchClient.post("/indexes/*/queries", { requests });
-        const results = (data?.results ?? []) as Array<{
+        const results = (data?.results ?? []) as {
             nbHits?: number;
-            hits?: Array<{ objectID: string; _score?: number }>;
-        }>;
+            hits?: { objectID: string; _score?: number }[];
+        }[];
 
         const hits = results.flatMap((r, idx) =>
             (r.hits ?? []).map((h) => ({

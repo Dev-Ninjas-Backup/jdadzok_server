@@ -1,12 +1,8 @@
-import { SearchEntityType } from "../search.constants";
-import {
-    SearchDocument,
-    VendorSearchParams,
-    VendorSearchResult,
-} from "../search-document.types";
+import { SearchEntityType, SearchProviderName } from "../search.constants";
+import { SearchDocument, VendorSearchParams, VendorSearchResult } from "../search-document.types";
 
 export interface SearchProvider {
-    readonly name: string;
+    readonly name: SearchProviderName;
 
     /** Create collections / indices if missing (idempotent). */
     ensureSchema(): Promise<void>;
