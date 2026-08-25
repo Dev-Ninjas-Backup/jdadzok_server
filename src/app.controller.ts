@@ -321,19 +321,9 @@ export class AppController {
             environment: process.env.NODE_ENV,
             uptime: process.uptime(),
             timestamp: new Date().toISOString(),
-            team: {
-                name: "Dev Ninja",
-                leader: "Niloy",
-                members: [
-                    {
-                        name: "Milon",
-                        role: "Backend Developer",
-                    },
-                    {
-                        name: "Sujon",
-                        role: "Backend Developer",
-                    },
-                ],
+            Developer: {
+                name: "MIRZA SAIKAT AHMMED",
+                role: "Backend Developer",
             },
         });
     }
