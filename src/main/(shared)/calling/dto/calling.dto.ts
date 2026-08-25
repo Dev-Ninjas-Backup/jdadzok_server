@@ -72,6 +72,15 @@ export class StartCallToUserDto {
     @IsOptional()
     @IsEnum(CallPurpose)
     callPurpose?: CallPurpose;
+
+    @ApiPropertyOptional({
+        enum: ["audio", "video"],
+        default: "audio",
+        description: "Whether this is an audio-only or video call",
+    })
+    @IsOptional()
+    @IsString()
+    mediaType?: "audio" | "video";
 }
 
 export class AcceptCallDto {

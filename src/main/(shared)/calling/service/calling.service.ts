@@ -32,6 +32,7 @@ export interface CallRoom {
     participants: Participant[];
     status: "CALLING" | "ACTIVE" | "ENDED" | "CANCELLED" | "MISSED" | "DECLINED";
     callPurpose: CallPurpose;
+    mediaType?: "audio" | "video";
     createdAt: Date;
     updatedAt: Date;
 }
@@ -62,10 +63,12 @@ export class CallService {
         socketId: string,
         callGateway: CallGateway,
         callPurpose: CallPurpose = CallPurpose.GENERAL,
+        mediaType: "audio" | "video" = "audio",
     ): Promise<{
         callId: string;
         status: "ringing" | "recipient_offline" | "user_busy";
         callPurpose: CallPurpose;
+        mediaType: "audio" | "video";
     }> {
         if (callerId === recipientUserId) {
             throw new BadRequestException("Cannot call yourself");
@@ -123,6 +126,8 @@ export class CallService {
             },
         });
 
+        const resolvedMedia: "audio" | "video" = mediaType === "video" ? "video" : "audio";
+
         // Create call room in cache WITH caller's socket ID
         const callRoom: CallRoom = {
             callId: call.id,
@@ -133,13 +138,14 @@ export class CallService {
                     userId: callerId,
                     socketId: socketId,
                     userName: caller?.profile?.name || "Unknown User",
-                    hasVideo: false,
-                    hasAudio: false,
+                    hasVideo: resolvedMedia === "video",
+                    hasAudio: true,
                     joinedAt: new Date(),
                 },
             ],
             status: "CALLING",
             callPurpose,
+            mediaType: resolvedMedia,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -155,18 +161,22 @@ export class CallService {
         );
 
         const recipientSockets = callGateway.getClientsForUser(recipientUserId);
+        const recipientSocketId =
+            recipientSockets.size > 0 ? Array.from(recipientSockets)[0].id : null;
 
         if (recipientSockets.size === 0) {
             // Recipient is offline - mark as missed
             await this.updateCallStatus(call.id, "MISSED");
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${callerId}`);
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${recipientUserId}`);
-            return { callId: call.id, status: "recipient_offline", callPurpose };
+            return { callId: call.id, status: "recipient_offline", callPurpose, mediaType: resolvedMedia };
         }
 
         const payload = {
             callId: call.id,
             callPurpose,
+            mediaType: resolvedMedia,
+            recipientSocketId,
             caller: {
                 userId: callerId,
                 socketId: socketId, // Include caller's socket ID
@@ -182,10 +192,10 @@ export class CallService {
         });
 
         this.logger.log(
-            `Call initiated: ${callerId} → ${recipientUserId} (call: ${call.id}, purpose: ${callPurpose}, socket: ${socketId})`,
+            `Call initiated: ${callerId} → ${recipientUserId} (call: ${call.id}, purpose: ${callPurpose}, media: ${resolvedMedia}, socket: ${socketId})`,
         );
 
-        return { callId: call.id, status: "ringing", callPurpose };
+        return { callId: call.id, status: "ringing", callPurpose, mediaType: resolvedMedia };
     }
 
     /**

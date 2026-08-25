@@ -43,6 +43,7 @@ export class CallController {
             "http-request",
             this.callGateway,
             dto.callPurpose,
+            dto.mediaType === "video" ? "video" : "audio",
         );
     }
 

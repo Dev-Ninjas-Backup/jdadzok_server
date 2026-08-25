@@ -509,7 +509,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage("callUser")
     async handleDirectCallUser(
         @ConnectedSocket() callerSocket: Socket,
-        @MessageBody() payload: { userId: string; callPurpose?: CallPurpose },
+        @MessageBody() payload: { userId: string; callPurpose?: CallPurpose; mediaType?: "audio" | "video" },
     ) {
         if (!this.requireAuth(callerSocket)) return;
 
@@ -520,6 +520,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const callerId = callerSocket.data.user.sub;
         const callerName = callerSocket.data.userName || "Unknown";
         const callerSocketId = callerSocket.id;
+        const mediaType: "audio" | "video" = payload.mediaType === "video" ? "video" : "audio";
 
         if (callerId === payload.userId) {
             return callerSocket.emit("error", { message: "Cannot call yourself" });
@@ -531,13 +532,14 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             const recipientSocketId =
                 recipientSockets.size > 0 ? Array.from(recipientSockets)[0].id : null;
 
-            // Start the call
+            // Start the call (service emits incomingCall once)
             const result = await this.callService.startCallToUser(
                 callerId,
                 payload.userId,
                 callerSocketId,
                 this,
                 payload.callPurpose,
+                mediaType,
             );
 
             const callId = result.callId;
@@ -568,6 +570,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 callId,
                 status: result.status,
                 callPurpose: result.callPurpose,
+                mediaType: result.mediaType,
                 recipientUserId: payload.userId,
                 callerSocketId: callerSocketId,
                 recipientSocketId: recipientSocketId,
@@ -584,29 +587,10 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 return;
             }
 
-            // Recipient is online - send incoming call notification
-            const incomingCallPayload = {
-                callId,
-                callPurpose: result.callPurpose,
-                caller: {
-                    userId: callerId,
-                    name: callerInfo?.profile?.name || callerName,
-                    avatarUrl: callerInfo?.profile?.avatarUrl || null,
-                    socketId: callerSocketId,
-                },
-                recipientSocketId: recipientSocketId,
-                timestamp: new Date().toISOString(),
-            };
-
-            // Send to all recipient's devices
-            recipientSockets.forEach((socket) => {
-                socket.emit("incomingCall", incomingCallPayload);
-            });
-
             this.logger.log(
                 `Call initiated: ${callerInfo?.profile?.name || callerName} (${callerId}) ` +
                     `[socket: ${callerSocketId}] → ${payload.userId} [socket: ${recipientSocketId}] ` +
-                    `| callId: ${callId} | status: ${result.status}`,
+                    `| callId: ${callId} | media: ${result.mediaType} | status: ${result.status}`,
             );
         } catch (error) {
             this.logger.error(`Error starting call: ${error.message}`);
