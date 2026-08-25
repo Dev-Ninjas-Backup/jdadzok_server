@@ -137,10 +137,31 @@ export class ActiveUsersService {
     }
 
     /**
-     * Set user status (online, away, offline)
+     * Set user status (online, away, offline).
+     * Keeps ACTIVE_USERS_KEY + lastSeen in sync — status-only writes broke mobile presence.
      */
-    async setUserStatus(userId: string, status: "online" | "away" | "offline"): Promise<void> {
-        await this.redis.redisClient.hset(`${this.PRESENCE_KEY}:${userId}`, "status", status);
+    async setUserStatus(
+        userId: string,
+        status: "online" | "away" | "offline",
+        socketId?: string,
+    ): Promise<void> {
+        if (status === "offline") {
+            await this.setUserOffline(userId);
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const fields: Record<string, string> = {
+            status,
+            lastSeen: now,
+        };
+        if (socketId) {
+            fields.socketId = socketId;
+        }
+
+        await this.redis.redisClient.hset(`${this.PRESENCE_KEY}:${userId}`, fields);
+        await this.redis.redisClient.sadd(this.ACTIVE_USERS_KEY, userId);
+        await this.redis.redisClient.expire(`${this.PRESENCE_KEY}:${userId}`, 300);
     }
 
     /**

@@ -82,6 +82,13 @@ export class ChatGateway extends BaseSocketGateway {
         const payload = this.buildPayload(message);
         const receiverId = payload.receiver?.id;
 
+        // New chats created after connect are not in joinUserChatRooms — join now
+        // so typing + read receipts (room emits) work immediately.
+        await this.joinUserSocketsToRoom(message.senderId, message.chatId);
+        if (receiverId) {
+            await this.joinUserSocketsToRoom(receiverId, message.chatId);
+        }
+
         if (receiverId) {
             const delivered = await this.emitToUserViaClientsMap(
                 receiverId,
@@ -102,6 +109,30 @@ export class ChatGateway extends BaseSocketGateway {
 
         await this.emitToUserViaClientsMap(message.senderId, SOCKET_EVENTS.CHAT.MESSAGE_SENT, payload);
         return payload;
+    }
+
+    @SubscribeMessage("chat:join")
+    async handleJoinChat(
+        @GetSocketUser() user: SocketUser,
+        @ConnectedSocket() client: Socket,
+        @MessageBody() { chatId }: { chatId: string },
+    ) {
+        if (!chatId) return;
+        try {
+            await this.chatService.getChatById(chatId, user.id);
+            await client.join(chatId);
+        } catch {
+            return client.emit("error", { message: "Cannot join chat" });
+        }
+    }
+
+    @SubscribeMessage("chat:leave")
+    async handleLeaveChat(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() { chatId }: { chatId: string },
+    ) {
+        if (!chatId) return;
+        await client.leave(chatId);
     }
 
     @SubscribeMessage(SOCKET_EVENTS.CHAT.MESSAGE_SEND)
@@ -139,10 +170,18 @@ export class ChatGateway extends BaseSocketGateway {
         });
 
         if (msg && msg.senderId !== user.id) {
-            this.server.to(msg.chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.MESSAGE_READ, {
+            const readPayload = {
                 messageId,
+                chatId: msg.chatId,
                 readBy: user.id,
-            });
+            };
+            this.server.to(msg.chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.MESSAGE_READ, readPayload);
+            // Ensure sender gets the receipt even if not in the room yet.
+            await this.emitToUserViaClientsMap(
+                msg.senderId,
+                SOCKET_EVENTS.CHAT.MESSAGE_READ,
+                readPayload,
+            );
         }
     }
 
@@ -189,9 +228,10 @@ export class ChatGateway extends BaseSocketGateway {
     @SubscribeMessage("user:set_status")
     async handleSetStatus(
         @GetSocketUser() user: SocketUser,
+        @ConnectedSocket() client: Socket,
         @MessageBody() { status }: { status: "online" | "away" | "offline" },
     ) {
-        await this.activeUsersService.setUserStatus(user.id, status);
+        await this.activeUsersService.setUserStatus(user.id, status, client.id);
 
         this.server.emit("user:status_changed", {
             userId: user.id,

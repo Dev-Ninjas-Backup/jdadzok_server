@@ -224,6 +224,13 @@ export abstract class BaseSocketGateway
         }
     }
 
+    /** Join every live socket for a user into a Socket.IO room (e.g. chatId). */
+    protected async joinUserSocketsToRoom(userId: string, roomId: string): Promise<void> {
+        const userSockets = this.clients.get(userId);
+        if (!userSockets || userSockets.size === 0) return;
+        await Promise.all([...userSockets].map((socket) => socket.join(roomId)));
+    }
+
     protected emitToRoom(roomId: string, event: string, data: any, excludeSocketId?: string): void {
         if (excludeSocketId) {
             this.server.to(roomId).except(excludeSocketId).emit(event, data);

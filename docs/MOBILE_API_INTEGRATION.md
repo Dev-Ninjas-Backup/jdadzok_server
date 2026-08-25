@@ -487,6 +487,7 @@ Auth: auth: { token: '<jwt>' }
 | Emit / listen | `chat:typing_start` / `chat:typing_stop` | Typing indicators |
 | Emit | `user:get_status` / `user:set_status` | Presence |
 | Listen | `user:status` / `user:status_changed` | Presence |
+| Emit | `chat:join` / `chat:leave` | Join/leave chat room (typing + read); also auto-joined on connect and on send |
 | Listen | `error` | Send failures |
 
 Uncomment `initServices()` / `SocketService` in `main.dart` when implementing.
