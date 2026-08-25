@@ -41,6 +41,11 @@ export class WebRTCSignalDto {
     @ApiProperty({ description: "WebRTC signal data (SDP)" })
     @IsObject()
     signal: any;
+
+    @ApiPropertyOptional({ description: "Call room id — used as relay fallback" })
+    @IsOptional()
+    @IsString()
+    callId?: string;
 }
 
 export class IceCandidateDto {
@@ -52,6 +57,11 @@ export class IceCandidateDto {
     @ApiProperty({ description: "ICE candidate" })
     @IsObject()
     candidate: any;
+
+    @ApiPropertyOptional({ description: "Call room id — used as relay fallback" })
+    @IsOptional()
+    @IsString()
+    callId?: string;
 }
 
 export class StartCallToUserDto {

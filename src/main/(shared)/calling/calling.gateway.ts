@@ -454,54 +454,141 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // ==================== WEBRTC SIGNALING ====================
 
-    @SubscribeMessage("offer")
-    handleOffer(@ConnectedSocket() socket: Socket, @MessageBody() data: WebRTCSignalDto) {
-        if (!this.requireAuth(socket)) return;
-
-        const targetSocket = this.server.sockets.sockets.get(data.targetSocketId);
-        if (!targetSocket) {
-            this.logger.warn(`Target socket ${data.targetSocketId} not found`);
-            return socket.emit("error", { message: "Peer not found" });
+    /**
+     * Relay SDP/ICE to a peer on the `/calling` namespace.
+     *
+     * Do NOT use `this.server.sockets.sockets.get(id)` — with `namespace: "/calling"`,
+     * `@WebSocketServer()` is a Namespace whose `.sockets` is already a Map. The old
+     * path looked up the default `/` namespace (or threw), so offers never reached the
+     * callee and calls stuck on "Connecting…".
+     *
+     * Prefer: live user socket map → socket-id room (`server.to(id)`) → call room.
+     */
+    private relayToPeer(
+        from: Socket,
+        targetSocketId: string,
+        event: string,
+        payload: Record<string, unknown>,
+        callId?: string,
+    ): boolean {
+        if (!targetSocketId) {
+            this.logger.warn(`relay ${event}: missing targetSocketId from ${from.id}`);
+            return false;
         }
 
-        this.logger.debug(`Relaying offer: ${socket.id} → ${data.targetSocketId}`);
-        targetSocket.emit("offer", {
-            offer: data.signal,
-            senderId: socket.id,
-        });
+        // 1) Live sockets for that peer user (same process) — most reliable.
+        const targetUserId = this.socketToUserId.get(targetSocketId);
+        if (targetUserId) {
+            let n = 0;
+            for (const peer of this.getClientsForUser(targetUserId)) {
+                if (peer.id === from.id) continue;
+                peer.emit(event, payload);
+                n++;
+            }
+            if (n > 0) {
+                this.logger.log(
+                    `Relayed ${event}: ${from.id} → user ${targetUserId} (${n} socket(s))`,
+                );
+                return true;
+            }
+        }
+
+        // 2) Call room fanout when both sides joined `callId` (stale socket id recovery).
+        //    Do not combine with (3) — peer is in both rooms and would get duplicates.
+        if (callId) {
+            from.to(callId).emit(event, payload);
+            this.logger.log(`Relayed ${event}: ${from.id} → call room ${callId}`);
+            return true;
+        }
+
+        // 3) Socket-id room on this namespace (every socket auto-joins its own id).
+        this.server.to(targetSocketId).emit(event, payload);
+        this.logger.log(`Relayed ${event}: ${from.id} → socket ${targetSocketId}`);
+        return true;
+    }
+
+    private normalizeSignalBody<T extends object>(data: T | T[]): T {
+        return (Array.isArray(data) ? data[0] : data) as T;
+    }
+
+    @SubscribeMessage("offer")
+    handleOffer(@ConnectedSocket() socket: Socket, @MessageBody() raw: WebRTCSignalDto) {
+        if (!this.requireAuth(socket)) return;
+
+        const data = this.normalizeSignalBody(raw);
+        const targetSocketId = data?.targetSocketId;
+        const signal = data?.signal;
+        if (!targetSocketId || !signal) {
+            this.logger.warn(`offer missing fields from ${socket.id}: ${JSON.stringify(raw)}`);
+            return socket.emit("error", { message: "Invalid offer payload" });
+        }
+
+        const ok = this.relayToPeer(
+            socket,
+            targetSocketId,
+            "offer",
+            {
+                offer: signal,
+                signal,
+                senderId: socket.id,
+                callId: data.callId,
+            },
+            data.callId,
+        );
+        if (!ok) {
+            socket.emit("error", { message: "Peer not found" });
+        }
     }
 
     @SubscribeMessage("answer")
-    handleAnswer(@ConnectedSocket() socket: Socket, @MessageBody() data: WebRTCSignalDto) {
+    handleAnswer(@ConnectedSocket() socket: Socket, @MessageBody() raw: WebRTCSignalDto) {
         if (!this.requireAuth(socket)) return;
 
-        const targetSocket = this.server.sockets.sockets.get(data.targetSocketId);
-        if (!targetSocket) {
-            this.logger.warn(`Target socket ${data.targetSocketId} not found`);
-            return socket.emit("error", { message: "Peer not found" });
+        const data = this.normalizeSignalBody(raw);
+        const targetSocketId = data?.targetSocketId;
+        const signal = data?.signal;
+        if (!targetSocketId || !signal) {
+            this.logger.warn(`answer missing fields from ${socket.id}`);
+            return socket.emit("error", { message: "Invalid answer payload" });
         }
 
-        this.logger.debug(`Relaying answer: ${socket.id} → ${data.targetSocketId}`);
-        targetSocket.emit("answer", {
-            answer: data.signal,
-            senderId: socket.id,
-        });
+        const ok = this.relayToPeer(
+            socket,
+            targetSocketId,
+            "answer",
+            {
+                answer: signal,
+                signal,
+                senderId: socket.id,
+                callId: data.callId,
+            },
+            data.callId,
+        );
+        if (!ok) {
+            socket.emit("error", { message: "Peer not found" });
+        }
     }
 
     @SubscribeMessage("iceCandidate")
-    handleIceCandidate(@ConnectedSocket() socket: Socket, @MessageBody() data: IceCandidateDto) {
+    handleIceCandidate(@ConnectedSocket() socket: Socket, @MessageBody() raw: IceCandidateDto) {
         if (!this.requireAuth(socket)) return;
 
-        const targetSocket = this.server.sockets.sockets.get(data.targetSocketId);
-        if (!targetSocket) {
-            return;
-        }
+        const data = this.normalizeSignalBody(raw);
+        const targetSocketId = data?.targetSocketId;
+        const candidate = data?.candidate;
+        if (!targetSocketId || !candidate) return;
 
-        this.logger.debug(`Relaying ICE: ${socket.id} → ${data.targetSocketId}`);
-        targetSocket.emit("iceCandidate", {
-            candidate: data.candidate,
-            senderId: socket.id,
-        });
+        this.relayToPeer(
+            socket,
+            targetSocketId,
+            "iceCandidate",
+            {
+                candidate,
+                senderId: socket.id,
+                callId: data.callId,
+            },
+            data.callId,
+        );
     }
 
     // ----------------- send call buy user id socket io -------------------
