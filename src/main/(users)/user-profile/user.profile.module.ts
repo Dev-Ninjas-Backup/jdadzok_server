@@ -5,9 +5,10 @@ import { UserProfileController } from "./user.profile.controller";
 import { UserProfileRepository } from "./user.profile.repository";
 import { UserProfileService } from "./user.profile.service";
 import { ReputationPassportService } from "./reputation-passport.service";
+import { SearchModule } from "@module/(search)/search.module";
 
 @Module({
-    imports: [],
+    imports: [SearchModule],
     controllers: [UserProfileController],
     providers: [
         UserProfileRepository,

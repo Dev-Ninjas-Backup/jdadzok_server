@@ -1,25 +1,35 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { CreateUserProfileDto } from "./dto/user.profile.dto";
 import { CapArtPreferencesDto } from "./dto/cap-art-preferences.dto";
 import { UserProfileRepository } from "./user.profile.repository";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
 
 @Injectable()
 export class UserProfileService {
-    constructor(private readonly profileRepository: UserProfileRepository) {}
+    private readonly logger = new Logger(UserProfileService.name);
+
+    constructor(
+        private readonly profileRepository: UserProfileRepository,
+        private readonly searchSync: SearchSyncService,
+    ) {}
 
     async get(userId: string) {
         return await this.profileRepository.find(userId);
     }
 
     async updateUserProfile(userId: string, data: CreateUserProfileDto) {
-        return await this.profileRepository.updateUserProfile(userId, data);
+        const updated = await this.profileRepository.updateUserProfile(userId, data);
+        await this.safeSearchUpsert(userId);
+        return updated;
     }
 
     async setVolunteerMentorOptIn(userId: string, isVolunteerMentorOptIn: boolean) {
-        return await this.profileRepository.setVolunteerMentorOptIn(
+        const updated = await this.profileRepository.setVolunteerMentorOptIn(
             userId,
             isVolunteerMentorOptIn,
         );
+        await this.safeSearchUpsert(userId);
+        return updated;
     }
 
     async setTalentSearchOptIn(userId: string, isTalentSearchOptIn: boolean) {
@@ -40,5 +50,13 @@ export class UserProfileService {
 
     async getUserProfile(userId: string, id: string) {
         return await this.profileRepository.getUserProfile(userId, id);
+    }
+
+    private async safeSearchUpsert(userId: string) {
+        try {
+            await this.searchSync.upsertMember(userId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for member ${userId}: ${String(err)}`);
+        }
     }
 }

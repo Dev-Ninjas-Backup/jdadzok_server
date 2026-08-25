@@ -6,9 +6,10 @@ import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.se
 import { VolunteerHourCounterpartyService } from "./volunteer-hour-counterparty.service";
 import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
+import { SearchModule } from "@module/(search)/search.module";
 
 @Module({
-    imports: [ChatModule],
+    imports: [ChatModule, SearchModule],
     controllers: [VolunteerController],
     providers: [
         VolunteerService,

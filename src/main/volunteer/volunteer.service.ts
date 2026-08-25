@@ -3,6 +3,7 @@ import {
     ForbiddenException,
     NotFoundException,
     BadRequestException,
+    Logger,
 } from "@nestjs/common";
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
@@ -16,11 +17,16 @@ import {
     resolveOtherText,
 } from "@common/utils/other-option.util";
 import { requiresCounterpartyConfirmation } from "@common/utils/volunteer-hour.util";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
+
 @Injectable()
 export class VolunteerService {
+    private readonly logger = new Logger(VolunteerService.name);
+
     constructor(
         private prisma: PrismaService,
         private readonly chatService: ChatService,
+        private readonly searchSync: SearchSyncService,
     ) {}
 
     async createProject(dto: CreateVolunteerProjectDto, userId: string) {
@@ -33,9 +39,12 @@ export class VolunteerService {
         if (user.id != ngo.ownerId)
             throw new ForbiddenException("Only NGO owner can create projects");
 
-        return this.prisma.volunteerProject.create({
+        const project = await this.prisma.volunteerProject.create({
             data: { ...dto, createdById: userId, ngoId: dto.ngoId },
         });
+
+        await this.safeSearchUpsert(project.id);
+        return project;
     }
 
     async getAllNgoProjects(userId: string) {
@@ -274,6 +283,23 @@ export class VolunteerService {
         await this.prisma.volunteerProject.delete({
             where: { id: projectId, createdById: userId },
         });
+        await this.safeSearchDelete(projectId);
         return "null";
+    }
+
+    private async safeSearchUpsert(projectId: string) {
+        try {
+            await this.searchSync.upsertOpportunity(projectId);
+        } catch (err) {
+            this.logger.warn(`Search upsert failed for opportunity ${projectId}: ${String(err)}`);
+        }
+    }
+
+    private async safeSearchDelete(projectId: string) {
+        try {
+            await this.searchSync.deleteOpportunity(projectId);
+        } catch (err) {
+            this.logger.warn(`Search delete failed for opportunity ${projectId}: ${String(err)}`);
+        }
     }
 }

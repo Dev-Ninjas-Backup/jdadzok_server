@@ -66,7 +66,38 @@ services:
         networks:
           - jdadzok_server
 
-
+    # AI search vendor (Issue #26) — NestJS app talks to this over the compose network
+    typesense:
+        image: typesense/typesense:27.1
+        container_name: typesense
+        restart: unless-stopped
+        profiles:
+            - dev
+            - prod
+        ports:
+            - "${TYPESENSE_PORT:-8108}:8108"
+        environment:
+            TYPESENSE_DATA_DIR: /data
+            TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
+            TYPESENSE_ENABLE_CORS: "true"
+        command: >
+            --data-dir /data
+            --api-key=${TYPESENSE_API_KEY}
+            --enable-cors
+        volumes:
+            - typesense-data:/data
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "exit 0",
+                ]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
+        networks:
+          - jdadzok_server
 
     caddy:
         image: caddy:latest
@@ -89,6 +120,7 @@ volumes:
     redis:
     pg:
     files-data:
+    typesense-data:
 networks:
     jdadzok_server:
       driver: bridge

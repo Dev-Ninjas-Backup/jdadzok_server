@@ -140,6 +140,16 @@ export const GUEST_PUBLIC_ROUTES: GuestPublicRoute[] = [
         path: "/bridge/:id",
         description: "Bridge listing detail",
     },
+    {
+        method: "GET",
+        path: "/search",
+        description: "Unified vendor search over members + opportunities (guest-safe by default)",
+    },
+    {
+        method: "GET",
+        path: "/search/status",
+        description: "Search provider feature-flag status",
+    },
 ];
 
 export function guestExploreEnvelope<T>(data: T) {

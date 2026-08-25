@@ -19,6 +19,7 @@ import { DashboardModule } from "./dashboard/dashboard.module";
 import { VolunteerModule } from "./volunteer/volunteer.module";
 import { StripeModule } from "./stripe/stripe.module";
 import { DonationModule } from "./donation/donation.module";
+import { SearchModule } from "./(search)/search.module";
 
 @Global()
 @Module({
@@ -39,6 +40,7 @@ import { DonationModule } from "./donation/donation.module";
         PublicGroupModule,
         MetricsGroupModule,
         VolunteerModule,
+        SearchModule,
         AdminModule,
         StripeModule,
         DonationModule,

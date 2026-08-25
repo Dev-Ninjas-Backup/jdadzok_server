@@ -34,6 +34,7 @@
         "db:seed": "tsx prisma/seed.ts",
         "db:seed:demo": "tsx prisma/seed-demo.ts",
         "seed:cap": "tsx src/scripts/seed-cap-requirements.ts",
+        "test:search": "tsx src/main/(search)/__tests__/search.issue-26.test.ts",
         "postinstall": "npx prisma generate"
     },
     "dependencies": {

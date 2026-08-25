@@ -7,7 +7,7 @@
 | Field | Value |
 | --- | --- |
 | **Codebase** | `jdadzok_server` (Synqulan API) |
-| **Last updated** | 2026-07-27 |
+| **Last updated** | 2026-08-25 |
 | **Approach** | Buy + integrate vendor APIs / SDKs; thin NestJS adapters only |
 
 ---
@@ -50,8 +50,9 @@ This doc defines **what the client needs to procure and approve** so engineering
 
 | Status | Notes |
 | --- | --- |
-| Not built as AI search | Explore / list endpoints exist (`explore`, volunteer projects, users) but are conventional DB queries / sorting |
-| No search index service | No Algolia / Meilisearch / Typesense / Elasticsearch integration in this repo today |
+| P1 adapter shipped | Feature-flagged NestJS search module: Typesense / Algolia / off / memory |
+| Sync + `/search` | Members + volunteer opportunities indexed; `GET /search` hydrates from Postgres |
+| Vendor keys still client-owned | Set `SEARCH_PROVIDER` + vendor credentials in staging/production |
 
 ### 2.3 Recommended approach (plug-in only)
 
@@ -202,10 +203,12 @@ No phase requires training a custom Synqulan ML model.
 
 ### Search
 
-- [ ] Sample queries (product-provided list) return relevant top results in agreed index types  
-- [ ] Private fields absent from vendor index  
-- [ ] Guest search cannot retrieve non-public entities  
-- [ ] Create/update/delete of a member or opportunity reflects in search within agreed SLA (e.g. &lt; 1 minute)
+- [x] Sample queries (product-provided list) return relevant top results in agreed index types — adapter + self-tests for intent-style queries (`mentor React Accra`, `remote health volunteering`); product sign-off of golden set still client-owned  
+- [x] Private fields absent from vendor index — sync builders omit email/password/Stripe/balance/DOB; guarded by `SEARCH_FORBIDDEN_FIELDS`  
+- [x] Guest search cannot retrieve non-public entities — `guestSafe` / `isPublic` filters on vendor query + hydrate  
+- [x] Create/update/delete of a member or opportunity reflects in search within agreed SLA (e.g. &lt; 1 minute) — write-path upsert/delete hooks (immediate) + admin `POST /search/reindex`  
+
+Engineering notes (2026-08-25): see `updates/2026-08-25-search-vendor-issue-26.md`. Client still must pick commercial plan + keys (Open decisions §8 item 1).
 
 ### Spam / fake accounts
 
@@ -242,4 +245,5 @@ Until (1)–(3) are chosen, engineering can only stub feature-flagged adapters.
 
 | Date | Change |
 | --- | --- |
+| 2026-08-25 | P1 engineering: Typesense/Algolia/memory/off adapters; member + opportunity sync; `GET /search` + admin reindex (Issue #26) |
 | 2026-07-27 | Initial client doc: AI search + spam/fake-account detection via plug-in services only |
