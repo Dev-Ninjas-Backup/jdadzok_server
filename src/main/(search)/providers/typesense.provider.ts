@@ -122,7 +122,10 @@ export class TypesenseSearchProvider implements SearchProvider {
             const existing = new Set(
                 ((data?.fields ?? []) as { name: string }[]).map((f) => f.name),
             );
-            const required = fields.map((f) => String(f.name));
+            // Typesense treats `id` as a built-in document key — it may not appear in fields[].
+            const required = fields
+                .map((f) => String(f.name))
+                .filter((n) => n !== "id");
             const missing = required.filter((n) => !existing.has(n));
             if (!missing.length) return;
 

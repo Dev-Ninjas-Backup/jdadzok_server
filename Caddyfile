@@ -1,5 +1,7 @@
-:80 {
-    root * /usr/share/caddy
-    try_files {path} /index.html
-    file_server
+api.synqulan.com {
+    reverse_proxy jdadzok_server:5056
+}
+
+admin.synqulan.com {
+    reverse_proxy jdadzok_admin_panel-app-1:4173
 }
