@@ -103,6 +103,7 @@ export class PostRepository {
                 where: { id: postForAuthor.id },
                 include: {
                     ...this.defaultInclude,
+                    metrics: true,
                     author: {
                         omit: { password: true },
                         include: {
@@ -355,6 +356,36 @@ export class PostRepository {
             take: limit,
         });
     }
+    async findByIdWithMetrics(id: string) {
+        const post = await this.prisma.post.findUnique({
+            where: { id },
+            include: {
+                ...this.defaultInclude,
+                metrics: true,
+                author: {
+                    omit: { password: true },
+                    include: {
+                        profile: {
+                            select: {
+                                name: true,
+                                username: true,
+                                coverUrl: true,
+                                avatarUrl: true,
+                                bio: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!post) {
+            throw new NotFoundException(`Post not found with ID: ${id}`);
+        }
+
+        return post;
+    }
+
     /**
      * Finds a post by ID with dynamic select and include options.
      * @param {string} id - The ID of the post.

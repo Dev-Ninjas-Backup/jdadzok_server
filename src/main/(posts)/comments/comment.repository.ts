@@ -1,6 +1,7 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { CreateCommentDto } from "./dto/create.comment.dto";
+import { UpdateCommentDto } from "./dto/update.comment.dto";
 
 @Injectable()
 export class CommentRepository {
@@ -38,6 +39,7 @@ export class CommentRepository {
                 return {
                     commentId: comment.id,
                     postId: comment.postId,
+                    parentCommentId: comment.parentCommentId,
                     authorId: comment.authorId,
                     text: comment.text,
                     mediaUrl: comment.mediaUrl,
@@ -86,9 +88,61 @@ export class CommentRepository {
         });
     }
 
-    async deleteComment(commentId: string) {
-        return await this.prisma.comment.delete({
+    async updateComment(commentId: string, authorId: string, data: UpdateCommentDto) {
+        const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+        if (!comment) throw new NotFoundException("Comment not found");
+        if (comment.authorId !== authorId) {
+            throw new ForbiddenException("You are not authorized to update this comment");
+        }
+
+        return this.prisma.comment.update({
             where: { id: commentId },
+            data: { text: data.text },
+            include: {
+                author: {
+                    include: {
+                        profile: { select: { name: true, avatarUrl: true } },
+                    },
+                },
+            },
+        });
+    }
+
+    async deleteComment(commentId: string, userId: string) {
+        return await this.prisma.$transaction(async (tx) => {
+            const comment = await tx.comment.findUnique({
+                where: { id: commentId },
+                include: { replies: { select: { id: true } } },
+            });
+            if (!comment) throw new NotFoundException("Comment not found");
+            if (comment.authorId !== userId) {
+                throw new ForbiddenException("You are not authorized to delete this comment");
+            }
+
+            const replyCount = comment.replies.length;
+            const totalRemoved = 1 + replyCount;
+
+            await tx.comment.deleteMany({
+                where: { OR: [{ id: commentId }, { parentCommentId: commentId }] },
+            });
+
+            await tx.postMetrics.updateMany({
+                where: { postId: comment.postId },
+                data: {
+                    totalComments: { decrement: totalRemoved },
+                    lastUpdated: new Date(),
+                },
+            });
+
+            await tx.userMetrics.updateMany({
+                where: { userId: comment.authorId },
+                data: {
+                    totalComments: { decrement: 1 },
+                    lastUpdated: new Date(),
+                },
+            });
+
+            return { deleted: true, commentId };
         });
     }
 }

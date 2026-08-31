@@ -24,6 +24,7 @@ import {
 import { NotificationType } from "@prisma/client";
 import { Server, Socket } from "socket.io";
 import { PrismaService } from "../prisma/prisma.service";
+import { FirebaseService } from "../firebase/firebase.service";
 
 @WebSocketGateway({
     cors: { origin: "*" },
@@ -41,6 +42,7 @@ export class NotificationGateway
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly prisma: PrismaService,
+        private readonly firebase: FirebaseService,
     ) {}
 
     @WebSocketServer()
@@ -254,6 +256,14 @@ export class NotificationGateway
                     `✓ Saved notification to DB for user ${recipient.id} (${recipient.email})`,
                 );
 
+                await this.sendFcmPush(recipient.id, {
+                    title,
+                    message,
+                    type,
+                    entityId,
+                    notificationId: notification.id,
+                });
+
                 return notification;
             });
 
@@ -262,6 +272,55 @@ export class NotificationGateway
         } catch (error) {
             this.logger.error(`Failed to save notifications to database: ${error}`);
             throw error;
+        }
+    }
+
+    private async sendFcmPush(
+        userId: string,
+        input: {
+            title: string;
+            message: string;
+            type: NotificationType;
+            entityId: string | null;
+            notificationId: string;
+        },
+    ): Promise<void> {
+        if (!this.firebase.isConfigured()) return;
+
+        const toggle = await this.prisma.notificationToggle.findUnique({
+            where: { userId },
+        });
+        if (toggle && !toggle.communication) return;
+
+        const devices = await this.prisma.deviceToken.findMany({
+            where: { userId },
+            select: { token: true },
+        });
+        if (devices.length === 0) return;
+
+        const data: Record<string, string> = {
+            type: input.type,
+            notificationId: input.notificationId,
+        };
+        if (input.entityId) data.entityId = input.entityId;
+
+        try {
+            const result = await this.firebase.sendPushToTokens(
+                devices.map((d) => d.token),
+                {
+                    title: input.title,
+                    body: input.message,
+                    data,
+                },
+            );
+
+            if (result.invalidTokens.length > 0) {
+                await this.prisma.deviceToken.deleteMany({
+                    where: { token: { in: result.invalidTokens } },
+                });
+            }
+        } catch (err) {
+            this.logger.warn(`FCM push failed for user ${userId}: ${String(err)}`);
         }
     }
 

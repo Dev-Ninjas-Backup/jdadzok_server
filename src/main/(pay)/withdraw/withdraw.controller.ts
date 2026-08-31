@@ -1,15 +1,26 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { successPaginatedResponse, successResponse } from "@common/utils/response.util";
+import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
+import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
+import { Controller, Get, Post, Query, UseGuards, Body } from "@nestjs/common";
 
 import { CreateWithdrawDto } from "./dto/create-withdraw.dto";
 import { WithdrawService } from "./withdraw.service";
-import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
 import { VerifiedUser } from "@type/shared.types";
-import { ApiBearerAuth } from "@nestjs/swagger";
-import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
+import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
+import { WithdrawQueryDto } from "./dto/withdraw-query.dto";
 
 @Controller("withdraw")
 export class WithdrawController {
     constructor(private readonly withdrawService: WithdrawService) {}
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get()
+    @ApiOperation({ summary: "Get payout / withdraw history for current user" })
+    async history(@GetVerifiedUser() user: VerifiedUser, @Query() query: WithdrawQueryDto) {
+        const result = await this.withdrawService.getHistory(user.id, query);
+        return successPaginatedResponse(result.data, result.metadata, "Withdraw history retrieved");
+    }
 
     // @ApiBearerAuth()
     // @UseGuards(JwtAuthGuard)

@@ -5,6 +5,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationToggleDto } from "./dto/notification-toggle";
 import { ReadNotificationDto } from "./dto/read.notification.dto";
 import { NotificationType } from "@prisma/client";
+import { RegisterDeviceTokenDto, UnregisterDeviceTokenDto } from "./dto/device-token.dto";
 
 @Injectable()
 export class NotificationsService {
@@ -375,5 +376,42 @@ export class NotificationsService {
             changeNotification,
             "Community notification setting turned OFF successfully",
         );
+    }
+
+    @HandleError("Failed to register device token")
+    async registerDeviceToken(
+        userId: string,
+        dto: RegisterDeviceTokenDto,
+    ): Promise<TResponse<any>> {
+        const record = await this.prisma.deviceToken.upsert({
+            where: {
+                userId_token: {
+                    userId,
+                    token: dto.token,
+                },
+            },
+            create: {
+                userId,
+                token: dto.token,
+                platform: dto.platform,
+            },
+            update: {
+                platform: dto.platform,
+            },
+        });
+
+        return successResponse(record, "Device token registered");
+    }
+
+    @HandleError("Failed to unregister device token")
+    async unregisterDeviceToken(
+        userId: string,
+        dto: UnregisterDeviceTokenDto,
+    ): Promise<TResponse<any>> {
+        await this.prisma.deviceToken.deleteMany({
+            where: { userId, token: dto.token },
+        });
+
+        return successResponse({ removed: true }, "Device token removed");
     }
 }

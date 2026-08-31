@@ -243,9 +243,7 @@ export class FullTableSeed {
         this.logger.log("✅ Reports");
     }
 
-    private async seedFraudChecks(
-        users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>,
-    ) {
+    private async seedFraudChecks(users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>) {
         if ((await this.prisma.fraudCheck.count()) > 0) return;
 
         await this.prisma.fraudCheck.createMany({
@@ -617,9 +615,7 @@ export class FullTableSeed {
         this.logger.log("✅ DonationLog");
     }
 
-    private async seedSubscriptions(
-        users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>,
-    ) {
+    private async seedSubscriptions(users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>) {
         if ((await this.prisma.subscription.count()) > 0) return;
         if (!users.student || !users.mentor) return;
 
@@ -672,9 +668,7 @@ export class FullTableSeed {
         this.logger.log("✅ Calling + CallParticipant");
     }
 
-    private async seedFileInstances(
-        users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>,
-    ) {
+    private async seedFileInstances(users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>) {
         if ((await this.prisma.fileInstance.count()) > 0) return;
 
         await this.prisma.fileInstance.create({
@@ -713,9 +707,7 @@ export class FullTableSeed {
         this.logger.log("✅ PaymentMethods");
     }
 
-    private async seedImpactExports(
-        users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>,
-    ) {
+    private async seedImpactExports(users: Awaited<ReturnType<FullTableSeed["resolveDemoUsers"]>>) {
         if ((await this.prisma.impactDataExportLog.count()) > 0) return;
         if (!users.corporate) return;
 

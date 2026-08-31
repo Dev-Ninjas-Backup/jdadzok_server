@@ -21,6 +21,7 @@ import { LoginDto } from "./dto/login.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyTokenDto } from "./dto/verify-token.dto";
 import { ChangedPasswordDto } from "./dto/change.password.dto";
+import { AppleAuthDto, FirebaseAuthDto, GoogleAuthDto } from "./dto/oauth-auth.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -39,6 +40,39 @@ export class AuthController {
         } catch (err) {
             return err;
         }
+    }
+
+    @UseInterceptors(ClassSerializerInterceptor)
+    @MakePublic()
+    @Post("firebase")
+    @UsePipes(ValidationPipe)
+    async loginWithFirebase(
+        @Res({ passthrough: true }) res: Response,
+        @Body() body: FirebaseAuthDto,
+    ) {
+        const result = await this.authService.loginWithFirebase(body.idToken, body.name);
+        cookieHandler(res, "set", result.accessToken);
+        return successResponse(result, "Firebase login successful");
+    }
+
+    @UseInterceptors(ClassSerializerInterceptor)
+    @MakePublic()
+    @Post("google")
+    @UsePipes(ValidationPipe)
+    async loginWithGoogle(@Res({ passthrough: true }) res: Response, @Body() body: GoogleAuthDto) {
+        const result = await this.authService.loginWithGoogle(body.idToken);
+        cookieHandler(res, "set", result.accessToken);
+        return successResponse(result, "Google login successful");
+    }
+
+    @UseInterceptors(ClassSerializerInterceptor)
+    @MakePublic()
+    @Post("apple")
+    @UsePipes(ValidationPipe)
+    async loginWithApple(@Res({ passthrough: true }) res: Response, @Body() body: AppleAuthDto) {
+        const result = await this.authService.loginWithApple(body.idToken, body.name);
+        cookieHandler(res, "set", result.accessToken);
+        return successResponse(result, "Apple login successful");
     }
 
     @ApiBearerAuth()

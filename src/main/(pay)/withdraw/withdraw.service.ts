@@ -168,4 +168,41 @@ export class WithdrawService {
 
         return { message: "Monthly withdraw queued" };
     }
+
+    async getHistory(userId: string, query: { page?: number; limit?: number }) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 20;
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            this.prisma.withdraw.findMany({
+                where: { userId },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+                select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    provider: true,
+                    stripeTxnId: true,
+                    errorMessage: true,
+                    scheduledFor: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            }),
+            this.prisma.withdraw.count({ where: { userId } }),
+        ]);
+
+        return {
+            data,
+            metadata: {
+                page,
+                limit,
+                total,
+                totalPage: Math.ceil(total / limit) || 1,
+            },
+        };
+    }
 }

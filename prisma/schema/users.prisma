@@ -143,6 +143,8 @@ model User {
   // Account-fraud vendor checks (Sift / SEON / Castle — optional P3)
   fraudChecks FraudCheck[]
 
+  deviceTokens DeviceToken[]
+
   @@index([email])
   @@index([capLevel])
   @@index([role])

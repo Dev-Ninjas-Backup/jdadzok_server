@@ -15,6 +15,7 @@ import { SearchSyncService } from "@module/(search)/search-sync.service";
 import { CreatePostDto, UpdatePostDto } from "./dto/create.post.dto";
 import { PostRepository } from "./posts.repository";
 import { PostQueryDto } from "./dto/posts.query.dto";
+import { enrichPostWithMetrics, enrichPostsWithMetrics } from "./utils/post-metrics.mapper";
 
 @Injectable()
 export class PostService {
@@ -63,7 +64,7 @@ export class PostService {
         // 6️⃣ Emit notification
         this.eventEmitter.emit(EVENT_TYPES.POST_CREATE, payload);
 
-        return post;
+        return enrichPostWithMetrics(post);
     }
 
     async index(options?: PostQueryDto) {
@@ -119,23 +120,25 @@ export class PostService {
                             },
                         },
                     },
+                    metrics: true,
                 },
             }),
 
             this.prisma.post.count({ where }),
         ]);
 
-        // Format author
-        const formatted = posts.map((post) => ({
-            ...post,
-            author: {
-                id: post.author.id,
-                email: post.author.email,
-                name: post.author.profile?.name ?? "Unknown",
-                avatarUrl:
-                    post.author.profile?.avatarUrl ?? "https://example.com/default-avatar.png",
-            },
-        }));
+        const formatted = enrichPostsWithMetrics(
+            posts.map((post) => ({
+                ...post,
+                author: {
+                    id: post.author.id,
+                    email: post.author.email,
+                    name: post.author.profile?.name ?? "Unknown",
+                    avatarUrl:
+                        post.author.profile?.avatarUrl ?? "https://example.com/default-avatar.png",
+                },
+            })),
+        );
 
         return {
             data: formatted,
@@ -149,11 +152,11 @@ export class PostService {
     }
 
     async findOne(id: string) {
-        const post = await this.repository.findById(id);
+        const post = await this.repository.findByIdWithMetrics(id);
         if (!post) {
             throw new NotFoundException("Post not found");
         }
-        return post;
+        return enrichPostWithMetrics(post);
     }
 
     async generateLink(id: string) {
@@ -226,7 +229,8 @@ export class PostService {
             where: {
                 authorId: user_id,
             },
+            include: { metrics: true },
         });
-        return res;
+        return enrichPostsWithMetrics(res);
     }
 }

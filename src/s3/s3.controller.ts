@@ -3,21 +3,32 @@ import {
     Controller,
     Post,
     UploadedFiles,
+    UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
+} from "@nestjs/swagger";
 import * as multer from "multer";
+import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import { S3ResponseDto } from "./dto/s3.dto";
 import { apiBodyExample } from "./example";
 import { S3Service } from "./s3.service";
 
 @ApiTags("AWS S3 Uploads")
+@ApiBearerAuth()
 @Controller("aws-uploads")
 export class S3Controller {
     constructor(private readonly s3Service: S3Service) {}
 
     @Post()
+    @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: "Upload multiple OR single files" })
     @ApiConsumes("multipart/form-data")
     @ApiBody(apiBodyExample)

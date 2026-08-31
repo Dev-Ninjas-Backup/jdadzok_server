@@ -570,13 +570,72 @@ IO.io(
 - Server routes: `/stripe/*`
 - Uncomment `StripeService.init()` in `main.dart` when ready
 
-### 8.2 Google / Apple Sign-In
+### 8.2 Google / Apple Sign-In (via Firebase Auth)
 
-UI exists in `SignInController` / `SignUpController` but **no backend OAuth endpoints** are wired in the current auth service (email/password only). Coordinate with backend before implementing social login.
+Mobile signs in with Google or Apple through the **Firebase Auth SDK**, then sends the resulting **Firebase ID token** to the backend:
 
-### 8.3 Push notifications
+```
+POST /auth/firebase     (preferred — any Firebase provider)
+POST /auth/google       (alias — same Firebase ID token)
+POST /auth/apple        (alias — same Firebase ID token; optional name on first sign-in)
+```
 
-`flutter_local_notifications` is listed; FCM/APNs device token registration endpoint should be confirmed with backend team before wiring `NotificationSettingsScreen`.
+**Body:**
+
+```json
+{
+  "idToken": "<firebase-id-token>",
+  "name": "Amara O."
+}
+```
+
+**Response:** same shape as `POST /auth/login` (`accessToken` + `user`).
+
+**Server env:** `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_PROJECT_ID` + `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`.
+
+**Mobile flow:**
+
+1. `FirebaseAuth.instance.signInWithCredential(...)` (Google / Apple)
+2. `await user.getIdToken()` → send to `/auth/firebase`
+3. Store returned JWT for API calls
+
+Do **not** send raw Google or Apple identity tokens — only the Firebase ID token.
+
+### 8.3 Push notifications (FCM via Firebase)
+
+Uses the **same Firebase project** as social auth (`firebase-admin` + your service account in `.env`).
+
+**Register device token (after login):**
+
+```
+POST /notifications/device-token
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "token": "<fcm-device-token-from-firebase-messaging>",
+  "platform": "IOS"
+}
+```
+
+`platform`: `IOS` | `ANDROID`
+
+**Unregister on logout:**
+
+```
+DELETE /notifications/device-token
+{ "token": "<fcm-device-token>" }
+```
+
+**Mobile setup:**
+
+1. Add `firebase_messaging` to Flutter
+2. Request notification permission
+3. `FirebaseMessaging.instance.getToken()` → register with backend
+4. On token refresh, re-register
+
+When the server creates an in-app notification (posts, comments, messages, etc.), it also sends an FCM push to all registered tokens for that user. Stale tokens are auto-removed.
 
 ### 8.4 Media uploads
 
@@ -659,7 +718,7 @@ CORS applies to **web/browser** builds only. Native Android/iOS calls are not CO
 | Email must be `@gmail.com` | Validate in sign-up UI or show clear error |
 | No refresh token | Re-login after 90 days or on 401 |
 | Cookie-first web admin | Mobile must use Bearer, not cookies |
-| OAuth not implemented | Google/Apple buttons need backend work first |
+| OAuth not implemented | Use Firebase Auth on mobile → `POST /auth/firebase` with Firebase ID token |
 | Reputation passport `:userId` requires auth | Even “public” passport needs a logged-in viewer |
 
 ---
@@ -677,6 +736,9 @@ CORS applies to **web/browser** builds only. Native Android/iOS calls are not CO
 | POST | `/auth/reset-password` | Public |
 | POST | `/auth/resent-code` | Public |
 | POST | `/auth/change-password` | Bearer |
+| POST | `/auth/firebase` | Public — Firebase ID token (Google/Apple via Firebase SDK) |
+| POST | `/auth/google` | Public — alias for Firebase Google sign-in |
+| POST | `/auth/apple` | Public — alias for Firebase Apple sign-in |
 | POST | `/choices` | Bearer |
 | GET | `/choices/all` | Public |
 

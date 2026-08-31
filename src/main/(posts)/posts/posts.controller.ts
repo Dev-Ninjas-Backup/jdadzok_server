@@ -1,4 +1,4 @@
-import { GetUser, GetVerifiedUser } from "@common/jwt/jwt.decorator";
+import { GetUser, GetVerifiedUser, MakePublic } from "@common/jwt/jwt.decorator";
 import { successResponse } from "@common/utils/response.util";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import {
@@ -74,20 +74,17 @@ export class PostController {
     }
 
     @Get("share-link/:id")
-    @ApiOperation({ summary: "Generate shareable post url" })
-    @UseGuards(JwtAuthGuard)
+    @MakePublic()
+    @ApiOperation({ summary: "Get public shareable post URL" })
     async shareLink(@Param("id", ParseUUIDPipe) id: string) {
-        try {
-            if (!id)
-                throw new NotFoundException("Post ID not found", {
-                    description: "Provided params are not valid / not found!",
-                });
-
-            const link = await this.service.generateLink(id);
-            return successResponse(link, "Post shareable link generated");
-        } catch (err) {
-            return err;
+        if (!id) {
+            throw new NotFoundException("Post ID not found", {
+                description: "Provided params are not valid / not found!",
+            });
         }
+
+        const link = await this.service.generateLink(id);
+        return successResponse({ url: link, shareUrl: link }, "Post shareable link generated");
     }
 
     @Patch(":id")

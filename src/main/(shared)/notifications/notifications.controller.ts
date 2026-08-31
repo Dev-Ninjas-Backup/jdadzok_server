@@ -8,6 +8,7 @@ import {
     Get,
     Param,
     Patch,
+    Post,
     Query,
     UseGuards,
     UsePipes,
@@ -18,6 +19,7 @@ import { NotificationType } from "@prisma/client";
 import { NotificationToggleDto } from "./dto/notification-toggle";
 import { ReadNotificationDto } from "./dto/read.notification.dto";
 import { NotificationsService } from "./notifications.service";
+import { RegisterDeviceTokenDto, UnregisterDeviceTokenDto } from "./dto/device-token.dto";
 
 @ApiTags("Notification Setting")
 @ValidateAuth()
@@ -218,5 +220,27 @@ export class NotificaitonsController {
         @GetUser("userId") userId: string,
     ): Promise<TResponse<any>> {
         return await this.NotificationsService.CommunityToogleNotificationSettingOff(userId);
+    }
+
+    @ApiBearerAuth()
+    @ValidateAuth()
+    @ApiOperation({ summary: "Register FCM/APNs device token for push notifications" })
+    @Post("device-token")
+    async registerDeviceToken(
+        @GetUser("userId") userId: string,
+        @Body() dto: RegisterDeviceTokenDto,
+    ): Promise<TResponse<any>> {
+        return this.NotificationsService.registerDeviceToken(userId, dto);
+    }
+
+    @ApiBearerAuth()
+    @ValidateAuth()
+    @ApiOperation({ summary: "Remove a registered device token" })
+    @Delete("device-token")
+    async unregisterDeviceToken(
+        @GetUser("userId") userId: string,
+        @Body() dto: UnregisterDeviceTokenDto,
+    ): Promise<TResponse<any>> {
+        return this.NotificationsService.unregisterDeviceToken(userId, dto);
     }
 }

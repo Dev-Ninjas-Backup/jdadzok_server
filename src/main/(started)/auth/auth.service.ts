@@ -23,6 +23,8 @@ import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyTokenDto } from "./dto/verify-token.dto";
 import { ChangedPasswordDto } from "./dto/change.password.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
+import { FirebaseService } from "@lib/firebase/firebase.service";
+import { AuthProvider } from "@prisma/client";
 
 @Injectable()
 export class AuthService {
@@ -34,6 +36,7 @@ export class AuthService {
         private readonly mailService: MailService,
         private readonly otpService: OptService,
         private readonly prisma: PrismaService,
+        private readonly firebase: FirebaseService,
     ) {}
 
     async login(input: LoginDto) {
@@ -71,6 +74,110 @@ export class AuthService {
             user: safeUser,
         };
     }
+
+    async loginWithFirebase(idToken: string, name?: string) {
+        const firebaseUser = await this.firebase.verifyIdToken(idToken);
+        return this.loginWithOAuth({
+            email: firebaseUser.email,
+            name: name ?? firebaseUser.name,
+            provider: firebaseUser.provider,
+            avatarUrl: firebaseUser.picture,
+        });
+    }
+
+    async loginWithGoogle(idToken: string) {
+        return this.loginWithFirebase(idToken);
+    }
+
+    async loginWithApple(idToken: string, name?: string) {
+        return this.loginWithFirebase(idToken, name);
+    }
+
+    private async loginWithOAuth(input: {
+        email: string;
+        name?: string;
+        provider: AuthProvider;
+        avatarUrl?: string;
+    }) {
+        let user = await this.userRepository.findByEmail(input.email);
+
+        if (!user) {
+            user = await this.prisma.$transaction(async (tx) => {
+                const created = await tx.user.create({
+                    data: {
+                        email: input.email,
+                        authProvider: input.provider,
+                        isVerified: true,
+                        role: "USER",
+                        capLevel: "NONE",
+                        metrics: {
+                            create: {
+                                totalPosts: 0,
+                                totalComments: 0,
+                                totalLikes: 0,
+                                totalShares: 0,
+                                totalFollowers: 0,
+                                totalFollowing: 0,
+                                totalEarnings: 0,
+                                currentMonthEarnings: 0,
+                                volunteerHours: 0,
+                                completedProjects: 0,
+                                activityScore: 0,
+                            },
+                        },
+                        profile: input.name
+                            ? {
+                                  create: {
+                                      name: input.name,
+                                      username: input.email.split("@")[0],
+                                      avatarUrl: input.avatarUrl,
+                                  },
+                              }
+                            : input.avatarUrl
+                              ? {
+                                    create: {
+                                        name: input.email.split("@")[0],
+                                        username: input.email.split("@")[0],
+                                        avatarUrl: input.avatarUrl,
+                                    },
+                                }
+                              : undefined,
+                    },
+                });
+
+                return created;
+            });
+        } else if (user.authProvider !== input.provider && user.authProvider !== "EMAIL") {
+            throw new ConflictException(`Account already registered with ${user.authProvider}`);
+        } else if (!user.isVerified) {
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: { isVerified: true, authProvider: input.provider },
+            });
+        }
+
+        const accessToken = await this.jwtService.signAsync({
+            sub: user.id,
+            roles: user.role,
+            email: user.email,
+        });
+
+        return {
+            accessToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified,
+                capLevel: user.capLevel,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+                stripeAccountId: user.stripeAccountId,
+                stripeCustomerId: user.stripeCustomerId,
+            },
+        };
+    }
+
     async forgetPassword(input: ForgetPasswordDto) {
         // email must need to be end with @gmail.com
         if (!input.email.endsWith("@gmail.com"))

@@ -1,0 +1,18 @@
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
+model DeviceToken {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  platform  DevicePlatform
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, token])
+  @@index([userId])
+  @@map("device_tokens")
+}

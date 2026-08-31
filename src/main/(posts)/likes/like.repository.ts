@@ -87,6 +87,16 @@ export class LikeRepository {
 
             //  Only decrement if like existed
             if (like.count > 0) {
+                if (postId) {
+                    await tx.postMetrics.updateMany({
+                        where: { postId },
+                        data: {
+                            totalLikes: { decrement: like.count },
+                            lastUpdated: new Date(),
+                        },
+                    });
+                }
+
                 await tx.userMetrics.updateMany({
                     where: { userId },
                     data: {
