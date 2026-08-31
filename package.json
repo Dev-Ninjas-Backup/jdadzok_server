@@ -33,6 +33,7 @@
         "prod": "bash ./scripts.sh",
         "db:seed": "tsx prisma/seed.ts",
         "db:seed:demo": "tsx prisma/seed-demo.ts",
+        "db:seed:full": "tsx prisma/seed-full.ts",
         "seed:cap": "tsx src/scripts/seed-cap-requirements.ts",
         "test:search": "tsx \"src/main/(search)/__tests__/search.issue-26.test.ts\"",
         "test:fraud": "tsx \"src/main/(abuse)/fraud/__tests__/fraud.issue-28.test.ts\"",

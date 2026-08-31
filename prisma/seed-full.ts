@@ -1,22 +1,20 @@
 /**
- * Standalone demo dummy seed (idempotent).
- * Usage: npm run db:seed:demo
+ * Seed platform settings + all remaining tables (idempotent).
+ * Usage: npm run db:seed:full
  */
 import { PrismaClient } from "@prisma/client";
 import { config } from "dotenv";
 import { expand } from "dotenv-expand";
 import path from "path";
-import { DemoDummySeed } from "./seeds/demo-dummy.seed";
 import { FullTableSeed } from "./seeds/full-table.seed";
 
 const prisma = new PrismaClient();
 
 async function main() {
     expand(config({ path: path.resolve(process.cwd(), ".env") }));
-    console.info("===============🌱 Demo dummy seed start 🌱===============");
-    await new DemoDummySeed(prisma).run();
+    console.info("===============🌱 Full table seed start 🌱===============");
     await new FullTableSeed(prisma).run();
-    console.info("===============🌱 Demo dummy seed done 😍===============");
+    console.info("===============🌱 Full table seed done 😍===============");
 }
 
 main()
