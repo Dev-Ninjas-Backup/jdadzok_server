@@ -169,7 +169,12 @@ export class CallService {
             await this.updateCallStatus(call.id, "MISSED");
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${callerId}`);
             await this.cacheManager.del(`${this.USER_CALL_PREFIX}${recipientUserId}`);
-            return { callId: call.id, status: "recipient_offline", callPurpose, mediaType: resolvedMedia };
+            return {
+                callId: call.id,
+                status: "recipient_offline",
+                callPurpose,
+                mediaType: resolvedMedia,
+            };
         }
 
         const payload = {

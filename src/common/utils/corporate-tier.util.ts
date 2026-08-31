@@ -63,8 +63,12 @@ export const SDG_GOAL_MIN = 1;
 export const SDG_GOAL_MAX = 17;
 
 export function assertValidSdgGoals(goals: number[]): void {
-    const invalid = goals.filter((g) => g < SDG_GOAL_MIN || g > SDG_GOAL_MAX || !Number.isInteger(g));
+    const invalid = goals.filter(
+        (g) => g < SDG_GOAL_MIN || g > SDG_GOAL_MAX || !Number.isInteger(g),
+    );
     if (invalid.length) {
-        throw new Error(`Invalid SDG goal numbers (must be integers ${SDG_GOAL_MIN}–${SDG_GOAL_MAX}): ${invalid.join(", ")}`);
+        throw new Error(
+            `Invalid SDG goal numbers (must be integers ${SDG_GOAL_MIN}–${SDG_GOAL_MAX}): ${invalid.join(", ")}`,
+        );
     }
 }

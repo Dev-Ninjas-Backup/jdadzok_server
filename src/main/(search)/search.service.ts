@@ -357,9 +357,7 @@ export class SearchService {
         const rows = await this.prisma.post.findMany({
             where: {
                 id: { in: ids },
-                ...(guestSafe
-                    ? { visibility: PostVisibility.PUBLIC, isHidden: false }
-                    : {}),
+                ...(guestSafe ? { visibility: PostVisibility.PUBLIC, isHidden: false } : {}),
             },
             select: {
                 id: true,

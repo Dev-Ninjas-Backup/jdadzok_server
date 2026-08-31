@@ -1,8 +1,5 @@
 import { CapLevel, CapRequirements, UserMetrics } from "@prisma/client";
-import {
-    capDisplayLabel,
-    capEarningLevelHeadline,
-} from "@common/utils/cap-earning-headline.util";
+import { capDisplayLabel, capEarningLevelHeadline } from "@common/utils/cap-earning-headline.util";
 
 interface CapEarningSnapshot {
     effectiveSharePercentage: number;
@@ -33,10 +30,7 @@ export function sanitizeCapRequirementsForPublic(
     return rest;
 }
 
-export function toPublicEarningLevel(
-    capLevel: CapLevel,
-    options?: { earningAtRedRate?: boolean },
-) {
+export function toPublicEarningLevel(capLevel: CapLevel, options?: { earningAtRedRate?: boolean }) {
     return {
         headline: capEarningLevelHeadline(capLevel),
         capLabel: capDisplayLabel(capLevel),
@@ -106,12 +100,7 @@ export function sanitizeUserMetricsForViewer<T extends Record<string, unknown>>(
         return metrics;
     }
 
-    const {
-        totalEarnings: _te,
-        currentMonthEarnings: _cme,
-        seller: _seller,
-        ...rest
-    } = metrics;
+    const { totalEarnings: _te, currentMonthEarnings: _cme, seller: _seller, ...rest } = metrics;
 
     return {
         ...rest,

@@ -629,7 +629,8 @@ export class DemoDummySeed {
             data: {
                 fromUserId: mentor.id,
                 toUserId: amara.id,
-                message: "Outstanding mentorship this week — clear explanations and follow-through.",
+                message:
+                    "Outstanding mentorship this week — clear explanations and follow-through.",
             },
         });
         await this.prisma.endorsement.create({
@@ -1000,7 +1001,8 @@ export class DemoDummySeed {
                     create: [
                         {
                             senderId: mentor.id,
-                            content: "Welcome to mentorship chat — sessions here log verified hours.",
+                            content:
+                                "Welcome to mentorship chat — sessions here log verified hours.",
                             status: LiveMessageStatus.SENT,
                         },
                         {

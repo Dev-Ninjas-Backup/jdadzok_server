@@ -1,14 +1,8 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
-import {
-    CapLevel,
-    ContributionType,
-    VolunteerHourVerificationStatus,
-} from "@prisma/client";
+import { CapLevel, ContributionType, VolunteerHourVerificationStatus } from "@prisma/client";
 import { capDisplayLabel } from "@common/utils/cap-earning-headline.util";
-import {
-    capLevelsAtOrAbove,
-} from "@common/utils/reputation-rank.util";
+import { capLevelsAtOrAbove } from "@common/utils/reputation-rank.util";
 import {
     computeContributionScore,
     CONTRIBUTION_LEADERBOARD_EXCLUDES,
@@ -139,8 +133,7 @@ export class ContributionLeaderboardService {
         }
 
         entries.sort((a, b) => {
-            const diff =
-                contributionSortValue(b, sortBy) - contributionSortValue(a, sortBy);
+            const diff = contributionSortValue(b, sortBy) - contributionSortValue(a, sortBy);
             if (diff !== 0) {
                 return diff;
             }
@@ -190,11 +183,7 @@ export class ContributionLeaderboardService {
         };
     }
 
-    private emptyResponse(
-        sortBy: ContributionSortField,
-        limit: number,
-        minCapLevel?: CapLevel,
-    ) {
+    private emptyResponse(sortBy: ContributionSortField, limit: number, minCapLevel?: CapLevel) {
         return {
             items: [],
             ranking: {

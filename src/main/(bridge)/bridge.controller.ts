@@ -61,10 +61,7 @@ export class BridgeController {
     @ValidateAuth()
     @ApiBearerAuth()
     @ApiOperation({ summary: "Get a Bridge booking with fee breakdown" })
-    async getBooking(
-        @GetUser("userId") userId: string,
-        @Param("bookingId") bookingId: string,
-    ) {
+    async getBooking(@GetUser("userId") userId: string, @Param("bookingId") bookingId: string) {
         const data = await this.bridgeService.getBooking(userId, bookingId);
         return successResponse(data, "Bridge booking retrieved");
     }
@@ -75,10 +72,7 @@ export class BridgeController {
     @ApiOperation({
         summary: "Mark an accepted Bridge booking completed (sets payout ready for settlement)",
     })
-    async complete(
-        @GetUser("userId") userId: string,
-        @Param("bookingId") bookingId: string,
-    ) {
+    async complete(@GetUser("userId") userId: string, @Param("bookingId") bookingId: string) {
         const data = await this.bridgeService.completeBooking(userId, bookingId);
         return successResponse(data, "Bridge booking completed");
     }

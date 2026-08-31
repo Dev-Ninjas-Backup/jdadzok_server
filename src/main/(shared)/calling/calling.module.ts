@@ -20,13 +20,7 @@ import { MentorshipCallHoursService } from "./service/mentorship-call-hours.serv
             max: 1000,
         }),
     ],
-    providers: [
-        CallGateway,
-        CallService,
-        MentorshipCallHoursService,
-        JwtService,
-        ConfigService,
-    ],
+    providers: [CallGateway, CallService, MentorshipCallHoursService, JwtService, ConfigService],
     controllers: [CallController],
     exports: [CallService, MentorshipCallHoursService],
 })

@@ -1,10 +1,4 @@
-import {
-    ForbiddenException,
-    Inject,
-    Injectable,
-    Logger,
-    NotFoundException,
-} from "@nestjs/common";
+import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { FraudDecision, FraudEventType } from "@prisma/client";
 import { PrismaService } from "@lib/prisma/prisma.service";
@@ -15,11 +9,7 @@ import {
     FraudProviderName,
 } from "./fraud.constants";
 import { FraudProvider } from "./providers/fraud-provider.interface";
-import {
-    FraudEvaluationResult,
-    FraudScoreRequest,
-    mapScoreToDecision,
-} from "./fraud.types";
+import { FraudEvaluationResult, FraudScoreRequest, mapScoreToDecision } from "./fraud.types";
 
 @Injectable()
 export class FraudService {
@@ -89,11 +79,7 @@ export class FraudService {
             }
         }
 
-        const decision = mapScoreToDecision(
-            score,
-            this.queueThreshold(),
-            this.rejectThreshold(),
-        );
+        const decision = mapScoreToDecision(score, this.queueThreshold(), this.rejectThreshold());
 
         const check = await this.prisma.fraudCheck.create({
             data: {
@@ -163,11 +149,7 @@ export class FraudService {
         });
     }
 
-    async listChecks(params: {
-        decision?: FraudDecision;
-        page?: number;
-        limit?: number;
-    }) {
+    async listChecks(params: { decision?: FraudDecision; page?: number; limit?: number }) {
         const page = Math.max(1, params.page ?? 1);
         const limit = Math.min(100, Math.max(1, params.limit ?? 20));
         const where = params.decision ? { decision: params.decision } : {};
@@ -211,9 +193,7 @@ export class FraudService {
             data: {
                 reviewedAt: new Date(),
                 reviewedById: adminUserId,
-                reason: existing.reason
-                    ? `${existing.reason}; admin_cleared`
-                    : "admin_cleared",
+                reason: existing.reason ? `${existing.reason}; admin_cleared` : "admin_cleared",
             },
         });
     }
@@ -229,15 +209,17 @@ export class FraudService {
     }
 
     private failClosed(): boolean {
-        return (this.config.get<string>("ABUSE_FRAUD_FAIL_CLOSED") || "false")
-            .trim()
-            .toLowerCase() === "true";
+        return (
+            (this.config.get<string>("ABUSE_FRAUD_FAIL_CLOSED") || "false").trim().toLowerCase() ===
+            "true"
+        );
     }
 
     /** When false, REJECT is recorded but does not throw (admin queue only). */
     private autoReject(): boolean {
-        return (this.config.get<string>("ABUSE_FRAUD_AUTO_REJECT") || "true")
-            .trim()
-            .toLowerCase() !== "false";
+        return (
+            (this.config.get<string>("ABUSE_FRAUD_AUTO_REJECT") || "true").trim().toLowerCase() !==
+            "false"
+        );
     }
 }

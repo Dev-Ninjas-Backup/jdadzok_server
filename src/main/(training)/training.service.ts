@@ -84,10 +84,7 @@ export class TrainingService {
                     cohorts: {
                         where: {
                             status: {
-                                in: [
-                                    TrainingCohortStatus.OPEN,
-                                    TrainingCohortStatus.IN_PROGRESS,
-                                ],
+                                in: [TrainingCohortStatus.OPEN, TrainingCohortStatus.IN_PROGRESS],
                             },
                         },
                         orderBy: { startsAt: "asc" },
@@ -278,8 +275,7 @@ export class TrainingService {
         }
 
         const isParticipant =
-            enrollment.studentId === userId ||
-            enrollment.cohort.course.instructorId === userId;
+            enrollment.studentId === userId || enrollment.cohort.course.instructorId === userId;
         if (!isParticipant) {
             throw new ForbiddenException("Not allowed to view this enrollment");
         }

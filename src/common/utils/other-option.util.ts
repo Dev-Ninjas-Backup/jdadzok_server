@@ -17,9 +17,7 @@ export function resolveOtherText(params: {
 
     if (params.isOther) {
         if (!trimmed) {
-            throw new BadRequestException(
-                `${label} free-text is required when selecting Other`,
-            );
+            throw new BadRequestException(`${label} free-text is required when selecting Other`);
         }
         return trimmed;
     }

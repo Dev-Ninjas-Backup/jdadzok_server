@@ -16,8 +16,7 @@ export class ContributionLeaderboardQueryDto {
     @ApiPropertyOptional({
         enum: ["combined", "hours", "mentorship", "endorsements"],
         default: "combined",
-        description:
-            "Rank strictly by contribution signals — never followers or activity score",
+        description: "Rank strictly by contribution signals — never followers or activity score",
     })
     @IsOptional()
     @IsEnum(["combined", "hours", "mentorship", "endorsements"])

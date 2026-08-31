@@ -1,10 +1,6 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ForbiddenException, Injectable } from "@nestjs/common";
-import {
-    Prisma,
-    Role,
-    VolunteerHourVerificationStatus,
-} from "@prisma/client";
+import { Prisma, Role, VolunteerHourVerificationStatus } from "@prisma/client";
 import { CORPORATE_TIER_CATALOG } from "@common/utils/corporate-tier.util";
 import {
     aggregateHoursByKey,
@@ -133,11 +129,8 @@ export class ImpactExportService {
             ),
             byCapLevel: applyKAnonymity(aggregateHoursByKey(capRows), minBucketSize),
             byRegion: applyKAnonymity(aggregateHoursByKey(regionRows), minBucketSize),
-            byMonth: applyKAnonymity(aggregateHoursByKey(monthRows), minBucketSize).map(
-                (bucket) =>
-                    "suppressed" in bucket
-                        ? bucket
-                        : { ...bucket, key: bucket.key },
+            byMonth: applyKAnonymity(aggregateHoursByKey(monthRows), minBucketSize).map((bucket) =>
+                "suppressed" in bucket ? bucket : { ...bucket, key: bucket.key },
             ),
             sdgAlignment: aggregateSdgGoals(
                 corporateGoals.map((row) => row.sdgAlignmentGoals),
@@ -172,8 +165,7 @@ export class ImpactExportService {
     private anonymisationPolicy(minBucketSize: number) {
         return {
             kAnonymityMinBucketSize: minBucketSize,
-            policy:
-                "Export buckets include aggregated hours and subject counts only. Buckets below the k threshold are suppressed.",
+            policy: "Export buckets include aggregated hours and subject counts only. Buckets below the k threshold are suppressed.",
             excludedFields: [
                 "userId",
                 "email",
@@ -192,10 +184,7 @@ export class ImpactExportService {
         const membership = await this.prisma.corporateMembership.findFirst({
             where: { contactPersonId: userId, isActive: true },
         });
-        if (
-            membership &&
-            CORPORATE_TIER_CATALOG[membership.tier].impactDataExport
-        ) {
+        if (membership && CORPORATE_TIER_CATALOG[membership.tier].impactDataExport) {
             return "corporate";
         }
 
@@ -211,11 +200,7 @@ export class ImpactExportService {
         );
     }
 
-    private async logExport(
-        userId: string,
-        exportType: string,
-        query: ImpactExportQueryDto,
-    ) {
+    private async logExport(userId: string, exportType: string, query: ImpactExportQueryDto) {
         await this.prisma.impactDataExportLog.create({
             data: {
                 requestedByUserId: userId,

@@ -9,4 +9,3 @@ export const CAP_LEVEL_RULES = {
     /** Parallel invitation track — not a sequential rung after Black */
     SKY_BLUE: { minScore: 0, promoteAt: 99999, requiresNomination: true },
 } as const;
-

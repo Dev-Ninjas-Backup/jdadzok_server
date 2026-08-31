@@ -29,8 +29,7 @@ export const SOFT_EARNINGS_PERSONAL_DASHBOARD_PATHS = [
 
 export const SOFT_EARNINGS_CONTRACT = {
     version: "2026-08-23",
-    rule:
-        "Public and third-party member views use soft-language earning headlines only. Exact revenue percentages and dollar amounts are returned under privateEarnings / privateSummary blocks or personal-dashboard routes.",
+    rule: "Public and third-party member views use soft-language earning headlines only. Exact revenue percentages and dollar amounts are returned under privateEarnings / privateSummary blocks or personal-dashboard routes.",
     forbiddenOnPublicViews: [...SOFT_EARNINGS_FORBIDDEN_PUBLIC_FIELDS],
     allowedPublicHeadlines: [...SOFT_EARNINGS_PUBLIC_FIELDS],
     personalDashboardRoutes: [...SOFT_EARNINGS_PERSONAL_DASHBOARD_PATHS],

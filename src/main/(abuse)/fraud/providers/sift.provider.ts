@@ -19,8 +19,7 @@ export class SiftFraudProvider implements FraudProvider {
 
     constructor(private readonly config: ConfigService) {
         this.apiKey = this.config.get<string>("SIFT_API_KEY") || "";
-        const baseURL =
-            this.config.get<string>("SIFT_API_BASE") || "https://api.sift.com/v205";
+        const baseURL = this.config.get<string>("SIFT_API_BASE") || "https://api.sift.com/v205";
         this.client = axios.create({
             baseURL: baseURL.replace(/\/$/, ""),
             timeout: 12_000,
@@ -31,9 +30,7 @@ export class SiftFraudProvider implements FraudProvider {
 
     async score(request: FraudScoreRequest): Promise<FraudVendorScore> {
         const siftType =
-            request.eventType === FraudEventType.PAYOUT
-                ? "$transaction"
-                : "$create_account";
+            request.eventType === FraudEventType.PAYOUT ? "$transaction" : "$create_account";
 
         const body: Record<string, unknown> = {
             $type: siftType,

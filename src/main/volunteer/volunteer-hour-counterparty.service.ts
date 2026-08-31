@@ -13,10 +13,7 @@ import {
     counterpartyConfirmationComplete,
     requiresCounterpartyConfirmation,
 } from "@common/utils/volunteer-hour.util";
-import {
-    VolunteerHourSource,
-    VolunteerHourVerificationStatus,
-} from "@prisma/client";
+import { VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
 import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
 
 @Injectable()
@@ -59,11 +56,7 @@ export class VolunteerHourCounterpartyService {
         });
     }
 
-    async confirmHour(
-        hourId: string,
-        counterpartyUserId: string,
-        dto: ConfirmCounterpartyHourDto,
-    ) {
+    async confirmHour(hourId: string, counterpartyUserId: string, dto: ConfirmCounterpartyHourDto) {
         const hour = await this.loadAwaitingCounterpartyHour(hourId, counterpartyUserId);
 
         const now = new Date();
@@ -135,10 +128,7 @@ export class VolunteerHourCounterpartyService {
             );
         }
 
-        if (
-            !hour.contributionType ||
-            !requiresCounterpartyConfirmation(hour.contributionType)
-        ) {
+        if (!hour.contributionType || !requiresCounterpartyConfirmation(hour.contributionType)) {
             throw new BadRequestException(
                 "This hour entry does not require counterparty confirmation.",
             );

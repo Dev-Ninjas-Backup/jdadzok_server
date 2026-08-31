@@ -10,13 +10,8 @@ import { ChatService } from "./chat.service";
 
 @Module({
     imports: [AuthModule, FriendRequestModule],
-    providers: [
-        ChatService,
-        ChatGateway,
-        PrismaService,
-        ActiveUsersService,
-    ],
+    providers: [ChatService, ChatGateway, PrismaService, ActiveUsersService],
     controllers: [ChatController],
-        exports: [ChatService, ActiveUsersService, ChatGateway],
+    exports: [ChatService, ActiveUsersService, ChatGateway],
 })
 export class ChatModule {}

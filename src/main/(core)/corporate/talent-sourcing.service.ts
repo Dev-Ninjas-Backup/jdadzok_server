@@ -1,9 +1,5 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import {
-    ForbiddenException,
-    Injectable,
-    NotFoundException,
-} from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { CapLevel, Prisma, Role } from "@prisma/client";
 import { CORPORATE_TIER_CATALOG } from "@common/utils/corporate-tier.util";
 import {
@@ -216,7 +212,10 @@ export class TalentSourcingService {
         );
     }
 
-    private buildQuota(membership: { tier: keyof typeof CORPORATE_TIER_CATALOG; talentUnlocksUsed: number }) {
+    private buildQuota(membership: {
+        tier: keyof typeof CORPORATE_TIER_CATALOG;
+        talentUnlocksUsed: number;
+    }) {
         const tierMeta = CORPORATE_TIER_CATALOG[membership.tier];
         return {
             talentUnlocksLimit: tierMeta.talentUnlocksLimit,
@@ -237,7 +236,10 @@ export class TalentSourcingService {
         return new Set(rows.map((row) => row.candidateUserId));
     }
 
-    private async assertUnlockQuota(membershipId: string, tier: keyof typeof CORPORATE_TIER_CATALOG) {
+    private async assertUnlockQuota(
+        membershipId: string,
+        tier: keyof typeof CORPORATE_TIER_CATALOG,
+    ) {
         const limit = CORPORATE_TIER_CATALOG[tier].talentUnlocksLimit;
         const used = await this.prisma.talentCandidateUnlock.count({
             where: { corporateMembershipId: membershipId },
@@ -249,11 +251,7 @@ export class TalentSourcingService {
         }
     }
 
-    private async resolveMembership(
-        userId: string,
-        role: Role,
-        corporateMembershipId?: string,
-    ) {
+    private async resolveMembership(userId: string, role: Role, corporateMembershipId?: string) {
         const isAdmin = role === Role.ADMIN || role === Role.SUPER_ADMIN;
 
         if (corporateMembershipId) {

@@ -1,14 +1,8 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable, NotFoundException } from "@nestjs/common";
-import {
-    ContributionType,
-    VolunteerHourVerificationStatus,
-} from "@prisma/client";
+import { ContributionType, VolunteerHourVerificationStatus } from "@prisma/client";
 import { effectiveVolunteerHours } from "@common/utils/volunteer-hour.util";
-import {
-    capDisplayLabel,
-    capEarningLevelHeadline,
-} from "@common/utils/cap-earning-headline.util";
+import { capDisplayLabel, capEarningLevelHeadline } from "@common/utils/cap-earning-headline.util";
 
 @Injectable()
 export class ReputationPassportService {

@@ -1,10 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
-import {
-    BridgeListingStatus,
-    Prisma,
-    VolunteerHourVerificationStatus,
-} from "@prisma/client";
+import { BridgeListingStatus, Prisma, VolunteerHourVerificationStatus } from "@prisma/client";
 import {
     guestExploreEnvelope,
     GUEST_JOIN_PROMPT,

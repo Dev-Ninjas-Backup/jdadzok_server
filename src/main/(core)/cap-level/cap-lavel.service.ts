@@ -39,13 +39,7 @@ export class CapLevelService {
         private readonly userMetricsService: UserMetricsService,
     ) {}
 
-    private readonly capLevelOrder: CapLevel[] = [
-        "NONE",
-        "GREEN",
-        "YELLOW",
-        "RED",
-        "BLACK",
-    ];
+    private readonly capLevelOrder: CapLevel[] = ["NONE", "GREEN", "YELLOW", "RED", "BLACK"];
 
     /** Parallel invitation track — never a sequential “next” after Black */
     private readonly parallelCapLevels = new Set<CapLevel>(["SKY_BLUE"]);
@@ -193,10 +187,7 @@ export class CapLevelService {
         }
 
         // Check volunteer hours requirement
-        if (
-            requirements.minVolunteerHours &&
-            bankHours < requirements.minVolunteerHours
-        ) {
+        if (requirements.minVolunteerHours && bankHours < requirements.minVolunteerHours) {
             missingRequirements.push(
                 `Verified Volunteer Hours (lifetime bank): ${Math.ceil(bankHours)}/${requirements.minVolunteerHours}`,
             );

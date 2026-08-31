@@ -121,14 +121,21 @@ export class CorporateService {
         return this.withTierMeta(updated);
     }
 
-    async updateEsgReport(id: string, userId: string, dto: UpdateCorporateEsgReportDto, isAdmin: boolean) {
+    async updateEsgReport(
+        id: string,
+        userId: string,
+        dto: UpdateCorporateEsgReportDto,
+        isAdmin: boolean,
+    ) {
         const membership = await this.prisma.corporateMembership.findUnique({ where: { id } });
         if (!membership) {
             throw new NotFoundException("Corporate membership not found");
         }
 
         if (!isAdmin && membership.contactPersonId !== userId) {
-            throw new ForbiddenException("Only the corporate contact or an admin may submit ESG reports");
+            throw new ForbiddenException(
+                "Only the corporate contact or an admin may submit ESG reports",
+            );
         }
 
         const tierMeta = CORPORATE_TIER_CATALOG[membership.tier];
@@ -142,7 +149,9 @@ export class CorporateService {
             try {
                 assertValidSdgGoals(dto.sdgAlignmentGoals);
             } catch (err) {
-                throw new BadRequestException(err instanceof Error ? err.message : "Invalid SDG goals");
+                throw new BadRequestException(
+                    err instanceof Error ? err.message : "Invalid SDG goals",
+                );
             }
         }
 
@@ -188,14 +197,19 @@ export class CorporateService {
             },
             usage: {
                 dailyAdsUsed: (membership as { dailyAdsUsed?: number }).dailyAdsUsed ?? 0,
-                sponsorshipsUsed: (membership as { sponsorshipsUsed?: number }).sponsorshipsUsed ?? 0,
-                talentUnlocksUsed: (membership as { talentUnlocksUsed?: number }).talentUnlocksUsed ?? 0,
+                sponsorshipsUsed:
+                    (membership as { sponsorshipsUsed?: number }).sponsorshipsUsed ?? 0,
+                talentUnlocksUsed:
+                    (membership as { talentUnlocksUsed?: number }).talentUnlocksUsed ?? 0,
             },
         };
     }
 
     private async assertUserExists(userId: string) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+        });
         if (!user) {
             throw new BadRequestException("Contact person user not found");
         }

@@ -58,10 +58,7 @@ export class TrainingController {
     @ValidateAuth()
     @ApiBearerAuth()
     @ApiOperation({ summary: "Create a training course / workshop" })
-    async createCourse(
-        @GetUser("userId") userId: string,
-        @Body() dto: CreateTrainingCourseDto,
-    ) {
+    async createCourse(@GetUser("userId") userId: string, @Body() dto: CreateTrainingCourseDto) {
         const data = await this.trainingService.createCourse(userId, dto);
         return successResponse(data, "Training course created");
     }

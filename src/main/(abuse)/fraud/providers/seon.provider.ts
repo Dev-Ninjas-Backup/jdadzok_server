@@ -19,8 +19,7 @@ export class SeonFraudProvider implements FraudProvider {
     constructor(private readonly config: ConfigService) {
         const apiKey = this.config.get<string>("SEON_API_KEY") || "";
         const baseURL =
-            this.config.get<string>("SEON_API_BASE") ||
-            "https://api.us.seon.io/SeonRestService";
+            this.config.get<string>("SEON_API_BASE") || "https://api.us.seon.io/SeonRestService";
         this.client = axios.create({
             baseURL: baseURL.replace(/\/$/, ""),
             timeout: 12_000,

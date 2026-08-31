@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { SponsoredTargetType } from "@prisma/client";
-import { IsEnum, IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateIf } from "class-validator";
+import {
+    IsEnum,
+    IsISO8601,
+    IsNumber,
+    IsOptional,
+    IsString,
+    IsUUID,
+    Min,
+    ValidateIf,
+} from "class-validator";
 
 export class CreateSponsoredOpportunityDto {
     @ApiProperty({ enum: SponsoredTargetType })

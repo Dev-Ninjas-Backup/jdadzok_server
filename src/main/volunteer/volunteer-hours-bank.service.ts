@@ -80,7 +80,7 @@ export class VolunteerHoursBankService {
 
         const projectBreakdown = byProject.map((row) => ({
             applicationId: row.applicationId,
-            project: row.applicationId ? projectMap.get(row.applicationId) ?? null : null,
+            project: row.applicationId ? (projectMap.get(row.applicationId) ?? null) : null,
             verifiedHours: Math.round((row._sum.hours ?? 0) * 100) / 100,
         }));
 

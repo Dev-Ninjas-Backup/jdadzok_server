@@ -24,7 +24,10 @@ export function coarseRegion(location: string | null | undefined): string {
         return "unspecified";
     }
     const trimmed = location.trim();
-    const parts = trimmed.split(/[,;/|]/).map((p) => p.trim()).filter(Boolean);
+    const parts = trimmed
+        .split(/[,;/|]/)
+        .map((p) => p.trim())
+        .filter(Boolean);
     if (parts.length >= 2) {
         return parts[parts.length - 1].toLowerCase();
     }
@@ -98,7 +101,6 @@ export function aggregateSdgGoals(
         .sort(([a], [b]) => a - b)
         .map(([goal, alignedOrgCount]) => ({
             goal,
-            alignedOrgCount:
-                alignedOrgCount < minSize ? ("suppressed" as const) : alignedOrgCount,
+            alignedOrgCount: alignedOrgCount < minSize ? ("suppressed" as const) : alignedOrgCount,
         }));
 }

@@ -7,10 +7,7 @@ import {
 import { CapLevelRepository } from "./cap-lavel.repository";
 import { CapLevelService } from "./cap-lavel.service";
 import { PromoteUserDto } from "./dto/cap-leve.dto";
-import {
-    CAP_LADDER_ORDER,
-    getNextLadderLevel,
-} from "@common/utils/cap-level.util";
+import { CAP_LADDER_ORDER, getNextLadderLevel } from "@common/utils/cap-level.util";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { EVENT_TYPES } from "@common/interface/events-name";
 import { CapLevelEvent } from "@common/interface/events-payload";
@@ -27,7 +24,9 @@ export class CapLevelPromotionService {
         private readonly eventEmitter: EventEmitter2,
     ) {}
 
-    async getMyCapStatus(userId: string): Promise<Awaited<ReturnType<CapLevelService["getUserCapStatus"]>>> {
+    async getMyCapStatus(
+        userId: string,
+    ): Promise<Awaited<ReturnType<CapLevelService["getUserCapStatus"]>>> {
         return this.capLevelService.getUserCapStatus(userId);
     }
 
@@ -193,11 +192,7 @@ export class CapLevelPromotionService {
         }
 
         const requirements = eligibility.requirements;
-        if (
-            !requirements ||
-            requirements.requiresVerification ||
-            requirements.requiresNomination
-        ) {
+        if (!requirements || requirements.requiresVerification || requirements.requiresNomination) {
             return { promoted: false };
         }
 

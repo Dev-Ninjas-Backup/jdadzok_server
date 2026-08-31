@@ -156,10 +156,7 @@ export class ChatService {
             chats.find((chat) => {
                 if (chat.participants.length !== 2) return false;
                 const participantIds = chat.participants.map((p) => p.userId).sort();
-                return (
-                    participantIds[0] === expectedIds[0] &&
-                    participantIds[1] === expectedIds[1]
-                );
+                return participantIds[0] === expectedIds[0] && participantIds[1] === expectedIds[1];
             }) ?? null
         );
     }
@@ -546,7 +543,7 @@ export class ChatService {
 
         const hasMore = rows.length > take;
         const messages = hasMore ? rows.slice(0, take) : rows;
-        const nextCursor = hasMore ? messages[messages.length - 1]?.id ?? null : null;
+        const nextCursor = hasMore ? (messages[messages.length - 1]?.id ?? null) : null;
 
         return {
             messages,

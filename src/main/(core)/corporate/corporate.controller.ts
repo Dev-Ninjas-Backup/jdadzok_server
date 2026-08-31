@@ -24,7 +24,8 @@ export class CorporateController {
     @MakePublic()
     @ApiOperation({
         summary: "Corporate membership tier catalog",
-        description: "June 26 tiers: Starter / Growth / Enterprise (maps from legacy Silver / Gold / Platinum).",
+        description:
+            "June 26 tiers: Starter / Growth / Enterprise (maps from legacy Silver / Gold / Platinum).",
     })
     listTiers() {
         return successResponse(this.corporateService.listTiers(), "Corporate tiers retrieved");
@@ -115,10 +116,7 @@ export class CorporateController {
     @ValidateAuth()
     @ApiBearerAuth()
     @ApiOperation({ summary: "List sponsorships for my corporate membership" })
-    async listMySponsorships(
-        @GetUser("userId") userId: string,
-        @GetUser("role") role: Role,
-    ) {
+    async listMySponsorships(@GetUser("userId") userId: string, @GetUser("role") role: Role) {
         const data = await this.sponsoredService.listForMembership(userId, role);
         return successResponse(data, "Sponsorships retrieved");
     }

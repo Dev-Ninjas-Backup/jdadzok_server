@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 spec_path = ROOT / "docs/SYNQULAN_JUNE26_SPEC_STATUS.md"
-html_path = ROOT / "To Borhan - June 26/synqulan-audit.html"
+html_path = ROOT / "synqulan-audit.html"
 
 spec = spec_path.read_text()
 block = re.search(r"## 1\. Cap System.*?## 8\. Screen-by-screen", spec, re.S).group(0)
@@ -18,20 +18,26 @@ for line in block.splitlines():
         if current:
             sections.append(current)
         current = {"title": line, "rows": []}
-    elif current and line.startswith("| `["):
-        # Split on unescaped pipes (markdown tables may contain \| in cells).
+    elif current and line.startswith("|"):
         parts = re.split(r"(?<!\\)\|", line)
         if len(parts) >= 5:
-            status_m = re.match(r"\s*`\[([x~ ])\]`\s*", parts[1])
-            if status_m:
-                current["rows"].append(
-                    {
-                        "status": status_m.group(1),
-                        "feature": parts[2].strip(),
-                        "requirement": parts[3].strip(),
-                        "backend": parts[4].strip().rstrip("|").strip(),
-                    }
-                )
+            cell = parts[1].strip()
+            if "`[x]`" in cell:
+                status = "x"
+            elif "`[~]`" in cell:
+                status = "~"
+            elif "`[ ]`" in cell:
+                status = " "
+            else:
+                continue
+            current["rows"].append(
+                {
+                    "status": status,
+                    "feature": parts[2].strip(),
+                    "requirement": parts[3].strip(),
+                    "backend": parts[4].strip().rstrip("|").strip(),
+                }
+            )
 if current:
     sections.append(current)
 

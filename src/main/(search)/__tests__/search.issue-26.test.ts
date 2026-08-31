@@ -58,9 +58,7 @@ function memberDoc(overrides: Partial<MemberSearchDocument> = {}): MemberSearchD
     };
 }
 
-function opportunityDoc(
-    overrides: Partial<CatalogSearchDocument> = {},
-): CatalogSearchDocument {
+function opportunityDoc(overrides: Partial<CatalogSearchDocument> = {}): CatalogSearchDocument {
     return {
         id: "opp-1",
         entityType: SearchEntityType.OPPORTUNITY,

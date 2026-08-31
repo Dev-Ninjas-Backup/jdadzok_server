@@ -98,16 +98,24 @@ export class ChatGateway extends BaseSocketGateway {
             if (delivered) {
                 await this.chatService.markDelivered(message.id);
                 payload.status = "DELIVERED" as ChatRealtimePayload["status"];
-                await this.emitToUserViaClientsMap(message.senderId, SOCKET_EVENTS.CHAT.MESSAGE_DELIVERED, {
-                    messageId: message.id,
-                    chatId: message.chatId,
-                    deliveredTo: receiverId,
-                    clientMessageId: message.clientMessageId ?? null,
-                });
+                await this.emitToUserViaClientsMap(
+                    message.senderId,
+                    SOCKET_EVENTS.CHAT.MESSAGE_DELIVERED,
+                    {
+                        messageId: message.id,
+                        chatId: message.chatId,
+                        deliveredTo: receiverId,
+                        clientMessageId: message.clientMessageId ?? null,
+                    },
+                );
             }
         }
 
-        await this.emitToUserViaClientsMap(message.senderId, SOCKET_EVENTS.CHAT.MESSAGE_SENT, payload);
+        await this.emitToUserViaClientsMap(
+            message.senderId,
+            SOCKET_EVENTS.CHAT.MESSAGE_SENT,
+            payload,
+        );
         return payload;
     }
 
@@ -175,7 +183,10 @@ export class ChatGateway extends BaseSocketGateway {
                 chatId: msg.chatId,
                 readBy: user.id,
             };
-            this.server.to(msg.chatId).except(user.id).emit(SOCKET_EVENTS.CHAT.MESSAGE_READ, readPayload);
+            this.server
+                .to(msg.chatId)
+                .except(user.id)
+                .emit(SOCKET_EVENTS.CHAT.MESSAGE_READ, readPayload);
             // Ensure sender gets the receipt even if not in the room yet.
             await this.emitToUserViaClientsMap(
                 msg.senderId,

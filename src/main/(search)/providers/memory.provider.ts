@@ -1,10 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { SearchEntityType, SearchProviderName } from "../search.constants";
-import {
-    SearchDocument,
-    VendorSearchParams,
-    VendorSearchResult,
-} from "../search-document.types";
+import { SearchDocument, VendorSearchParams, VendorSearchResult } from "../search-document.types";
 import { SearchProvider } from "./search-provider.interface";
 
 @Injectable()
@@ -38,8 +34,7 @@ export class MemorySearchProvider implements SearchProvider {
         }
         if (params.capLevel) {
             docs = docs.filter(
-                (d) =>
-                    d.entityType === SearchEntityType.MEMBER && d.capLevel === params.capLevel,
+                (d) => d.entityType === SearchEntityType.MEMBER && d.capLevel === params.capLevel,
             );
         }
 

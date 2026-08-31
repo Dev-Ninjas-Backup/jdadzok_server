@@ -34,15 +34,14 @@ export class SkyBlueNominationService {
             where: {
                 nomineeId: dto.nomineeId,
                 status: {
-                    in: [
-                        SkyBlueNominationStatus.PENDING,
-                        SkyBlueNominationStatus.IN_REVIEW,
-                    ],
+                    in: [SkyBlueNominationStatus.PENDING, SkyBlueNominationStatus.IN_REVIEW],
                 },
             },
         });
         if (open) {
-            throw new BadRequestException("An open Sky Blue nomination already exists for this user");
+            throw new BadRequestException(
+                "An open Sky Blue nomination already exists for this user",
+            );
         }
 
         return this.prisma.$transaction(async (tx) => {
@@ -302,7 +301,9 @@ export class SkyBlueNominationService {
             nomination.status !== SkyBlueNominationStatus.PENDING &&
             nomination.status !== SkyBlueNominationStatus.IN_REVIEW
         ) {
-            throw new BadRequestException(`Nomination is ${nomination.status} and cannot be updated`);
+            throw new BadRequestException(
+                `Nomination is ${nomination.status} and cannot be updated`,
+            );
         }
         return nomination;
     }

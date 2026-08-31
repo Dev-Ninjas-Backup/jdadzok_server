@@ -9,10 +9,7 @@ import { ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
-import {
-    EndorseVolunteerHourDto,
-    RejectVolunteerHourDto,
-} from "./dto/endorse-volunteer-hour.dto";
+import { EndorseVolunteerHourDto, RejectVolunteerHourDto } from "./dto/endorse-volunteer-hour.dto";
 import { VolunteerHourEndorsementService } from "./volunteer-hour-endorsement.service";
 import { VolunteerHourCounterpartyService } from "./volunteer-hour-counterparty.service";
 import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
@@ -167,8 +164,7 @@ export class VolunteerController {
     }
 
     @ApiOperation({
-        summary:
-            "List mentoring/advice hours awaiting your confirmation as mentee / recipient",
+        summary: "List mentoring/advice hours awaiting your confirmation as mentee / recipient",
     })
     @Get("hours/pending-counterparty")
     listPendingCounterparty(@GetVerifiedUser() user: VerifiedUser) {

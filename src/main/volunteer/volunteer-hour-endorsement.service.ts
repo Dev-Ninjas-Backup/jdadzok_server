@@ -5,10 +5,7 @@ import {
     NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
-import {
-    EndorseVolunteerHourDto,
-    RejectVolunteerHourDto,
-} from "./dto/endorse-volunteer-hour.dto";
+import { EndorseVolunteerHourDto, RejectVolunteerHourDto } from "./dto/endorse-volunteer-hour.dto";
 import { isCapLevelHigher, isPlatformAdmin } from "@common/utils/cap-level.util";
 import { counterpartyConfirmationComplete } from "@common/utils/volunteer-hour.util";
 import { VolunteerHourVerificationStatus } from "@prisma/client";

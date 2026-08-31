@@ -1,14 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { CapLevel } from "@prisma/client";
 import { Type } from "class-transformer";
-import {
-    IsBoolean,
-    IsEnum,
-    IsOptional,
-    IsString,
-    IsUUID,
-    MaxLength,
-} from "class-validator";
+import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 
 export class TalentSearchQueryDto {
     @ApiPropertyOptional({ description: "Search name, username, title, or bio" })

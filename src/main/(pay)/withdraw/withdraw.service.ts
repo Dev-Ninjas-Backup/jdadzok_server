@@ -2,12 +2,7 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { QUEUE_JOB_NAME } from "@module/(buill-queue)/constants";
 import { FraudService } from "@module/(abuse)/fraud/fraud.service";
 import { InjectQueue } from "@nestjs/bullmq";
-import {
-    BadRequestException,
-    ForbiddenException,
-    Injectable,
-    Optional,
-} from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
 import Stripe from "stripe";

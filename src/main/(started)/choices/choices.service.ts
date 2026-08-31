@@ -1,9 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
-import {
-    OTHER_CHOICE_SLUG,
-    resolveOtherText,
-} from "@common/utils/other-option.util";
+import { OTHER_CHOICE_SLUG, resolveOtherText } from "@common/utils/other-option.util";
 import { CreateUserChoiceDto } from "../user-choice/dto/user-choice.dto";
 import { ChoicesRepository } from "./choices.repository";
 

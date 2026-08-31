@@ -1,11 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { BridgeListingStatus, PostVisibility } from "@prisma/client";
-import {
-    CAP_RANK,
-    SEARCH_PROVIDER_TOKEN,
-    SearchEntityType,
-} from "./search.constants";
+import { CAP_RANK, SEARCH_PROVIDER_TOKEN, SearchEntityType } from "./search.constants";
 import {
     CatalogSearchDocument,
     MemberSearchDocument,
@@ -376,8 +372,7 @@ export class SearchSyncService {
             isActive: true,
             isPublic: true,
             capRank:
-                (CAP_RANK[community.capLevel] ?? CAP_RANK.NONE) +
-                (community.isVerified ? 50 : 0),
+                (CAP_RANK[community.capLevel] ?? CAP_RANK.NONE) + (community.isVerified ? 50 : 0),
         };
     }
 

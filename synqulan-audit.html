@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synqulan &mdash; Spec vs. Build Audit</title>
+<style>
+  :root{
+    --paper:#eceeea;
+    --paper-raised:#f7f8f4;
+    --hairline:#d4d7cf;
+    --ink:#1b211d;
+    --ink-soft:#4b564f;
+    --ink-faint:#7a847b;
+    --teal:#1f5c56;
+    --teal-ink:#134039;
+    --gold:#a8791f;
+    --stat-green:#2f6e46;
+    --stat-green-bg:#e1ecdf;
+    --stat-yellow:#a3730f;
+    --stat-yellow-bg:#f2e6c8;
+    --stat-red:#9c3a2b;
+    --stat-red-bg:#f3ddd6;
+    --stat-sky:#295f82;
+    --stat-sky-bg:#dbe6ec;
+    --code-bg:#e2e5dd;
+  }
+  :root[data-theme="dark"]{
+    --paper:#14181a;
+    --paper-raised:#1b201f;
+    --hairline:#2d332f;
+    --ink:#e8eae2;
+    --ink-soft:#aab2a6;
+    --ink-faint:#7d8580;
+    --teal:#5fada2;
+    --teal-ink:#8fc9bf;
+    --gold:#d3a749;
+    --stat-green:#7fbf8e;
+    --stat-green-bg:#1f3327;
+    --stat-yellow:#e0b84f;
+    --stat-yellow-bg:#3a3120;
+    --stat-red:#e08874;
+    --stat-red-bg:#3a2420;
+    --stat-sky:#7fb3d1;
+    --stat-sky-bg:#1f2e38;
+    --code-bg:#232925;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#14181a;
+      --paper-raised:#1b201f;
+      --hairline:#2d332f;
+      --ink:#e8eae2;
+      --ink-soft:#aab2a6;
+      --ink-faint:#7d8580;
+      --teal:#5fada2;
+      --teal-ink:#8fc9bf;
+      --gold:#d3a749;
+      --stat-green:#7fbf8e;
+      --stat-green-bg:#1f3327;
+      --stat-yellow:#e0b84f;
+      --stat-yellow-bg:#3a3120;
+      --stat-red:#e08874;
+      --stat-red-bg:#3a2420;
+      --stat-sky:#7fb3d1;
+      --stat-sky-bg:#1f2e38;
+      --code-bg:#232925;
+    }
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .doc{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    padding:0 0 6rem;
+  }
+  .display{
+    font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  }
+  code, .mono{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:0.86em;
+    background:var(--code-bg);
+    padding:0.1em 0.4em;
+    border-radius:3px;
+  }
+
+  .masthead{
+    max-width:820px;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 2rem;
+    border-bottom:1px solid var(--hairline);
+  }
+  .eyebrow{
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--teal-ink);
+    font-weight:600;
+    margin:0 0 0.9rem;
+  }
+  h1.title{
+    font-size:2.35rem;
+    margin:0 0 0.6rem;
+    text-wrap:balance;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:1.08rem;
+    color:var(--ink-soft);
+    max-width:60ch;
+    margin:0 0 1.4rem;
+  }
+  .meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.4rem 1.4rem;
+    font-size:0.83rem;
+    color:var(--ink-faint);
+  }
+  .meta b{color:var(--ink-soft); font-weight:600;}
+
+  .wrap{
+    max-width:820px;
+    margin:0 auto;
+    padding:0 1.5rem;
+  }
+  .wide{
+    max-width:980px;
+    margin:0 auto;
+    padding:0 1.5rem;
+  }
+
+  section.section{
+    padding-top:3rem;
+  }
+  .sec-head{
+    display:flex;
+    align-items:baseline;
+    gap:0.85rem;
+    margin-bottom:0.5rem;
+  }
+  .sec-num{
+    font-family:Georgia,serif;
+    font-size:1rem;
+    color:var(--teal);
+    font-weight:600;
+    flex:none;
+  }
+  h2.sec-title{
+    font-size:1.5rem;
+    margin:0;
+    font-weight:600;
+    letter-spacing:-0.005em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    max-width:66ch;
+    margin:0.6rem 0 1.6rem;
+  }
+  .lede b{color:var(--ink);}
+
+  .callout{
+    background:var(--paper-raised);
+    border-left:3px solid var(--gold);
+    padding:0.9rem 1.1rem;
+    border-radius:0 4px 4px 0;
+    font-size:0.94rem;
+    color:var(--ink-soft);
+    margin:1.1rem 0 1.8rem;
+  }
+  .callout b{color:var(--ink);}
+
+  .tbl-scroll{
+    overflow-x:auto;
+    border:1px solid var(--hairline);
+    border-radius:6px;
+    margin:0 0 2.2rem;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.89rem;
+    min-width:640px;
+  }
+  thead th{
+    text-align:left;
+    font-size:0.7rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    font-weight:600;
+    padding:0.7rem 0.9rem;
+    background:var(--paper-raised);
+    border-bottom:1px solid var(--hairline);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:0.8rem 0.9rem;
+    border-bottom:1px solid var(--hairline);
+    vertical-align:top;
+    color:var(--ink-soft);
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  td.feature{color:var(--ink); font-weight:600; width:17%;}
+  td.status{width:11%; white-space:nowrap;}
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:0.4em;
+    font-size:0.78rem;
+    font-weight:600;
+    padding:0.22em 0.65em 0.24em;
+    border-radius:99px;
+    white-space:nowrap;
+  }
+  .pill::before{content:""; width:0.5em; height:0.5em; border-radius:50%; flex:none;}
+  .pill--yes{background:var(--stat-green-bg); color:var(--stat-green);}
+  .pill--yes::before{background:var(--stat-green);}
+  .pill--part{background:var(--stat-yellow-bg); color:var(--stat-yellow);}
+  .pill--part::before{background:var(--stat-yellow);}
+  .pill--no{background:var(--stat-red-bg); color:var(--stat-red);}
+  .pill--no::before{background:var(--stat-red);}
+  .pill--mismatch{background:var(--stat-sky-bg); color:var(--stat-sky);}
+  .pill--mismatch::before{background:var(--stat-sky);}
+
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:0.6rem 1.4rem;
+    align-items:center;
+    font-size:0.83rem;
+    color:var(--ink-soft);
+    margin-top:1rem;
+  }
+
+  .stat-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--hairline);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    overflow:hidden;
+    margin:1.8rem 0 0;
+  }
+  .stat-cell{
+    background:var(--paper-raised);
+    padding:1.1rem 1rem;
+    text-align:center;
+  }
+  .stat-cell .n{
+    font-family:Georgia,serif;
+    font-size:1.9rem;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    display:block;
+  }
+  .stat-cell .l{
+    font-size:0.72rem;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin-top:0.2rem;
+    display:block;
+  }
+  .stat-cell.green .n{color:var(--stat-green);}
+  .stat-cell.yellow .n{color:var(--stat-yellow);}
+  .stat-cell.red .n{color:var(--stat-red);}
+  .stat-cell.sky .n{color:var(--stat-sky);}
+
+  .punch{
+    counter-reset:punch;
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+  }
+  .punch li{
+    counter-increment:punch;
+    position:relative;
+    padding:1rem 1.1rem 1rem 3rem;
+    background:var(--paper-raised);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+  }
+  .punch li::before{
+    content:counter(punch);
+    position:absolute;
+    left:0.9rem;
+    top:1rem;
+    font-family:Georgia,serif;
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--teal);
+  }
+  .punch h4{
+    margin:0 0 0.3rem;
+    font-size:1rem;
+    font-weight:600;
+  }
+  .punch p{
+    margin:0;
+    font-size:0.9rem;
+    color:var(--ink-soft);
+  }
+  .punch .why{
+    display:block;
+    margin-top:0.45rem;
+    font-size:0.83rem;
+    color:var(--ink-faint);
+  }
+
+  footer.foot{
+    max-width:820px;
+    margin:3rem auto 0;
+    padding:1.5rem;
+    border-top:1px solid var(--hairline);
+    font-size:0.8rem;
+    color:var(--ink-faint);
+  }
+
+  @media (max-width:640px){
+    h1.title{font-size:1.7rem;}
+    .stat-strip{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<div class="doc">
+  <div class="masthead">
+    <p class="eyebrow">Codebase Audit &middot; jdadzok_server</p>
+    <h1 class="title display">Spec vs. build: what "To Borhan &ndash; June 26" asks for, and what the backend has today</h1>
+    <p class="subtitle">A section-by-section comparison of the Synqulan concept brief and developer requirements against the current NestJS/Prisma backend &mdash; 34 of 36 core features implemented; 2 partial polish items remain.</p>
+    <div class="meta">
+      <span><b>Sources read</b> &mdash; Synqulan-Concept-and-Design.docx, Synqulan-Developer-Requirements.docx, prototype.html, synqulan-individual.html, synqulan-business.html</span>
+      <span><b>Codebase</b> &mdash; src/main/*, prisma/schema/* (v1.6.0)</span>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat-cell green"><span class="n">34</span><span class="l">Implemented</span></div>
+      <div class="stat-cell yellow"><span class="n">2</span><span class="l">Partial</span></div>
+      <div class="stat-cell red"><span class="n">0</span><span class="l">Missing</span></div>
+      <div class="stat-cell sky"><span class="n">0</span><span class="l">Mismatched</span></div>
+    </div>
+    <div class="legend">
+      <span class="pill pill--yes">Implemented</span>
+      <span class="pill pill--part">Partial</span>
+      <span class="pill pill--no">Missing</span>
+      <span class="pill pill--mismatch">Mismatch &mdash; built, but wrong shape</span>
+    </div>
+    <p class="callout" style="margin-top:1rem;"><b>Last synced 2026-08-31</b> &mdash; Summary counts and feature statuses match <code>docs/SYNQULAN_JUNE26_SPEC_STATUS.md</code> (sections 1&ndash;7, 36 features). Prefer that document as source of truth.</p>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">1</span><h2 class="sec-title display">The Cap System &amp; ladder</h2></div>
+      <p class="lede">The five-level ladder, its earning logic, and the visual identity of the caps.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Five-level ladder</td>
+            <td>Green &rarr; Yellow &rarr; Red &rarr; Black &rarr; Sky Blue, stored per user with progression rules</td>
+            <td><code>CapLevel</code> enum + <code>User.capLevel</code>, <code>CapRequirements</code>, cron promotion under <code>src/main/(core)/cap-level/</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Top-tier rename</td>
+            <td>Top cap is <b>Sky Blue</b>, not “black with ostrich feather”</td>
+            <td><code>CapLevel.SKY_BLUE</code> (renamed from <code>OSTRICH_FEATHER</code>); parallel invitation track</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Green&rarr;Yellow&rarr;Red: algorithmic</td>
+            <td>Lower rungs driven by Impact / Activity score</td>
+            <td><code>ActivityScore</code> + cap cron / processor auto-promote when <code>requiresVerification</code> is false</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Red&rarr;Black: hours + admin gate</td>
+            <td>Must be Red, meet verified-hours threshold, admin review</td>
+            <td><code>PUT /cap-level/promote/:userId</code> + <code>CapPromotionAudit</code>; one-rung ladder; no cron skip to Black; bypass requires <code>bypassReason</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Sky Blue: invitation-only, dual verification</td>
+            <td>Never applied for; KYC + notability; committee + audit trail; earns at Red rate until Black-level volunteering</td>
+            <td><code>SkyBlueNomination</code> + events; <code>/cap-level/sky-blue/*</code>; ad-share uses Red rate until Black <code>minVolunteerHours</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Revenue % hidden, configurable</td>
+            <td>Exact ad-share % never hard-coded in UI copy &mdash; business data</td>
+            <td><code>CapRequirements.adSharePercentage</code> is DB-backed (good); module README still documents fixed 2/10/20/45/60% figures</td>
+            <td class="status"><span class="pill pill--part">Partial</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Illustrated cap: style &amp; placement</td>
+            <td>Profile setting: style (structured / soft) and placement (worn / beside; default beside)</td>
+            <td><code>Profile.capArtStyle</code> + <code>Profile.capArtPlacement</code>; <code>GET/PATCH /user-profile/cap-art-preferences</code>; also via <code>PATCH /user-profile</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">2</span><h2 class="sec-title display">Volunteering &amp; the mentor opt-in</h2></div>
+      <p class="lede">The spec's single most repeated rule: <b>the trigger for mentoring tools is an opt-in, independent of Cap level</b> &mdash; now represented by <code>Profile.isVolunteerMentorOptIn</code> and enforced across volunteer, chat, and calling flows.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Volunteer/mentor opt-in flag</td>
+            <td>Boolean from onboarding; toggleable; gates mentoring tools <b>independent of Cap</b></td>
+            <td><code>Profile.isVolunteerMentorOptIn</code>; set via <code>POST /choices</code> (onboarding) or <code>PATCH /user-profile</code> / <code>PATCH /user-profile/volunteer-mentor-opt-in</code>; gates volunteer apply + hour logging</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Opportunities / projects</td>
+            <td>NGO-listed placements; apply / accept / reject; hours count</td>
+            <td><code>VolunteerProject</code> + <code>VolunteerApplication</code> in <code>src/main/volunteer/</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Hours bank &amp; carry forward</td>
+            <td>Hours persist across Caps; Black = Red + threshold + review</td>
+            <td><code>UserMetrics.lifetimeVerifiedVolunteerHours</code> aggregated from verified <code>VolunteerHour</code>; <code>GET /volunteer/hours-bank</code>; feeds Black threshold in cap eligibility + admin review</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Contribution types + “Other”</td>
+            <td>Mentoring, advice, project, teaching, charity + free-text Other (pattern app-wide)</td>
+            <td><code>ContributionType</code> on <code>VolunteerHour</code> + Bridge listings; Other free-text via <code>resolveOtherText</code>; interests <code>Other</code> choice + <code>Profile.interestOtherText</code>; Bridge discover filters</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">3</span><h2 class="sec-title display">Verifying a volunteer hour</h2></div>
+      <p class="lede">The docs call this <b>the make-or-break problem</b> &mdash; &ldquo;if hours can be fabricated, the entire reputation economy loses meaning.&rdquo; Four trust tiers are specified; the backend implements roughly one and a half.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Verification source</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">In-platform mentorship call (highest trust)</td>
+            <td>Verified call in-app; duration auto-logs as verified hours</td>
+            <td><code>Calling.callPurpose=MENTORSHIP</code>; on <code>END</code>, creates <code>VolunteerHour</code> pending <b>mentee confirmation</b>; Cap credit on <code>PATCH /volunteer/hours/:id/confirm-counterparty</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Partner-verified (NGO)</td>
+            <td>Vetted partner confirms; hours auto-count</td>
+            <td>Hours require <code>ACCEPTED</code> application; NGO owner confirms via <code>updateStatus()</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Counterparty confirmation</td>
+            <td>Mentee / recipient confirms mentoring session</td>
+            <td><code>counterpartyUserId</code> on MENTORING/ADVICE + mentorship calls; mentee confirms via <code>/volunteer/hours/:id/confirm-counterparty</code> before Cap credit / endorsement</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Self-reported + endorsement gate</td>
+            <td>Self-logged hours pending until higher-Cap / admin endorsement</td>
+            <td>Self-report &rarr; <code>VolunteerHourVerificationStatus.PENDING</code>; <code>PATCH /volunteer/hours/:id/endorse</code> by higher-Cap or admin credits Cap metrics; auto NGO endorsement removed</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Admin review at Black threshold</td>
+            <td>Admin review before highest revenue share</td>
+            <td><code>requiresVerification</code> + promote API + audit; bypass only with recorded reason</td>
+            <td class="status"><span class="pill pill--part">Partial</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">4</span><h2 class="sec-title display">Follow, Connect, chats &amp; calls</h2></div>
+      <p class="lede">The spec's anti-harassment safeguard is that messaging requires <b>mutual Connect, enforced server-side</b> &mdash; and that a verified session must be visually and structurally impossible to mistake for a casual call.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Follow (one-way)</td>
+            <td>Subscribe to updates; feeds audience / ads; no consent</td>
+            <td>Single <code>Follow</code> model (<code>follows</code> table) via <code>FollowService</code>; legacy <code>UserFollow</code> removed</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Connect (mutual)</td>
+            <td>Request both accept; gate for private messaging and general calls</td>
+            <td><code>FriendRequest</code> ACCEPTED enforced server-side on private chat + <code>callPurpose=GENERAL</code> calls</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Messaging gated by mutual Connect</td>
+            <td>Must be enforced <b>server-side</b></td>
+            <td><code>FriendRequestService.assertConnected</code> on private chat create/send (HTTP + socket)</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">General vs. Mentorship chat</td>
+            <td>Two distinct inbox contexts; mentorship thread auto-opens on accept</td>
+            <td><code>LiveChatContext</code> GENERAL/MENTORSHIP on <code>LiveChat</code>; <code>GET /chat/my?context=</code>; auto-open on volunteer application or Bridge mentorship booking accept</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Verified session call vs. General call</td>
+            <td>Opposite screens/records; one logs to Cap, one never</td>
+            <td><code>CallPurpose</code> <code>GENERAL</code> \| <code>MENTORSHIP</code> on <code>Calling</code>; only mentorship ends auto-log verified hours</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">5</span><h2 class="sec-title display">Monetisation pillars</h2></div>
+      <p class="lede">Five revenue pillars are specified, in order of potential; the backend has strong rails for the first, partial support for the third, and nothing yet for the rest.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Pillar</th><th>Who pays</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Advertising revenue-share</td>
+            <td>Advertisers &rarr; member share by Cap</td>
+            <td><code>AdRevenueShare</code>, monthly calc, payout / withdraw / Stripe rails</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Recruitment / talent-sourcing</td>
+            <td>Employers pay for reputation-ranked candidates</td>
+            <td><code>GET /corporate/talent/search</code>; <code>POST /corporate/talent/unlocks</code>; <code>Profile.isTalentSearchOptIn</code>; tier unlock quotas</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Corporate / CSR subscriptions</td>
+            <td>Orgs pay; tiers + impact reporting</td>
+            <td><code>CorporateMembership</code> tiers <b>Starter / Growth / Enterprise</b>; SDG/ESG fields + <code>PATCH /corporate/memberships/:id/esg-report</code>; <code>GET /corporate/tiers</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Training &amp; course marketplace</td>
+            <td>Course buyers; cohorts / completion</td>
+            <td><code>(training)</code> module: <code>TrainingCourse</code> / <code>TrainingCohort</code> / <code>TrainingEnrollment</code>; <code>/training/courses</code> + enroll + complete</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Sponsored opportunities &amp; projects</td>
+            <td>Orgs sponsor Bridge / volunteer opportunities</td>
+            <td><code>SponsoredOpportunity</code> &rarr; <code>VolunteerProject</code> / <code>BridgeListing</code>; <code>GET /sponsored/opportunities</code>; <code>POST /corporate/sponsorships</code> (not Product↔Post <code>DedicatedAd</code>)</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Bridge gig transaction fee</td>
+            <td>Cut of money flowing to gig workers</td>
+            <td><code>BridgeBooking</code> fee snapshot + <code>feeBreakdown</code>; <code>GET /bridge/fee-policy</code>; complete &rarr; <code>settlementStatus</code> READY</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Anonymised impact-data insights</td>
+            <td>Sell aggregations to NGOs / agencies</td>
+            <td><code>GET /impact/export/summary</code> + <code>/breakdown</code>; k-anonymity buckets; <code>ImpactDataExportLog</code> audit</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">6</span><h2 class="sec-title display">&ldquo;The Bridge&rdquo; vs. today's Marketplace</h2></div>
+      <p class="lede">This is a naming collision worth flagging on its own: the <code>(marketplace)</code> module already in the codebase is a conventional buy/sell goods store, not the skills-and-opportunity exchange the design brief calls <b>The Bridge</b>.</p>
+      <div class="callout">The brief is explicit that &ldquo;marketplace&rdquo; was deliberately avoided as a name because of its buy-and-sell connotation. Building Bridge features (mentorship matching, talent discovery, paid gigs, Cap-weighted visibility) directly on top of the existing <code>Product</code>/<code>Order</code> tables risks conflating a commerce feature with a reputation feature the spec is careful to keep separate.</div>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Projects seeking help</td>
+            <td>Listed with mentorship, talent, paid gigs</td>
+            <td><code>BridgeListing</code> type <code>PROJECT_HELP</code> under <code>src/main/(bridge)/</code> (NGO unpaid placements remain on <code>VolunteerProject</code>)</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Members listing their own expertise</td>
+            <td>Higher Caps get more Bridge visibility</td>
+            <td><code>BridgeListing</code> type <code>EXPERTISE</code>; discover API Cap-weighted by <code>ownerCapLevel</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Paid gigs</td>
+            <td>Bookable; small fee framed as cut of payout</td>
+            <td><code>BridgeListing</code> type <code>GIG</code> + <code>BridgeBooking</code>; fee computed at book time via <code>bridge-gig-fee.util</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">7</span><h2 class="sec-title display">Profile, dashboards &amp; guest experience</h2></div>
+      <p class="lede">Grab-bag of remaining screen-level requirements from Section 8 of the developer spec.</p>
+    </section>
+  </div>
+
+  <div class="wide">
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature</th><th>Spec requirement</th><th>Current backend state</th><th>Status</th></tr></thead>
+                        <tbody>
+          <tr>
+            <td class="feature">Reputation-passport profile</td>
+            <td>Cap, impact, hours, mentees, earning level as headlines</td>
+            <td><code>GET /user-profile/reputation-passport</code> (+ <code>/:userId</code>); mentees = distinct verified MENTORING counterparties; soft earning headline</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Personal dashboard</td>
+            <td>Own ad revenue, pending payout, trends, Cap bar, payout history</td>
+            <td><code>src/main/dashboard/</code> controllers / services</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Recognition leaderboard</td>
+            <td>Rank by contribution (hours, mentorship, endorsements), not followers</td>
+            <td><code>GET /leaderboard/contribution</code>; sorts verified hours, mentoring hours, endorsements; excludes followers/activity/revenue</td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Explore as a guest</td>
+            <td>Unauth browse of opportunities / impact; join prompt; identity actions locked</td>
+            <td><code>GET /explore/guest/*</code> + contract; <code>@MakePublic()</code> on explore/Bridge browse; <code>guestMode</code> envelope + <code>lockedActions</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+          <tr>
+            <td class="feature">Landing pages (individual / business)</td>
+            <td>Two marketing pages with cross-link, testimonials, pricing</td>
+            <td><b>Static HTML</b> in June 26 folder (out of API scope). Backend supports related public content via <code>about-us</code>, <code>terms-and-conditions</code>, <code>privacy-policy</code></td>
+            <td class="status"><span class="pill pill--yes">Implemented</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="section">
+      <div class="sec-head"><span class="sec-num display">8</span><h2 class="sec-title display">Priority A backlog &mdash; all shipped</h2></div>
+      <p class="lede">The five load-bearing items from the original audit are now implemented. Remaining work is polish (soft-language earnings copy, admin-gate hardening) and screen-by-screen frontend wiring.</p>
+
+      <ol class="punch">
+        <li>
+          <h4>Volunteer/mentor opt-in flag <span class="pill pill--yes" style="margin-left:0.4em;">Done</span></h4>
+          <p><code>Profile.isVolunteerMentorOptIn</code> gates volunteer apply, hour logging, and mentorship calls. Set via onboarding (<code>POST /choices</code>) or <code>PATCH /user-profile/volunteer-mentor-opt-in</code>.</p>
+        </li>
+        <li>
+          <h4>Calling mentorship dimension <span class="pill pill--yes" style="margin-left:0.4em;">Done</span></h4>
+          <p><code>Calling.callPurpose</code> (<code>GENERAL</code> vs <code>MENTORSHIP</code>) auto-creates a pending <code>VolunteerHour</code> on mentorship call end; mentee confirms for Cap credit.</p>
+        </li>
+        <li>
+          <h4>Mutual-Connect gating on messaging <span class="pill pill--yes" style="margin-left:0.4em;">Done</span></h4>
+          <p><code>FriendRequestService.assertConnected</code> enforced server-side on private chat create/send (HTTP + socket) and <code>callPurpose=GENERAL</code> calls.</p>
+        </li>
+        <li>
+          <h4>Sky Blue rename + parallel track <span class="pill pill--yes" style="margin-left:0.4em;">Done</span></h4>
+          <p><code>CapLevel.SKY_BLUE</code> with <code>SkyBlueNomination</code> workflow; invitation-only, KYC + notability, earns at Red rate until Black-level volunteering.</p>
+        </li>
+        <li>
+          <h4>Bridge as separate module <span class="pill pill--yes" style="margin-left:0.4em;">Done</span></h4>
+          <p><code>(bridge)</code> module with expertise/gig/project-help listings, Cap-weighted discover, booking + transaction fee &mdash; separate from goods <code>Product</code>/<code>Order</code>.</p>
+        </li>
+      </ol>
+    </section>
+  </div>
+
+  <footer class="foot">
+    Synced with <code>docs/SYNQULAN_JUNE26_SPEC_STATUS.md</code> on 2026-08-31. Feature table statuses and summary strip reflect sections 1&ndash;7 of that document (34 implemented, 2 partial, 0 missing).</footer>
+</div>
+</body>
+</html>

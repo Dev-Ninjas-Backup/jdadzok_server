@@ -23,7 +23,9 @@ export class ChatController {
     @Post("private")
     @ValidateAuth()
     @ApiBearerAuth()
-    @ApiOperation({ summary: "Start or get existing general private chat (mutual Connect required)" })
+    @ApiOperation({
+        summary: "Start or get existing general private chat (mutual Connect required)",
+    })
     async startPrivateChat(@GetUser("userId") userId: string, @Body() dto: StartPrivateChatDto) {
         return this.chatService.getOrCreatePrivateChat(userId, dto.otherUserId);
     }
@@ -35,10 +37,7 @@ export class ChatController {
         summary:
             "Start or get mentorship chat with another member (accepted volunteer application or Bridge mentorship booking)",
     })
-    async startMentorshipChat(
-        @GetUser("userId") userId: string,
-        @Body() dto: StartPrivateChatDto,
-    ) {
+    async startMentorshipChat(@GetUser("userId") userId: string, @Body() dto: StartPrivateChatDto) {
         return this.chatService.getOrCreateMentorshipChat(userId, dto.otherUserId);
     }
 
@@ -130,7 +129,11 @@ export class ChatController {
     @ApiOperation({
         summary: "Get paginated messages for a chat (cursor = last message id)",
     })
-    @ApiQuery({ name: "cursor", required: false, description: "Last message id from previous page" })
+    @ApiQuery({
+        name: "cursor",
+        required: false,
+        description: "Last message id from previous page",
+    })
     @ApiQuery({ name: "limit", required: false, description: "Page size (default 50, max 100)" })
     async getMessages(
         @GetUser("userId") userId: string,

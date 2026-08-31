@@ -29,7 +29,9 @@ export class CapLevelController {
     @ApiOperation({
         summary: "Get my Cap ladder status (soft headlines + privateEarnings exact figures)",
     })
-    async getMyStatus(@GetUser("userId") userId: string): Promise<ReturnType<typeof successResponse>> {
+    async getMyStatus(
+        @GetUser("userId") userId: string,
+    ): Promise<ReturnType<typeof successResponse>> {
         const status = await this.promotionService.getMyCapStatus(userId);
         const data = mapCapStatusForPersonalDashboard(status);
         return successResponse(data, "Cap status retrieved");
@@ -48,7 +50,9 @@ export class CapLevelController {
     @Get("status/:userId")
     @ValidateAdmin()
     @ApiOperation({ summary: "Get a member Cap status (admin — includes raw share %)" })
-    async getUserStatus(@Param("userId") userId: string): Promise<ReturnType<typeof successResponse>> {
+    async getUserStatus(
+        @Param("userId") userId: string,
+    ): Promise<ReturnType<typeof successResponse>> {
         const status = await this.promotionService.getMyCapStatus(userId);
         const data = mapCapStatusForAdmin(status);
         return successResponse(data, "Cap status retrieved");

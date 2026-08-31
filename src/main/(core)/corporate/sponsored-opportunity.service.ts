@@ -5,12 +5,7 @@ import {
     Injectable,
     NotFoundException,
 } from "@nestjs/common";
-import {
-    BridgeListingStatus,
-    Prisma,
-    Role,
-    SponsoredTargetType,
-} from "@prisma/client";
+import { BridgeListingStatus, Prisma, Role, SponsoredTargetType } from "@prisma/client";
 import { CORPORATE_TIER_CATALOG } from "@common/utils/corporate-tier.util";
 import { CreateSponsoredOpportunityDto } from "./dto/sponsored-opportunity.dto";
 
@@ -18,11 +13,7 @@ import { CreateSponsoredOpportunityDto } from "./dto/sponsored-opportunity.dto";
 export class SponsoredOpportunityService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async create(
-        userId: string,
-        role: Role,
-        dto: CreateSponsoredOpportunityDto,
-    ) {
+    async create(userId: string, role: Role, dto: CreateSponsoredOpportunityDto) {
         const membership = await this.resolveMembership(userId, role, dto.corporateMembershipId);
 
         if (!membership.isActive) {
@@ -246,10 +237,14 @@ export class SponsoredOpportunityService {
     private async assertTargetValid(dto: CreateSponsoredOpportunityDto) {
         if (dto.targetType === SponsoredTargetType.VOLUNTEER_PROJECT) {
             if (!dto.volunteerProjectId) {
-                throw new BadRequestException("volunteerProjectId is required for VOLUNTEER_PROJECT");
+                throw new BadRequestException(
+                    "volunteerProjectId is required for VOLUNTEER_PROJECT",
+                );
             }
             if (dto.bridgeListingId) {
-                throw new BadRequestException("bridgeListingId must not be set for VOLUNTEER_PROJECT");
+                throw new BadRequestException(
+                    "bridgeListingId must not be set for VOLUNTEER_PROJECT",
+                );
             }
             const project = await this.prisma.volunteerProject.findFirst({
                 where: { id: dto.volunteerProjectId, isActive: true },
@@ -288,7 +283,10 @@ export class SponsoredOpportunityService {
         }
     }
 
-    private async assertSponsorshipQuota(membershipId: string, tier: keyof typeof CORPORATE_TIER_CATALOG) {
+    private async assertSponsorshipQuota(
+        membershipId: string,
+        tier: keyof typeof CORPORATE_TIER_CATALOG,
+    ) {
         const limit = CORPORATE_TIER_CATALOG[tier].sponsorshipsLimit;
         const activeCount = await this.prisma.sponsoredOpportunity.count({
             where: { corporateMembershipId: membershipId, active: true },

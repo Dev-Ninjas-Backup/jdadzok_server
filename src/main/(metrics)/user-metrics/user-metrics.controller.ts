@@ -22,7 +22,9 @@ export class UserMetricsController {
         return this.service.getUserMetrics(user.id, filter);
     }
 
-    @ApiOperation({ summary: "Get another user metrics by ID (earnings stripped — soft headlines only)" })
+    @ApiOperation({
+        summary: "Get another user metrics by ID (earnings stripped — soft headlines only)",
+    })
     @ApiResponse({ status: 200 })
     @Get(":userId")
     async getUserMetricsById(
@@ -31,11 +33,6 @@ export class UserMetricsController {
         @Query() filter: UserMetricsFilterDto,
     ) {
         const metrics = await this.service.getUserMetrics(userId, filter);
-        return sanitizeUserMetricsForViewer(
-            metrics,
-            viewer.id,
-            userId,
-            metrics.user?.capLevel,
-        );
+        return sanitizeUserMetricsForViewer(metrics, viewer.id, userId, metrics.user?.capLevel);
     }
 }

@@ -16,9 +16,7 @@ import { FraudProvider } from "./providers/fraud-provider.interface";
 export class FraudModule implements OnModuleInit {
     private readonly logger = new Logger(FraudModule.name);
 
-    constructor(
-        @Inject(FRAUD_PROVIDER_TOKEN) private readonly provider: FraudProvider,
-    ) {}
+    constructor(@Inject(FRAUD_PROVIDER_TOKEN) private readonly provider: FraudProvider) {}
 
     onModuleInit() {
         this.logger.log(`Fraud provider: ${this.provider.name}`);

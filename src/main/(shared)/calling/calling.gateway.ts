@@ -508,7 +508,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     private normalizeSignalBody<T extends object>(data: T | T[]): T {
-        return (Array.isArray(data) ? data[0] : data) as T;
+        return Array.isArray(data) ? data[0] : data;
     }
 
     @SubscribeMessage("offer")
@@ -596,7 +596,8 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage("callUser")
     async handleDirectCallUser(
         @ConnectedSocket() callerSocket: Socket,
-        @MessageBody() payload: { userId: string; callPurpose?: CallPurpose; mediaType?: "audio" | "video" },
+        @MessageBody()
+        payload: { userId: string; callPurpose?: CallPurpose; mediaType?: "audio" | "video" },
     ) {
         if (!this.requireAuth(callerSocket)) return;
 

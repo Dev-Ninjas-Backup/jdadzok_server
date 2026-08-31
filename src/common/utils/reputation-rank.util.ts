@@ -39,11 +39,7 @@ export function computeReputationRank(input: {
     const hours = effectiveVolunteerHours(input.metrics ?? {});
     const activity = input.metrics?.activityScore ?? 0;
 
-    return (
-        CAP_LEVEL_WEIGHT[input.capLevel] +
-        hours * 10 +
-        activity * 5
-    );
+    return CAP_LEVEL_WEIGHT[input.capLevel] + hours * 10 + activity * 5;
 }
 
 export function sortByReputationRank<T extends { reputationRank: number }>(items: T[]): T[] {

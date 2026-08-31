@@ -1,65 +1,65 @@
 {
-  "issue": 26,
-  "title": "[AI/Abuse P1] Search vendor: index members + opportunities; /search API",
-  "ranAt": "2026-08-25T04:27:20.721Z",
-  "passed": 11,
-  "failed": 0,
-  "total": 11,
-  "results": [
-    {
-      "name": "factory: SEARCH_PROVIDER=off → OffSearchProvider",
-      "ok": true,
-      "ms": 1
-    },
-    {
-      "name": "factory: typesense without keys falls back to off",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "factory: algolia without keys falls back to off",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "factory: SEARCH_PROVIDER=memory → MemorySearchProvider",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "off provider returns empty search (no custom ML)",
-      "ok": true,
-      "ms": 1
-    },
-    {
-      "name": "memory: upsert members + opportunities and search by intent query",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "guest-safe: inactive / non-public opportunities excluded",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "sync reflects create/update/delete within SLA path (immediate upsert/delete)",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "indexed documents never contain private fields (email, password, stripe, …)",
-      "ok": true,
-      "ms": 1
-    },
-    {
-      "name": "cap-weighted ranking prefers higher Cap when relevance ties",
-      "ok": true,
-      "ms": 0
-    },
-    {
-      "name": "types filter isolates opportunities from members",
-      "ok": true,
-      "ms": 0
-    }
-  ]
+    "issue": 26,
+    "title": "[AI/Abuse P1] Search vendor: index members + opportunities; /search API",
+    "ranAt": "2026-08-25T04:27:20.721Z",
+    "passed": 11,
+    "failed": 0,
+    "total": 11,
+    "results": [
+        {
+            "name": "factory: SEARCH_PROVIDER=off → OffSearchProvider",
+            "ok": true,
+            "ms": 1
+        },
+        {
+            "name": "factory: typesense without keys falls back to off",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "factory: algolia without keys falls back to off",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "factory: SEARCH_PROVIDER=memory → MemorySearchProvider",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "off provider returns empty search (no custom ML)",
+            "ok": true,
+            "ms": 1
+        },
+        {
+            "name": "memory: upsert members + opportunities and search by intent query",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "guest-safe: inactive / non-public opportunities excluded",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "sync reflects create/update/delete within SLA path (immediate upsert/delete)",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "indexed documents never contain private fields (email, password, stripe, …)",
+            "ok": true,
+            "ms": 1
+        },
+        {
+            "name": "cap-weighted ranking prefers higher Cap when relevance ties",
+            "ok": true,
+            "ms": 0
+        },
+        {
+            "name": "types filter isolates opportunities from members",
+            "ok": true,
+            "ms": 0
+        }
+    ]
 }

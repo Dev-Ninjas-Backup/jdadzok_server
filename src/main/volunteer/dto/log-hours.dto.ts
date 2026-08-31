@@ -1,6 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { ContributionType } from "@prisma/client";
-import { IsEnum, IsISO8601, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from "class-validator";
+import {
+    IsEnum,
+    IsISO8601,
+    IsOptional,
+    IsString,
+    IsUUID,
+    MaxLength,
+    ValidateIf,
+} from "class-validator";
 
 export class LogHoursDto {
     @ApiProperty({

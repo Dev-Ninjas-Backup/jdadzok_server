@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { ArrayNotEmpty, IsArray, IsBoolean, IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
+import {
+    ArrayNotEmpty,
+    IsArray,
+    IsBoolean,
+    IsOptional,
+    IsString,
+    IsUUID,
+    MaxLength,
+} from "class-validator";
 
 export class CreateUserChoiceDto {
     @ApiProperty({

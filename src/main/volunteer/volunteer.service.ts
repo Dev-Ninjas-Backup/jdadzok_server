@@ -10,12 +10,15 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
 import { LogHoursDto } from "./dto/log-hours.dto";
 import { UpdateStatusDto } from "./dto/update-status.dto";
-import { ApplicationStatus, ContributionType, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
-import { ChatService } from "@module/(sockets)/chats/chat.service";
 import {
-    isContributionOther,
-    resolveOtherText,
-} from "@common/utils/other-option.util";
+    ApplicationStatus,
+    ContributionType,
+    Role,
+    VolunteerHourSource,
+    VolunteerHourVerificationStatus,
+} from "@prisma/client";
+import { ChatService } from "@module/(sockets)/chats/chat.service";
+import { isContributionOther, resolveOtherText } from "@common/utils/other-option.util";
 import { requiresCounterpartyConfirmation } from "@common/utils/volunteer-hour.util";
 import { SearchSyncService } from "@module/(search)/search-sync.service";
 
