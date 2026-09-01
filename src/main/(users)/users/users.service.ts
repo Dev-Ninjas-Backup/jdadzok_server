@@ -3,26 +3,31 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { OptService } from "@lib/utils/otp.service";
 import { UtilsService } from "@lib/utils/utils.service";
 import { QUEUE_JOB_NAME } from "@module/(buill-queue)/constants";
+import { SearchSyncService } from "@module/(search)/search-sync.service";
+import { AuthService } from "@module/(started)/auth/auth.service";
 import { VerifyTokenDto } from "@module/(started)/auth/dto/verify-token.dto";
 import { InjectQueue } from "@nestjs/bullmq";
 import {
     BadRequestException,
     ConflictException,
+    ForbiddenException,
     Injectable,
     InternalServerErrorException,
     NotFoundException,
+    Optional,
 } from "@nestjs/common";
 import { JwtServices } from "@service/jwt.service";
 import { TUser } from "@type/index";
 import { omit } from "@utils/index";
 import { Queue } from "bullmq";
+import { CapLevel, Prisma, Role } from "@prisma/client";
+import { FollowService } from "../follow/follow.service";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ResentOtpDto } from "./dto/resent-otp.dto";
 import { UpdateUserDto } from "./dto/update.user.dto";
 import { CreateUserDto } from "./dto/users.dto";
 import { UserRepository } from "./users.repository";
 import { AllUserQueryDto } from "./dto/all-user-query.dto";
-import { CapLevel, Prisma, Role } from "@prisma/client";
-import { FollowService } from "../follow/follow.service";
 
 @Injectable()
 export class UserService {
@@ -35,6 +40,8 @@ export class UserService {
         private readonly otpService: OptService,
         private readonly mailService: MailService,
         private readonly followService: FollowService,
+        private readonly authService: AuthService,
+        @Optional() private readonly searchSync?: SearchSyncService,
     ) {}
 
     async register(body: CreateUserDto) {
@@ -151,7 +158,44 @@ export class UserService {
         const user = await this.repository.findById(userId);
         if (!user) throw new NotFoundException("User not found!");
 
+        await this.cleanupBeforeDelete(userId);
         await this.repository.delete(userId);
+    }
+
+    async deleteMyAccount(userId: string, dto: DeleteAccountDto) {
+        const user = await this.repository.findById(userId);
+        if (!user) throw new NotFoundException("User not found!");
+
+        if (user.twoFactorEnabled) {
+            if (!dto.totpCode) {
+                throw new BadRequestException("Authenticator code is required");
+            }
+            await this.authService.verifyTwoFactorCode(userId, dto.totpCode);
+        } else if (user.authProvider === "EMAIL") {
+            if (!dto.currentPassword) {
+                throw new BadRequestException("Current password is required");
+            }
+            if (!user.password) {
+                throw new BadRequestException("Password not set for this account");
+            }
+            const isValid = await this.utilsService.compare(dto.currentPassword, user.password);
+            if (!isValid) {
+                throw new ForbiddenException("Current password is incorrect");
+            }
+        }
+
+        await this.cleanupBeforeDelete(userId);
+        await this.repository.delete(userId);
+        return { deleted: true };
+    }
+
+    private async cleanupBeforeDelete(userId: string) {
+        await this.prisma.deviceToken.deleteMany({ where: { userId } });
+        try {
+            await this.searchSync?.deleteMember(userId);
+        } catch {
+            // Search vendor may be offline — account deletion must still proceed.
+        }
     }
 
     async getMe(userId: string) {

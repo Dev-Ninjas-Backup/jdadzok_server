@@ -1,3 +1,4 @@
+import { cookieHandler } from "@common/jwt/cookie.handler";
 import { GetUser, GetVerifiedUser, MakePublic } from "@common/jwt/jwt.decorator";
 import { successResponse } from "@common/utils/response.util";
 import { VerifyTokenDto } from "@module/(started)/auth/dto/verify-token.dto";
@@ -12,6 +13,7 @@ import {
     Patch,
     Post,
     Query,
+    Res,
     UseGuards,
     UsePipes,
     ValidationPipe,
@@ -19,6 +21,8 @@ import {
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { TUser, VerifiedUser } from "@type/index";
 import { omit } from "@utils/index";
+import { Response } from "express";
+import { DeleteAccountDto } from "./dto/delete-account.dto";
 import { ResentOtpDto } from "./dto/resent-otp.dto";
 import { UpdateUserDto } from "./dto/update.user.dto";
 import { CreateUserDto } from "./dto/users.dto";
@@ -126,7 +130,25 @@ export class UserController {
     }
 
     @ApiBearerAuth()
-    @Delete("delete")
+    @Delete("me")
+    @UsePipes(ValidationPipe)
+    @UseGuards(JwtAuthGuard)
+    async deleteMe(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Body() body: DeleteAccountDto,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        try {
+            const result = await this.service.deleteMyAccount(user.id, body);
+            cookieHandler(res, "clear");
+            return successResponse(result, "Your account has been deleted");
+        } catch (err) {
+            return err;
+        }
+    }
+
+    @ApiBearerAuth()
+    @Delete(":id")
     @UsePipes(ValidationPipe)
     @UseGuards(JwtAuthGuard)
     async delete(@GetVerifiedUser() user: VerifiedUser, @Param("id") id: string) {
