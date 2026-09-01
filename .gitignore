@@ -78,5 +78,4 @@ sajib.pem
 jdadzok_server.pem
 *.pem
 *.key
-graphify-out/
 .env
