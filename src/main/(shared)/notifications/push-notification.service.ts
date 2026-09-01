@@ -1,7 +1,7 @@
-import { FirebaseService } from "@lib/firebase/firebase.service";
+import { FirebaseService, IncomingCallPushPayload } from "@lib/firebase/firebase.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable, Logger } from "@nestjs/common";
-import { NotificationType } from "@prisma/client";
+import { CallPurpose, NotificationType } from "@prisma/client";
 
 @Injectable()
 export class PushNotificationService {
@@ -60,6 +60,51 @@ export class PushNotificationService {
             );
         } catch (err) {
             this.logger.warn(`FCM send failed for user ${userId}: ${String(err)}`);
+        }
+    }
+
+    /**
+     * Wake an offline callee via FCM. Returns true when at least one token received the push.
+     */
+    async sendIncomingCallPush(
+        userId: string,
+        payload: Omit<IncomingCallPushPayload, "callPurpose"> & { callPurpose: CallPurpose },
+    ): Promise<boolean> {
+        if (!this.firebase.isConfigured()) return false;
+
+        const toggle = await this.prisma.notificationToggle.findUnique({
+            where: { userId },
+        });
+        if (toggle && !toggle.communication) return false;
+
+        const devices = await this.prisma.deviceToken.findMany({
+            where: { userId },
+            select: { token: true },
+        });
+        if (devices.length === 0) return false;
+
+        const tokens = devices.map((d) => d.token);
+
+        try {
+            const result = await this.firebase.sendIncomingCallPush(tokens, {
+                ...payload,
+                callPurpose: payload.callPurpose,
+            });
+
+            if (result.invalidTokens.length > 0) {
+                await this.prisma.deviceToken.deleteMany({
+                    where: { token: { in: result.invalidTokens } },
+                });
+            }
+
+            this.logger.log(
+                `Incoming call FCM to user ${userId}: ${result.successCount} sent, ${result.failureCount} failed`,
+            );
+
+            return result.successCount > 0;
+        } catch (err) {
+            this.logger.warn(`Incoming call FCM failed for user ${userId}: ${String(err)}`);
+            return false;
         }
     }
 }

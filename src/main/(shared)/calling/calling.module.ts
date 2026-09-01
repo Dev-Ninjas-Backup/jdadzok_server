@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 
 import { PrismaModule } from "@lib/prisma/prisma.module";
 import { FriendRequestModule } from "@module/(users)/friend-request/friend-request.module";
+import { NotificaitonsModule } from "@module/(shared)/notifications/notifications.module";
 import { CacheModule } from "@nestjs/cache-manager";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
@@ -15,6 +16,7 @@ import { MentorshipCallHoursService } from "./service/mentorship-call-hours.serv
     imports: [
         PrismaModule,
         FriendRequestModule,
+        NotificaitonsModule,
         CacheModule.register({
             ttl: 0,
             max: 1000,

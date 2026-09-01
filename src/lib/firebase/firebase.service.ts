@@ -31,6 +31,15 @@ export interface FcmSendResult {
     invalidTokens: string[];
 }
 
+export interface IncomingCallPushPayload {
+    callId: string;
+    callerId: string;
+    callerName: string;
+    callerAvatarUrl?: string | null;
+    mediaType: "audio" | "video";
+    callPurpose: string;
+}
+
 @Injectable()
 export class FirebaseService implements OnModuleInit {
     private readonly logger = new Logger(FirebaseService.name);
@@ -131,6 +140,71 @@ export class FirebaseService implements OnModuleInit {
         if (invalidTokens.length > 0) {
             this.logger.warn(`Removing ${invalidTokens.length} invalid FCM token(s)`);
         }
+
+        return {
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+            invalidTokens,
+        };
+    }
+
+    async sendIncomingCallPush(
+        tokens: string[],
+        payload: IncomingCallPushPayload,
+    ): Promise<FcmSendResult> {
+        if (!this.app || tokens.length === 0) {
+            return { successCount: 0, failureCount: 0, invalidTokens: [] };
+        }
+
+        const mediaLabel = payload.mediaType === "video" ? "video" : "audio";
+        const title = `Incoming ${mediaLabel} call`;
+        const body = `${payload.callerName} is calling`;
+
+        const data: Record<string, string> = {
+            type: "call",
+            callId: payload.callId,
+            callerId: payload.callerId,
+            callerName: payload.callerName,
+            mediaType: payload.mediaType,
+            callPurpose: payload.callPurpose,
+        };
+        if (payload.callerAvatarUrl) {
+            data.callerAvatarUrl = payload.callerAvatarUrl;
+        }
+
+        const message: MulticastMessage = {
+            tokens,
+            notification: { title, body },
+            data,
+            android: {
+                priority: "high",
+                ttl: 30_000,
+            },
+            apns: {
+                headers: { "apns-priority": "10" },
+                payload: {
+                    aps: {
+                        alert: { title, body },
+                        sound: "default",
+                        "content-available": 1,
+                    },
+                },
+            },
+        };
+
+        const response: BatchResponse = await this.getMessaging().sendEachForMulticast(message);
+        const invalidTokens: string[] = [];
+
+        response.responses.forEach((item, index) => {
+            if (item.success) return;
+            const code = item.error?.code;
+            if (
+                code === "messaging/registration-token-not-registered" ||
+                code === "messaging/invalid-registration-token"
+            ) {
+                invalidTokens.push(tokens[index]);
+            }
+        });
 
         return {
             successCount: response.successCount,

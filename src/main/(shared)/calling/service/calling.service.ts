@@ -15,6 +15,7 @@ import { CallGateway } from "../calling.gateway";
 import { CallPurpose, CallStatus } from "@prisma/client";
 import { MentorshipCallHoursService } from "./mentorship-call-hours.service";
 import { FriendRequestService } from "@module/(users)/friend-request/friend-request.service";
+import { PushNotificationService } from "@module/(shared)/notifications/push-notification.service";
 
 export interface Participant {
     socketId: string;
@@ -52,6 +53,7 @@ export class CallService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private readonly mentorshipCallHours: MentorshipCallHoursService,
         private readonly friendRequestService: FriendRequestService,
+        private readonly pushNotification: PushNotificationService,
     ) {}
 
     /**
@@ -165,13 +167,35 @@ export class CallService {
             recipientSockets.size > 0 ? Array.from(recipientSockets)[0].id : null;
 
         if (recipientSockets.size === 0) {
-            // Recipient is offline - mark as missed
-            await this.updateCallStatus(call.id, "MISSED");
-            await this.cacheManager.del(`${this.USER_CALL_PREFIX}${callerId}`);
-            await this.cacheManager.del(`${this.USER_CALL_PREFIX}${recipientUserId}`);
+            const pushSent = await this.pushNotification.sendIncomingCallPush(recipientUserId, {
+                callId: call.id,
+                callerId,
+                callerName: caller?.profile?.name || "Unknown User",
+                callerAvatarUrl: caller?.profile?.avatarUrl,
+                mediaType: resolvedMedia,
+                callPurpose,
+            });
+
+            if (!pushSent) {
+                await this.updateCallStatus(call.id, "MISSED");
+                await this.cacheManager.del(`${this.USER_CALL_PREFIX}${callerId}`);
+                await this.cacheManager.del(`${this.USER_CALL_PREFIX}${recipientUserId}`);
+                await this.cacheManager.del(`${this.CALL_ROOM_PREFIX}${call.id}`);
+                return {
+                    callId: call.id,
+                    status: "recipient_offline",
+                    callPurpose,
+                    mediaType: resolvedMedia,
+                };
+            }
+
+            this.logger.log(
+                `Call ${call.id}: recipient offline — FCM push sent, keeping call ringing`,
+            );
+
             return {
                 callId: call.id,
-                status: "recipient_offline",
+                status: "ringing",
                 callPurpose,
                 mediaType: resolvedMedia,
             };

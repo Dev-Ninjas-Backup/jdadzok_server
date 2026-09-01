@@ -637,6 +637,35 @@ DELETE /notifications/device-token
 
 When the server creates an in-app notification (posts, comments, messages, etc.), it also sends an FCM push to all registered tokens for that user. Stale tokens are auto-removed.
 
+**Incoming call push (offline callee):**
+
+When a user initiates a call and the recipient has no active `/calling` socket, the server sends a high-priority FCM push to wake the app. The call stays in `CALLING` state until accepted, declined, cancelled, or timed out on the client.
+
+FCM `data` payload (all values are strings):
+
+```json
+{
+  "type": "call",
+  "callId": "<uuid>",
+  "callerId": "<user-uuid>",
+  "callerName": "Amara O.",
+  "callerAvatarUrl": "https://...",
+  "mediaType": "audio",
+  "callPurpose": "GENERAL"
+}
+```
+
+`mediaType`: `audio` | `video`  
+`callPurpose`: `GENERAL` | `MENTORSHIP`
+
+**Mobile handler:**
+
+1. On `type == "call"`, connect to `/calling` socket with JWT
+2. Emit `acceptCall` with `{ "callId": "..." }` or `declineCall`
+3. Join WebRTC flow via existing `offer` / `answer` / `iceCandidate` events
+
+If the recipient has no registered device tokens, the caller receives `callMissed` with `reason: "recipient_offline"`.
+
 ### 8.4 Media uploads
 
 ```
