@@ -6,6 +6,8 @@ model User {
   password     String?
   authProvider AuthProvider @default(EMAIL)
   isVerified   Boolean      @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
 
   // User role and progression
   role      Role     @default(USER)
