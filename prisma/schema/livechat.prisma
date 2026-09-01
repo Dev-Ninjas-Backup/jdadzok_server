@@ -10,6 +10,7 @@ enum LiveChatType {
 enum LiveChatContext {
   GENERAL
   MENTORSHIP
+  SUPPORT
 }
 
 enum LiveMessageStatus {

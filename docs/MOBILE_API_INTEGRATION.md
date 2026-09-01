@@ -291,6 +291,72 @@ POST /auth/change-password
 Authorization: Bearer <token>
 ```
 
+### 4.7 Delete account (Settings)
+
+```
+DELETE /users/me
+Authorization: Bearer <token>
+```
+
+**Body (EMAIL users):**
+
+```json
+{ "currentPassword": "secret12" }
+```
+
+**Body (when 2FA enabled):**
+
+```json
+{ "totpCode": "123456" }
+```
+
+OAuth users without a password can delete with JWT only (unless 2FA is enabled, then `totpCode` is required). Clears device tokens and auth cookie on success.
+
+### 4.8 Two-factor authentication (TOTP)
+
+**Setup (authenticator app):**
+
+```
+POST /auth/2fa/setup
+Authorization: Bearer <token>
+```
+
+Response `data`: `{ "secret": "...", "otpauthUrl": "otpauth://..." }` — show QR from `otpauthUrl`, then:
+
+```
+POST /auth/2fa/enable
+{ "code": "123456" }
+```
+
+**Login when 2FA is on:**
+
+`POST /auth/login` (or Firebase/Google/Apple) returns:
+
+```json
+{
+  "requiresMfa": true,
+  "mfaToken": "<short-lived-jwt>",
+  "user": { ... }
+}
+```
+
+Complete sign-in:
+
+```
+POST /auth/2fa/verify
+{ "mfaToken": "...", "code": "123456" }
+```
+
+Returns normal `{ accessToken, user }`.
+
+**Disable:**
+
+```
+POST /auth/2fa/disable
+Authorization: Bearer <token>
+{ "code": "123456" }
+```
+
 ---
 
 ## 5. Public vs authenticated routes
@@ -458,9 +524,10 @@ Use `privateEarnings` / `privateSummary` blocks from cap status for exact figure
 
 | Action | API |
 |--------|-----|
-| Inbox | `GET /chat/my?context=GENERAL` or `MENTORSHIP` |
+| Inbox | `GET /chat/my?context=GENERAL`, `MENTORSHIP`, or `SUPPORT` |
 | Start general chat | `POST /chat/private` |
 | Start mentorship chat | `POST /chat/mentorship/private` |
+| Support chat | `POST /chat/support` |
 | Messages | `GET /chat/:chatId/messages?cursor=&limit=` (default `limit=50`, max 100; `cursor` = last message id) |
 | Send (HTTP fallback) | `POST /chat/:chatId/messages` body may include `clientMessageId` for idempotent retries |
 
@@ -529,6 +596,9 @@ POST /volunteer/apply                          (member — apply)
 | Notification prefs | `/notifications/toggles` |
 | Privacy | Profile visibility fields on `PATCH /user-profile` |
 | Sign out | `POST /auth/logout` + clear storage |
+| Delete account | `DELETE /users/me` — see §4.7 |
+| Two-factor auth | `POST /auth/2fa/setup`, `/enable`, `/disable`, `/verify` — see §4.8 |
+| Support chat | `POST /chat/support` — see §6.9 |
 | Terms / privacy | `GET /terms-and-conditions`, `GET /privacy-policy` |
 
 ---
@@ -747,7 +817,7 @@ CORS applies to **web/browser** builds only. Native Android/iOS calls are not CO
 | Email must be `@gmail.com` | Validate in sign-up UI or show clear error |
 | No refresh token | Re-login after 90 days or on 401 |
 | Cookie-first web admin | Mobile must use Bearer, not cookies |
-| OAuth not implemented | Use Firebase Auth on mobile → `POST /auth/firebase` with Firebase ID token |
+| Social login | Firebase Auth on mobile → `POST /auth/firebase` with Firebase ID token; 2FA applies after OAuth if enabled |
 | Reputation passport `:userId` requires auth | Even “public” passport needs a logged-in viewer |
 
 ---
@@ -765,6 +835,11 @@ CORS applies to **web/browser** builds only. Native Android/iOS calls are not CO
 | POST | `/auth/reset-password` | Public |
 | POST | `/auth/resent-code` | Public |
 | POST | `/auth/change-password` | Bearer |
+| POST | `/auth/2fa/setup` | Bearer |
+| POST | `/auth/2fa/enable` | Bearer |
+| POST | `/auth/2fa/disable` | Bearer |
+| POST | `/auth/2fa/verify` | Public — complete MFA login |
+| DELETE | `/users/me` | Bearer — self-service account delete |
 | POST | `/auth/firebase` | Public — Firebase ID token (Google/Apple via Firebase SDK) |
 | POST | `/auth/google` | Public — alias for Firebase Google sign-in |
 | POST | `/auth/apple` | Public — alias for Firebase Apple sign-in |

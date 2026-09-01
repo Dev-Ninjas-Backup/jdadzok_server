@@ -22,8 +22,10 @@ import { LoginDto } from "./dto/login.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyTokenDto } from "./dto/verify-token.dto";
 import { ChangedPasswordDto } from "./dto/change.password.dto";
+import { TwoFactorCodeDto, TwoFactorLoginDto } from "./dto/two-factor.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { FirebaseService } from "@lib/firebase/firebase.service";
+import { TotpService } from "@lib/utils/totp.service";
 import { AuthProvider } from "@prisma/client";
 
 @Injectable()
@@ -37,6 +39,7 @@ export class AuthService {
         private readonly otpService: OptService,
         private readonly prisma: PrismaService,
         private readonly firebase: FirebaseService,
+        private readonly totp: TotpService,
     ) {}
 
     async login(input: LoginDto) {
@@ -52,12 +55,43 @@ export class AuthService {
             if (!isMatch) throw new ForbiddenException("Email or Password Invalid!");
         }
 
+        if (user.twoFactorEnabled && user.twoFactorSecret) {
+            const mfaToken = await this.jwtService.signAsync(
+                { sub: user.id, email: user.email, roles: user.role, purpose: "mfa" },
+                { expiresIn: "5m" },
+            );
+            return {
+                requiresMfa: true,
+                mfaToken,
+                user: this.toSafeUser(user),
+            };
+        }
+
         const accessToken = await this.jwtService.signAsync({
             sub: user.id,
             roles: user.role,
             email: user.email,
         });
-        const safeUser = {
+
+        return {
+            accessToken,
+            user: this.toSafeUser(user),
+        };
+    }
+
+    private toSafeUser(user: {
+        id: string;
+        email: string;
+        role: string;
+        isVerified: boolean;
+        capLevel: string;
+        createdAt: Date;
+        updatedAt: Date;
+        stripeAccountId: string | null;
+        stripeCustomerId: string | null;
+        twoFactorEnabled?: boolean;
+    }) {
+        return {
             id: user.id,
             email: user.email,
             role: user.role,
@@ -67,12 +101,107 @@ export class AuthService {
             updatedAt: user.updatedAt,
             stripeAccountId: user.stripeAccountId,
             stripeCustomerId: user.stripeCustomerId,
+            twoFactorEnabled: user.twoFactorEnabled ?? false,
         };
+    }
+
+    async setupTwoFactor(userId: string) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException("User not found");
+        if (user.twoFactorEnabled) {
+            throw new ConflictException("Two-factor authentication is already enabled");
+        }
+
+        const secret = this.totp.generateSecret();
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { twoFactorSecret: secret, twoFactorEnabled: false },
+        });
+
+        return {
+            secret,
+            otpauthUrl: this.totp.keyUri(user.email, secret),
+        };
+    }
+
+    async enableTwoFactor(userId: string, dto: TwoFactorCodeDto) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException("User not found");
+        if (user.twoFactorEnabled) {
+            throw new ConflictException("Two-factor authentication is already enabled");
+        }
+        if (!user.twoFactorSecret) {
+            throw new BadRequestException("Call POST /auth/2fa/setup first");
+        }
+        if (!this.totp.verify(dto.code, user.twoFactorSecret)) {
+            throw new ForbiddenException("Invalid authenticator code");
+        }
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { twoFactorEnabled: true },
+        });
+
+        return { message: "Two-factor authentication enabled" };
+    }
+
+    async disableTwoFactor(userId: string, dto: TwoFactorCodeDto) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException("User not found");
+        if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+            throw new BadRequestException("Two-factor authentication is not enabled");
+        }
+        if (!this.totp.verify(dto.code, user.twoFactorSecret)) {
+            throw new ForbiddenException("Invalid authenticator code");
+        }
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { twoFactorEnabled: false, twoFactorSecret: null },
+        });
+
+        return { message: "Two-factor authentication disabled" };
+    }
+
+    async verifyTwoFactorLogin(dto: TwoFactorLoginDto) {
+        let payload: { sub: string; email: string; roles: string; purpose?: string };
+        try {
+            payload = await this.jwtService.verifyAsync(dto.mfaToken);
+        } catch {
+            throw new UnauthorizedException("MFA session expired — please sign in again");
+        }
+        if (payload.purpose !== "mfa") {
+            throw new UnauthorizedException("Invalid MFA token");
+        }
+
+        const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+        if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+            throw new UnauthorizedException(
+                "Two-factor authentication is not enabled for this account",
+            );
+        }
+        if (!this.totp.verify(dto.code, user.twoFactorSecret)) {
+            throw new ForbiddenException("Invalid authenticator code");
+        }
+
+        const accessToken = await this.jwtService.signAsync({
+            sub: user.id,
+            roles: user.role,
+            email: user.email,
+        });
 
         return {
             accessToken,
-            user: safeUser,
+            user: this.toSafeUser(user),
         };
+    }
+
+    async verifyTwoFactorCode(userId: string, code: string): Promise<void> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user?.twoFactorEnabled || !user.twoFactorSecret) return;
+        if (!this.totp.verify(code, user.twoFactorSecret)) {
+            throw new ForbiddenException("Invalid authenticator code");
+        }
     }
 
     async loginWithFirebase(idToken: string, name?: string) {
@@ -162,19 +291,21 @@ export class AuthService {
             email: user.email,
         });
 
+        if (user.twoFactorEnabled && user.twoFactorSecret) {
+            const mfaToken = await this.jwtService.signAsync(
+                { sub: user.id, email: user.email, roles: user.role, purpose: "mfa" },
+                { expiresIn: "5m" },
+            );
+            return {
+                requiresMfa: true,
+                mfaToken,
+                user: this.toSafeUser(user),
+            };
+        }
+
         return {
             accessToken,
-            user: {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                isVerified: user.isVerified,
-                capLevel: user.capLevel,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt,
-                stripeAccountId: user.stripeAccountId,
-                stripeCustomerId: user.stripeCustomerId,
-            },
+            user: this.toSafeUser(user),
         };
     }
 

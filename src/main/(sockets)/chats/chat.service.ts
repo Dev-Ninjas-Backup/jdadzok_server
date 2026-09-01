@@ -20,6 +20,70 @@ export class ChatService {
         private readonly friendRequestService: FriendRequestService,
     ) {}
 
+    /** Find or create 1-to-1 support chat between member and platform support agent. */
+    @HandleError("Failed to get or create support chat", "chat")
+    async getOrCreateSupportChat(userId: string): Promise<LiveChat> {
+        const existing = await this.prisma.liveChat.findFirst({
+            where: {
+                type: "INDIVIDUAL",
+                context: LiveChatContext.SUPPORT,
+                participants: { some: { userId } },
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                profile: { select: { name: true, avatarUrl: true } },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (existing) return existing;
+
+        const agentId = await this.resolveSupportAgentId();
+        if (userId === agentId) {
+            throw new ForbiddenException(
+                "Support agents cannot open a support chat with themselves",
+            );
+        }
+
+        return this.createIndividualChat({
+            userA: userId,
+            userB: agentId,
+            context: LiveChatContext.SUPPORT,
+            createdById: userId,
+        });
+    }
+
+    /** Admin/support agent inbox for open support threads. */
+    @HandleError("Failed to list support queue", "chat")
+    async getSupportQueue(agentId: string) {
+        return this.getMyChats(agentId, LiveChatContext.SUPPORT);
+    }
+
+    private async resolveSupportAgentId(): Promise<string> {
+        const configured = process.env.SUPPORT_AGENT_EMAIL?.trim();
+        if (configured) {
+            const user = await this.prisma.user.findUnique({ where: { email: configured } });
+            if (user) return user.id;
+        }
+
+        const admin = await this.prisma.user.findFirst({
+            where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+            orderBy: { createdAt: "asc" },
+            select: { id: true },
+        });
+        if (!admin) {
+            throw new NotFoundException("No support agent is configured on this platform");
+        }
+        return admin.id;
+    }
+
     /** Find or create 1-to-1 general chat (requires mutual Connect). */
     @HandleError("Failed to get or create chat", "chat")
     async getOrCreatePrivateChat(userA: string, userB: string): Promise<LiveChat> {
@@ -324,7 +388,7 @@ export class ChatService {
         if (other) {
             if (chat.context === LiveChatContext.MENTORSHIP) {
                 await this.assertMentorshipLink(senderId, other.userId);
-            } else if (chat.type === "INDIVIDUAL") {
+            } else if (chat.context === LiveChatContext.GENERAL && chat.type === "INDIVIDUAL") {
                 await this.friendRequestService.assertConnected(senderId, other.userId);
             }
         }

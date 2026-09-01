@@ -1,4 +1,4 @@
-import { GetUser, ValidateAuth } from "@common/jwt/jwt.decorator";
+import { GetUser, ValidateAdmin, ValidateAuth } from "@common/jwt/jwt.decorator";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -19,6 +19,22 @@ export class ChatController {
         private activeUsersService: ActiveUsersService,
         private prisma: PrismaService,
     ) {}
+
+    @Post("support")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Start or get existing support chat with platform support" })
+    async startSupportChat(@GetUser("userId") userId: string) {
+        return this.chatService.getOrCreateSupportChat(userId);
+    }
+
+    @Get("support/queue")
+    @ValidateAdmin()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "List support chats assigned to the support inbox (admin only)" })
+    async getSupportQueue(@GetUser("userId") userId: string) {
+        return this.chatService.getSupportQueue(userId);
+    }
 
     @Post("private")
     @ValidateAuth()
@@ -49,7 +65,7 @@ export class ChatController {
         name: "context",
         required: false,
         enum: LiveChatContext,
-        description: "Filter inbox: GENERAL or MENTORSHIP",
+        description: "Filter inbox: GENERAL, MENTORSHIP, or SUPPORT",
     })
     @ApiResponse({ status: 200, description: "List of user chats with metadata" })
     async getMyChats(

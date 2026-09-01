@@ -1,1 +1,143 @@
-{"nodes": [{"id": "$graphify-root$_scripts_sync_audit_html_from_spec_py", "label": "sync-audit-html-from-spec.py", "file_type": "code", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L1"}, {"id": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "label": "md_to_html()", "file_type": "code", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L86", "_callable": true}, {"id": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "label": "render_tbody()", "file_type": "code", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L92", "_callable": true}], "edges": [{"source": "$graphify-root$_scripts_sync_audit_html_from_spec_py", "target": "re", "relation": "imports", "context": "import", "confidence": "EXTRACTED", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L4", "weight": 1.0}, {"source": "$graphify-root$_scripts_sync_audit_html_from_spec_py", "target": "pathlib", "relation": "imports_from", "context": "import", "confidence": "EXTRACTED", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L5", "weight": 1.0}, {"source": "$graphify-root$_scripts_sync_audit_html_from_spec_py", "target": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "relation": "contains", "confidence": "EXTRACTED", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L86", "weight": 1.0}, {"source": "$graphify-root$_scripts_sync_audit_html_from_spec_py", "target": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "relation": "contains", "confidence": "EXTRACTED", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L92", "weight": 1.0}, {"source": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "target": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "relation": "calls", "context": "call", "confidence": "EXTRACTED", "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L97", "weight": 1.0}], "raw_calls": [{"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "callee": "sub", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L87", "receiver": "re"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "callee": "sub", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L88", "receiver": "re"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "callee": "replace", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L89", "receiver": null}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html", "callee": "replace", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L89", "receiver": "text"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "callee": "get", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L95", "receiver": "feature_labels"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "callee": "extend", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L99", "receiver": "lines"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "callee": "append", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L109", "receiver": "lines"}, {"caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody", "callee": "join", "is_member_call": true, "source_file": "scripts/sync-audit-html-from-spec.py", "source_location": "L110", "receiver": null}]}
+{
+    "nodes": [
+        {
+            "id": "$graphify-root$_scripts_sync_audit_html_from_spec_py",
+            "label": "sync-audit-html-from-spec.py",
+            "file_type": "code",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L1"
+        },
+        {
+            "id": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "label": "md_to_html()",
+            "file_type": "code",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L86",
+            "_callable": true
+        },
+        {
+            "id": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "label": "render_tbody()",
+            "file_type": "code",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L92",
+            "_callable": true
+        }
+    ],
+    "edges": [
+        {
+            "source": "$graphify-root$_scripts_sync_audit_html_from_spec_py",
+            "target": "re",
+            "relation": "imports",
+            "context": "import",
+            "confidence": "EXTRACTED",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L4",
+            "weight": 1.0
+        },
+        {
+            "source": "$graphify-root$_scripts_sync_audit_html_from_spec_py",
+            "target": "pathlib",
+            "relation": "imports_from",
+            "context": "import",
+            "confidence": "EXTRACTED",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L5",
+            "weight": 1.0
+        },
+        {
+            "source": "$graphify-root$_scripts_sync_audit_html_from_spec_py",
+            "target": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L86",
+            "weight": 1.0
+        },
+        {
+            "source": "$graphify-root$_scripts_sync_audit_html_from_spec_py",
+            "target": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "relation": "contains",
+            "confidence": "EXTRACTED",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L92",
+            "weight": 1.0
+        },
+        {
+            "source": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "target": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "relation": "calls",
+            "context": "call",
+            "confidence": "EXTRACTED",
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L97",
+            "weight": 1.0
+        }
+    ],
+    "raw_calls": [
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "callee": "sub",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L87",
+            "receiver": "re"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "callee": "sub",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L88",
+            "receiver": "re"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "callee": "replace",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L89",
+            "receiver": null
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_md_to_html",
+            "callee": "replace",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L89",
+            "receiver": "text"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "callee": "get",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L95",
+            "receiver": "feature_labels"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "callee": "extend",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L99",
+            "receiver": "lines"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "callee": "append",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L109",
+            "receiver": "lines"
+        },
+        {
+            "caller_nid": "$graphify-root$_scripts_sync_audit_html_from_spec_render_tbody",
+            "callee": "join",
+            "is_member_call": true,
+            "source_file": "scripts/sync-audit-html-from-spec.py",
+            "source_location": "L110",
+            "receiver": null
+        }
+    ]
+}

@@ -1,6 +1,8 @@
 import { MailService } from "@lib/mail/mail.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { OptService } from "@lib/utils/otp.service";
+import { AuthModule } from "@module/(started)/auth/auth.module";
+import { SearchModule } from "@module/(search)/search.module";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -14,7 +16,13 @@ import { UserRepository } from "./users.repository";
 import { UserService } from "./users.service";
 
 @Module({
-    imports: [BullModule.registerQueue({ name: "users" }), UserProfileModule, FollowModule],
+    imports: [
+        BullModule.registerQueue({ name: "users" }),
+        UserProfileModule,
+        FollowModule,
+        AuthModule,
+        SearchModule,
+    ],
     controllers: [UserController],
     providers: [
         UsersProcessor,

@@ -1,5 +1,6 @@
 import { AuthValidatorService } from "@global/auth-validator/auth-validator.service";
 import { OptService } from "@lib/utils/otp.service";
+import { TotpService } from "@lib/utils/totp.service";
 import { UserProfileRepository } from "@module/(users)/user-profile/user.profile.repository";
 import { UserRepository } from "@module/(users)/users/users.repository";
 import { BullModule } from "@nestjs/bullmq";
@@ -29,6 +30,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
         JwtStrategy,
         UserProfileRepository,
         OptService,
+        TotpService,
         UserRepository,
         AuthValidatorService,
     ],
