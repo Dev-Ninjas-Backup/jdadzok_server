@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Patch, Param, Delete } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, Get, Patch, Param, Delete, Query } from "@nestjs/common";
 import { VolunteerService } from "./volunteer.service";
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
@@ -17,6 +17,7 @@ import {
     ConfirmCounterpartyHourDto,
     RejectCounterpartyHourDto,
 } from "./dto/counterparty-volunteer-hour.dto";
+import { ListCounterpartyUsersDto } from "./dto/list-counterparty-users.dto";
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -160,6 +161,21 @@ export class VolunteerController {
         return handleRequest(
             () => this.hourEndorsementService.rejectHour(hourId, user.id, dto),
             "Volunteer hours rejected",
+        );
+    }
+
+    @ApiOperation({
+        summary:
+            "Search platform users to pick as counterparty user ID (mentee / recipient) when logging mentoring or advice hours",
+    })
+    @Get("counterparty-users")
+    listCounterpartyUsers(
+        @Query() query: ListCounterpartyUsersDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourCounterpartyService.listCandidateUsers(user.id, query),
+            "Counterparty users retrieved",
         );
     }
 
