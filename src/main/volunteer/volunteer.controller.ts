@@ -68,14 +68,17 @@ export class VolunteerController {
         );
     }
 
-    @ApiOperation({ summary: "Get all volunteer applications under a specific project" })
+    @ApiOperation({
+        summary:
+            "Get all volunteer applications under a specific project. Callable by the NGO owner or a platform admin.",
+    })
     @Get("project/:projectId/applications")
     getProjectApplications(
         @Param("projectId") projectId: string,
         @GetVerifiedUser() user: VerifiedUser,
     ) {
         return handleRequest(
-            () => this.volunteerService.getProjectApplications(projectId, user.id),
+            () => this.volunteerService.getProjectApplications(projectId, user.id, user.role),
             "Fetched all volunteer applications for this project successfully",
         );
     }
@@ -221,7 +224,7 @@ export class VolunteerController {
 
     @ApiOperation({
         summary:
-            "Only the owner of the NGO that created this project can update the application status.",
+            "Update a volunteer application's status (pending/accepted/rejected). Callable by the NGO owner who created the project, or a platform admin.",
     })
     @Patch("status/:applicationId")
     updateStatus(
@@ -229,7 +232,7 @@ export class VolunteerController {
         @Body() dto: UpdateStatusDto,
         @GetVerifiedUser() user: VerifiedUser,
     ) {
-        return this.volunteerService.updateStatus(id, dto, user.id);
+        return this.volunteerService.updateStatus(id, dto, user.id, user.role);
     }
 
     @ApiOperation({ summary: "See own application details" })
