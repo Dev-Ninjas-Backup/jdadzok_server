@@ -1,6 +1,6 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
-import { CapLevel, ContributionType, VolunteerHourVerificationStatus } from "@prisma/client";
+import { CapLevel, ContributionType, Sector, VolunteerHourVerificationStatus } from "@prisma/client";
 import { capDisplayLabel } from "@common/utils/cap-earning-headline.util";
 import { capLevelsAtOrAbove } from "@common/utils/reputation-rank.util";
 import {
@@ -29,28 +29,53 @@ export class ContributionLeaderboardService {
     async getLeaderboard(query: ContributionLeaderboardQueryDto) {
         const limit = Math.min(query.limit ?? 50, 100);
         const sortBy: ContributionSortField = query.sortBy ?? "combined";
+        const period = query.period ?? "all";
+        const category = query.category;
         const allowedCapLevels = query.minCapLevel
             ? capLevelsAtOrAbove(query.minCapLevel)
             : undefined;
+        // "week" = rolling last 7 days, not calendar-week-to-date, so the window is stable
+        // regardless of what day someone loads the leaderboard.
+        const since = period === "week" ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : undefined;
+        // The lifetime UserMetrics bank has no per-project link, so it can't be scoped to a
+        // sector — a category filter forces the direct VolunteerHour sum, same as "week" does.
+        const useDirectHours = period === "week" || !!category;
+        const projectSectorFilter = category ? { application: { project: { sector: category } } } : {};
 
-        const [metricsRows, mentoringGroups, endorsementGroups] = await Promise.all([
-            this.prisma.userMetrics.findMany({
-                where: { lifetimeVerifiedVolunteerHours: { gt: 0 } },
-                select: {
-                    userId: true,
-                    lifetimeVerifiedVolunteerHours: true,
-                },
-            }),
+        const [hoursRows, mentoringGroups, endorsementGroups] = await Promise.all([
+            useDirectHours
+                ? this.prisma.volunteerHour.groupBy({
+                      by: ["loggedByUserId"],
+                      where: {
+                          verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
+                          ...(since ? { createdAt: { gte: since } } : {}),
+                          ...projectSectorFilter,
+                      },
+                      _sum: { hours: true },
+                  })
+                : this.prisma.userMetrics.findMany({
+                      where: { lifetimeVerifiedVolunteerHours: { gt: 0 } },
+                      select: {
+                          userId: true,
+                          lifetimeVerifiedVolunteerHours: true,
+                      },
+                  }),
             this.prisma.volunteerHour.groupBy({
                 by: ["loggedByUserId"],
                 where: {
                     verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
                     contributionType: ContributionType.MENTORING,
+                    ...(since ? { createdAt: { gte: since } } : {}),
+                    ...projectSectorFilter,
                 },
                 _sum: { hours: true },
             }),
             this.prisma.endorsement.groupBy({
                 by: ["toUserId"],
+                where: {
+                    ...(since ? { createdAt: { gte: since } } : {}),
+                    ...(category ? { project: { sector: category } } : {}),
+                },
                 _count: { _all: true },
             }),
         ]);
@@ -71,9 +96,16 @@ export class ContributionLeaderboardService {
             return created;
         };
 
-        for (const row of metricsRows) {
-            const entry = ensure(row.userId);
-            entry.verifiedHours = roundHours(row.lifetimeVerifiedVolunteerHours);
+        if (useDirectHours) {
+            for (const row of hoursRows as { loggedByUserId: string; _sum: { hours: number | null } }[]) {
+                const entry = ensure(row.loggedByUserId);
+                entry.verifiedHours = roundHours(row._sum.hours ?? 0);
+            }
+        } else {
+            for (const row of hoursRows as { userId: string; lifetimeVerifiedVolunteerHours: number }[]) {
+                const entry = ensure(row.userId);
+                entry.verifiedHours = roundHours(row.lifetimeVerifiedVolunteerHours);
+            }
         }
 
         for (const row of mentoringGroups) {
@@ -88,7 +120,7 @@ export class ContributionLeaderboardService {
 
         const userIds = [...signalsByUser.keys()];
         if (!userIds.length) {
-            return this.emptyResponse(sortBy, limit, query.minCapLevel);
+            return this.emptyResponse(sortBy, limit, query.minCapLevel, period, category);
         }
 
         const users = await this.prisma.user.findMany({
@@ -178,12 +210,20 @@ export class ContributionLeaderboardService {
             },
             filters: {
                 minCapLevel: query.minCapLevel ?? null,
+                period,
+                category: category ?? null,
             },
             generatedAt: new Date().toISOString(),
         };
     }
 
-    private emptyResponse(sortBy: ContributionSortField, limit: number, minCapLevel?: CapLevel) {
+    private emptyResponse(
+        sortBy: ContributionSortField,
+        limit: number,
+        minCapLevel: CapLevel | undefined,
+        period: "week" | "all",
+        category?: Sector,
+    ) {
         return {
             items: [],
             ranking: {
@@ -200,7 +240,7 @@ export class ContributionLeaderboardService {
                         : null,
             },
             pagination: { limit, returned: 0, eligibleUsers: 0 },
-            filters: { minCapLevel: minCapLevel ?? null },
+            filters: { minCapLevel: minCapLevel ?? null, period, category: category ?? null },
             generatedAt: new Date().toISOString(),
         };
     }
