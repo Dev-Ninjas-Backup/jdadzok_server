@@ -7,6 +7,7 @@ import { ActiveUsersService } from "./active-user.service";
 import { ChatGateway } from "./chat.gateway";
 import { ChatService } from "./chat.service";
 import { CreateMessageDto } from "./dto/create.message.dto";
+import { MarkDeliveredDto } from "./dto/mark-delivered.dto";
 import { StartPrivateChatDto } from "./dto/start-private.dto";
 
 @ApiTags("Chat API operations")
@@ -120,6 +121,20 @@ export class ChatController {
         return { count };
     }
 
+    @Get("presence/:userId")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Get a user's online presence" })
+    @ApiResponse({ status: 200, description: "{ online, lastActiveAt }" })
+    async getPresence(@Param("userId") userId: string) {
+        const presence = await this.activeUsersService.getUserPresence(userId);
+        return {
+            userId,
+            online: presence?.status === "online",
+            lastActiveAt: presence?.lastSeen ?? null,
+        };
+    }
+
     @Get("chat/:otherUserId")
     @ValidateAuth()
     @ApiBearerAuth()
@@ -191,6 +206,32 @@ export class ChatController {
         @Param("messageId") messageId: string,
     ) {
         return this.chatService.markRead(messageId, userId);
+    }
+
+    @Patch(":chatId/read")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Mark every unread message in a chat as read" })
+    async markChatRead(@GetUser("userId") userId: string, @Param("chatId") chatId: string) {
+        return this.chatService.markChatRead(chatId, userId);
+    }
+
+    @Post(":chatId/messages/delivered")
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "Bulk-acknowledge messages in a chat as delivered" })
+    async markMessagesDelivered(
+        @GetUser("userId") userId: string,
+        @Param("chatId") chatId: string,
+        @Body() dto: MarkDeliveredDto,
+    ) {
+        const result = await this.chatService.markManyDelivered(chatId, userId, dto.messageIds);
+        try {
+            await this.chatGateway.notifyMessagesDelivered(chatId, result.messageIds, userId);
+        } catch {
+            // Persist succeeded; realtime broadcast is best-effort.
+        }
+        return result;
     }
 
     @Get(":chatId/unread-count")

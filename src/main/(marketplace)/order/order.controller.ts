@@ -27,10 +27,20 @@ export class OrderController {
     }
 
     @Get("/myOrder")
-    @ApiOperation({ summary: "My all order" })
-    @ApiResponse({ status: 200, description: "List of the order" })
+    @ApiOperation({
+        summary: "My first order (deprecated)",
+        description: "Returns a single order only. Use GET /orders/my for the full list.",
+    })
+    @ApiResponse({ status: 200, description: "A single order" })
     async myOrder(@GetVerifiedUser() user: VerifiedUser) {
         return handleRequest(() => this.service.myOrder(user.id), "Get All Order Successfully");
+    }
+
+    @Get("/my")
+    @ApiOperation({ summary: "Get all of my orders" })
+    @ApiResponse({ status: 200, description: "List of my orders" })
+    async myOrders(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(() => this.service.myOrders(user.id), "Get My Orders Successfully");
     }
 
     @Get(":id")

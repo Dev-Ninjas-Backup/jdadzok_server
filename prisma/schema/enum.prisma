@@ -223,6 +223,17 @@ enum ReportTargetType {
   USER
 }
 
+/// Sector chips on the contribution leaderboard (category filter) and volunteer opportunities.
+enum Sector {
+  HEALTH
+  EDUCATION
+  TECHNOLOGY
+  AGRICULTURE
+  ARTS
+  BUSINESS
+  OTHER
+}
+
 enum Role {
   USER
   MODERATOR
