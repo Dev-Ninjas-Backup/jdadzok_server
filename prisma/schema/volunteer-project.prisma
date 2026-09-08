@@ -6,6 +6,8 @@ model VolunteerProject {
   startDate   DateTime?
   endDate     DateTime?
   isActive    Boolean   @default(true)
+  /// Category chip (Health, Education, Technology, ...) — drives the leaderboard's category filter.
+  sector      Sector    @default(OTHER)
 
   // --- RELATION TO NGO ---
   ngoId String
@@ -24,4 +26,6 @@ model VolunteerProject {
   Endorsement Endorsement[]
 
   sponsoredOpportunities SponsoredOpportunity[]
+
+  @@index([sector])
 }

@@ -1,5 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString, IsISO8601 } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Sector } from "@prisma/client";
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsISO8601 } from "class-validator";
 
 export class CreateVolunteerProjectDto {
     @ApiProperty({ example: "ngo id" })
@@ -30,4 +31,13 @@ export class CreateVolunteerProjectDto {
     @IsOptional()
     @IsISO8601()
     endDate?: string;
+
+    @ApiPropertyOptional({
+        enum: Sector,
+        default: Sector.OTHER,
+        description: "Category chip shown on the leaderboard/explore filters",
+    })
+    @IsOptional()
+    @IsEnum(Sector)
+    sector?: Sector;
 }

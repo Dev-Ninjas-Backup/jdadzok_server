@@ -1,12 +1,24 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+
+export type OpportunityAudience = "VOLUNTEER" | "MENTORSHIP";
 
 export class GuestExploreQueryDto {
     @ApiPropertyOptional({ description: "Search term for opportunities and listings" })
     @IsOptional()
     @IsString()
     search?: string;
+
+    @ApiPropertyOptional({
+        enum: ["VOLUNTEER", "MENTORSHIP"],
+        description:
+            "VOLUNTEER (default) returns NGO volunteer projects. MENTORSHIP returns open Bridge " +
+            "listings tagged MENTORING/ADVICE — a separate dataset from volunteer projects.",
+    })
+    @IsOptional()
+    @IsEnum(["VOLUNTEER", "MENTORSHIP"])
+    audience?: OpportunityAudience;
 
     @ApiPropertyOptional({ default: 1, minimum: 1 })
     @IsOptional()

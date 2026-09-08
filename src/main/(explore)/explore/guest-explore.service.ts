@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { BridgeListingStatus, Prisma, VolunteerHourVerificationStatus } from "@prisma/client";
+import {
+    BridgeListingStatus,
+    ContributionType,
+    Prisma,
+    VolunteerHourVerificationStatus,
+} from "@prisma/client";
 import {
     guestExploreEnvelope,
     GUEST_JOIN_PROMPT,
@@ -58,6 +63,10 @@ export class GuestExploreService {
     }
 
     async listOpportunities(query: GuestExploreQueryDto) {
+        if (query.audience === "MENTORSHIP") {
+            return this.listMentorshipOpportunities(query);
+        }
+
         const page = query.page ?? 1;
         const limit = query.limit ?? 12;
         const skip = (page - 1) * limit;
@@ -89,6 +98,7 @@ export class GuestExploreService {
                     location: true,
                     startDate: true,
                     endDate: true,
+                    sector: true,
                     createdAt: true,
                     ngo: {
                         select: {
@@ -117,6 +127,77 @@ export class GuestExploreService {
         });
     }
 
+    /**
+     * Mentorship opportunities are a distinct dataset from NGO volunteer projects — they live on
+     * the Bridge (open listings tagged MENTORING/ADVICE), not on VolunteerProject. Kept under the
+     * same /explore/guest/opportunities?audience=MENTORSHIP path so the app doesn't need a second
+     * endpoint, but the underlying model and Cap-weighted ranking match GET /bridge.
+     */
+    private async listMentorshipOpportunities(query: GuestExploreQueryDto) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? 12;
+        const skip = (page - 1) * limit;
+        const search = query.search?.trim();
+
+        const where: Prisma.BridgeListingWhereInput = {
+            status: BridgeListingStatus.OPEN,
+            contributionType: { in: [ContributionType.MENTORING, ContributionType.ADVICE] },
+            ...(search
+                ? {
+                      OR: [
+                          { title: { contains: search, mode: "insensitive" } },
+                          { description: { contains: search, mode: "insensitive" } },
+                          { location: { contains: search, mode: "insensitive" } },
+                      ],
+                  }
+                : {}),
+        };
+
+        const [rows, total] = await Promise.all([
+            this.prisma.bridgeListing.findMany({
+                where,
+                // Pull a wider window then Cap-sort, same pattern as BridgeService.listDiscover.
+                take: Math.min(500, skip + limit + 50),
+                select: {
+                    id: true,
+                    type: true,
+                    title: true,
+                    description: true,
+                    contributionType: true,
+                    location: true,
+                    remoteOk: true,
+                    ownerCapLevel: true,
+                    createdAt: true,
+                    owner: {
+                        select: {
+                            id: true,
+                            profile: { select: { name: true, avatarUrl: true } },
+                        },
+                    },
+                },
+            }),
+            this.prisma.bridgeListing.count({ where }),
+        ]);
+
+        const items = rows
+            .map((row) => ({
+                ...row,
+                visibilityWeight: CAP_VISIBILITY_WEIGHT[row.ownerCapLevel] ?? 0,
+            }))
+            .sort((a, b) => b.visibilityWeight - a.visibilityWeight)
+            .slice(skip, skip + limit);
+
+        return guestExploreEnvelope({
+            items,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit) || 1,
+            },
+        });
+    }
+
     async getOpportunityDetail(projectId: string) {
         const project = await this.prisma.volunteerProject.findFirst({
             where: { id: projectId, isActive: true },
@@ -127,6 +208,7 @@ export class GuestExploreService {
                 location: true,
                 startDate: true,
                 endDate: true,
+                sector: true,
                 createdAt: true,
                 ngo: {
                     select: {

@@ -491,6 +491,76 @@ export class ChatService {
         });
     }
 
+    /** Mark every still-SENT message in a chat delivered in one call (or just the given ids). */
+    @HandleError("Failed to mark messages as delivered", "message")
+    async markManyDelivered(chatId: string, userId: string, messageIds?: string[]) {
+        await this.assertParticipant(chatId, userId);
+
+        const toUpdate = await this.prisma.liveMessage.findMany({
+            where: {
+                chatId,
+                senderId: { not: userId },
+                status: LiveMessageStatus.SENT,
+                ...(messageIds?.length ? { id: { in: messageIds } } : {}),
+            },
+            select: { id: true },
+        });
+
+        if (!toUpdate.length) {
+            return { chatId, markedDelivered: 0, messageIds: [] as string[] };
+        }
+
+        const ids = toUpdate.map((m) => m.id);
+        await this.prisma.liveMessage.updateMany({
+            where: { id: { in: ids } },
+            data: { status: LiveMessageStatus.DELIVERED },
+        });
+
+        return { chatId, markedDelivered: ids.length, messageIds: ids };
+    }
+
+    /** Mark every unread message in a chat read for this user in one call. */
+    @HandleError("Failed to mark chat as read", "message")
+    async markChatRead(chatId: string, userId: string) {
+        await this.assertParticipant(chatId, userId);
+
+        const unread = await this.prisma.liveMessage.findMany({
+            where: {
+                chatId,
+                senderId: { not: userId },
+                readBy: { none: { userId } },
+            },
+            select: { id: true },
+        });
+
+        if (!unread.length) {
+            return { chatId, markedRead: 0 };
+        }
+
+        await this.prisma.liveMessageRead.createMany({
+            data: unread.map((m) => ({ messageId: m.id, userId, liveChatId: chatId })),
+            skipDuplicates: true,
+        });
+
+        return { chatId, markedRead: unread.length };
+    }
+
+    private async assertParticipant(chatId: string, userId: string): Promise<void> {
+        const chat = await this.prisma.liveChat.findUnique({
+            where: { id: chatId },
+            select: { participants: { select: { userId: true } } },
+        });
+
+        if (!chat) {
+            throw new NotFoundException("Chat not found");
+        }
+
+        const isParticipant = chat.participants.some((p) => p.userId === userId);
+        if (!isParticipant) {
+            throw new ForbiddenException("You are not a participant in this chat");
+        }
+    }
+
     @HandleError("Failed to get my chats", "chat")
     async getMyChats(userId: string, context?: LiveChatContext) {
         const chats = await this.prisma.liveChat.findMany({

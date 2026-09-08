@@ -119,6 +119,27 @@ export class ChatGateway extends BaseSocketGateway {
         return payload;
     }
 
+    /**
+     * Broadcast a bulk delivered-ack (HTTP POST /chat/:chatId/messages/delivered) to the room,
+     * mirroring the per-message MESSAGE_DELIVERED emit in notifyMessageCreated above.
+     */
+    async notifyMessagesDelivered(
+        chatId: string,
+        messageIds: string[],
+        deliveredBy: string,
+    ): Promise<void> {
+        if (!messageIds.length) return;
+
+        this.server
+            .to(chatId)
+            .except(deliveredBy)
+            .emit(SOCKET_EVENTS.CHAT.MESSAGE_DELIVERED, {
+                chatId,
+                messageIds,
+                deliveredBy,
+            });
+    }
+
     @SubscribeMessage("chat:join")
     async handleJoinChat(
         @GetSocketUser() user: SocketUser,

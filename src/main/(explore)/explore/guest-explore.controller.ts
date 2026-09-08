@@ -36,14 +36,23 @@ export class GuestExploreController {
     }
 
     @Get("opportunities")
-    @ApiOperation({ summary: "Browse active volunteer projects (guest-safe fields only)" })
+    @ApiOperation({
+        summary: "Browse opportunities (guest-safe fields only)",
+        description:
+            "audience=VOLUNTEER (default) returns NGO volunteer projects. audience=MENTORSHIP " +
+            "returns open Bridge listings tagged MENTORING/ADVICE instead — a separate dataset, " +
+            "not a filter over the same rows.",
+    })
     async listOpportunities(@Query() query: GuestExploreQueryDto) {
         const data = await this.guestExploreService.listOpportunities(query);
-        return successResponse(data, "Guest volunteer opportunities retrieved");
+        return successResponse(data, "Guest opportunities retrieved");
     }
 
     @Get("opportunities/:projectId")
-    @ApiOperation({ summary: "Volunteer project detail for guests" })
+    @ApiOperation({
+        summary: "Volunteer project detail for guests",
+        description: "For a MENTORSHIP listing id, use GET /bridge/:id instead.",
+    })
     async getOpportunity(@Param("projectId") projectId: string) {
         const data = await this.guestExploreService.getOpportunityDetail(projectId);
         return successResponse(data, "Guest volunteer opportunity retrieved");

@@ -122,6 +122,15 @@ export class OrderService {
         });
         return order;
     }
+
+    // get all orders belonging to the current user (list, not just the first one)
+    async myOrders(userId: string) {
+        return this.prisma.order.findMany({
+            where: { buyerId: userId },
+            include: { product: true },
+            orderBy: { createdAt: "desc" },
+        });
+    }
     // delete order
     async remove(id: string, userId: string) {
         const orderOwner = await this.prisma.order.findFirst({
