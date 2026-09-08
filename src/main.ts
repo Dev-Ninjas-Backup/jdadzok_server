@@ -65,6 +65,8 @@ async function bootstrap() {
             "https://jdadzok-admin-dashboard.netlify.app",
             "http://13.204.75.28",
             "https://admin.synqulan.com",
+            "http://212.85.26.187:4173",
+            "http://212.85.26.187:5056",
         ],
         methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
         credentials: true,

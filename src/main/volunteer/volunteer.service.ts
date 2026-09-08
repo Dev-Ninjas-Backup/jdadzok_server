@@ -20,6 +20,7 @@ import {
 import { ChatService } from "@module/(sockets)/chats/chat.service";
 import { isContributionOther, resolveOtherText } from "@common/utils/other-option.util";
 import { requiresCounterpartyConfirmation } from "@common/utils/volunteer-hour.util";
+import { isPlatformAdmin } from "@common/utils/cap-level.util";
 import { SearchSyncService } from "@module/(search)/search-sync.service";
 
 @Injectable()
@@ -101,14 +102,14 @@ export class VolunteerService {
         });
     }
 
-    async getProjectApplications(projectId: string, userId: string) {
+    async getProjectApplications(projectId: string, userId: string, userRole: Role) {
         // get the project and verify ownership
         const project = await this.prisma.volunteerProject.findUnique({
             where: { id: projectId },
         });
 
         if (!project) throw new NotFoundException("Project not found");
-        if (project.createdById !== userId)
+        if (project.createdById !== userId && !isPlatformAdmin(userRole))
             throw new ForbiddenException(
                 "You are not authorized to view applications for this project",
             );
@@ -228,14 +229,21 @@ export class VolunteerService {
         ]);
     }
 
-    async updateStatus(applicationId: string, dto: UpdateStatusDto, userId: string) {
+    async updateStatus(
+        applicationId: string,
+        dto: UpdateStatusDto,
+        userId: string,
+        userRole: Role,
+    ) {
         const app = await this.prisma.volunteerApplication.findUnique({
             where: { id: applicationId },
             include: { project: true },
         });
         if (!app) throw new NotFoundException("Application not found");
-        if (app.project.createdById !== userId)
-            throw new ForbiddenException("Only NGO owner can confirm completion");
+        if (app.project.createdById !== userId && !isPlatformAdmin(userRole))
+            throw new ForbiddenException(
+                "Only the NGO owner or a platform admin can update this application's status",
+            );
 
         const updated = await this.prisma.volunteerApplication.update({
             where: { id: applicationId },

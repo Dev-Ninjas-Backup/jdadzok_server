@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Patch, Param, Delete } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, Get, Patch, Param, Delete, Query } from "@nestjs/common";
 import { VolunteerService } from "./volunteer.service";
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
@@ -17,6 +17,7 @@ import {
     ConfirmCounterpartyHourDto,
     RejectCounterpartyHourDto,
 } from "./dto/counterparty-volunteer-hour.dto";
+import { ListCounterpartyUsersDto } from "./dto/list-counterparty-users.dto";
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -67,14 +68,17 @@ export class VolunteerController {
         );
     }
 
-    @ApiOperation({ summary: "Get all volunteer applications under a specific project" })
+    @ApiOperation({
+        summary:
+            "Get all volunteer applications under a specific project. Callable by the NGO owner or a platform admin.",
+    })
     @Get("project/:projectId/applications")
     getProjectApplications(
         @Param("projectId") projectId: string,
         @GetVerifiedUser() user: VerifiedUser,
     ) {
         return handleRequest(
-            () => this.volunteerService.getProjectApplications(projectId, user.id),
+            () => this.volunteerService.getProjectApplications(projectId, user.id, user.role),
             "Fetched all volunteer applications for this project successfully",
         );
     }
@@ -164,6 +168,21 @@ export class VolunteerController {
     }
 
     @ApiOperation({
+        summary:
+            "Search platform users to pick as counterparty user ID (mentee / recipient) when logging mentoring or advice hours",
+    })
+    @Get("counterparty-users")
+    listCounterpartyUsers(
+        @Query() query: ListCounterpartyUsersDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourCounterpartyService.listCandidateUsers(user.id, query),
+            "Counterparty users retrieved",
+        );
+    }
+
+    @ApiOperation({
         summary: "List mentoring/advice hours awaiting your confirmation as mentee / recipient",
     })
     @Get("hours/pending-counterparty")
@@ -205,7 +224,7 @@ export class VolunteerController {
 
     @ApiOperation({
         summary:
-            "Only the owner of the NGO that created this project can update the application status.",
+            "Update a volunteer application's status (pending/accepted/rejected). Callable by the NGO owner who created the project, or a platform admin.",
     })
     @Patch("status/:applicationId")
     updateStatus(
@@ -213,7 +232,7 @@ export class VolunteerController {
         @Body() dto: UpdateStatusDto,
         @GetVerifiedUser() user: VerifiedUser,
     ) {
-        return this.volunteerService.updateStatus(id, dto, user.id);
+        return this.volunteerService.updateStatus(id, dto, user.id, user.role);
     }
 
     @ApiOperation({ summary: "See own application details" })
