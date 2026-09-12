@@ -12,6 +12,7 @@ import Stripe from "stripe";
 import { PaymentStatus } from "@prisma/client";
 import { ApiResponse } from "./utils/api-response";
 import { FraudService } from "@module/(abuse)/fraud/fraud.service";
+import { TrainingService } from "@module/(training)/training.service";
 
 @Injectable()
 export class StripeService {
@@ -22,6 +23,7 @@ export class StripeService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
+        private readonly trainingService: TrainingService,
         @Optional() private readonly fraudService?: FraudService,
     ) {
         const stripeSecret = this.configService.getOrThrow<string>("STRIPE_SECRET");
@@ -137,6 +139,13 @@ export class StripeService {
             switch (event.type) {
                 case "payment_intent.succeeded": {
                     const paymentIntent = event.data.object;
+
+                    const enrollmentId = paymentIntent.metadata.enrollmentId;
+                    if (enrollmentId) {
+                        await this.trainingService.confirmEnrollmentPayment(enrollmentId);
+                        this.logger.log(`Training enrollment confirmed: ${enrollmentId}`);
+                        return ApiResponse.success("Enrollment payment processed successfully");
+                    }
 
                     const orderId = paymentIntent.metadata.orderId;
                     if (!orderId) {

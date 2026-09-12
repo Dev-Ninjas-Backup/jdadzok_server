@@ -5,7 +5,6 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
     CreateTrainingCohortDto,
     CreateTrainingCourseDto,
-    EnrollTrainingCohortDto,
     TrainingCourseListQueryDto,
     UpdateTrainingCourseDto,
 } from "./dto/training.dto";
@@ -92,14 +91,18 @@ export class TrainingController {
     @Post("cohorts/:cohortId/enroll")
     @ValidateAuth()
     @ApiBearerAuth()
-    @ApiOperation({ summary: "Enroll in a cohort (course purchase scaffold)" })
-    async enroll(
-        @GetUser("userId") userId: string,
-        @Param("cohortId") cohortId: string,
-        @Body() dto: EnrollTrainingCohortDto,
-    ) {
-        const data = await this.trainingService.enroll(userId, cohortId, dto);
-        return successResponse(data, "Enrolled in training cohort");
+    @ApiOperation({
+        summary: "Enroll in a cohort",
+        description:
+            "Free cohorts enroll immediately. Paid cohorts return a Stripe clientSecret — " +
+            "the enrollment is finalized (ENROLLED) only after payment_intent.succeeded.",
+    })
+    async enroll(@GetUser("userId") userId: string, @Param("cohortId") cohortId: string) {
+        const data = await this.trainingService.enroll(userId, cohortId);
+        const message = data.clientSecret
+            ? "Enrollment pending payment"
+            : "Enrolled in training cohort";
+        return successResponse(data, message);
     }
 
     @Patch("enrollments/:enrollmentId/complete")
