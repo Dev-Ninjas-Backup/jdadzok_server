@@ -155,6 +155,13 @@ services:
         ports:
           - "80:80"
           - "443:443"
+        # admin.synqulan.com proxies to the admin panel, which is a separate
+        # compose project on its own network. Caddy cannot resolve it by container
+        # name from here, so that route 502s on every deploy that recreates this
+        # container. The panel publishes 4173 on the host, so reach it there and
+        # leave the two stacks' networks decoupled.
+        extra_hosts:
+          - "host.docker.internal:host-gateway"
         volumes:
           - ./Caddyfile:/etc/caddy/Caddyfile
           - ./public/dist:/usr/share/caddy
