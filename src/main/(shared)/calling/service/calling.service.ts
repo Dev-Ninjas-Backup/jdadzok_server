@@ -82,13 +82,23 @@ export class CallService {
         }
 
         if (callPurpose === CallPurpose.MENTORSHIP) {
-            const callerProfile = await this.prisma.profile.findFirst({
-                where: { userId: callerId },
-                select: { isVolunteerMentorOptIn: true },
+            // A verified session needs an opted-in mentor on one side, but not
+            // necessarily as the *caller*. Requiring the caller to be the mentor
+            // blocked every mentee-initiated session — the normal case, since the
+            // mentee's mentorship thread and its scheduled-session card are the
+            // entry points for actually starting one. Requiring the pair to contain
+            // a mentor keeps the intent: MENTORSHIP still cannot be used between two
+            // users who are not part of a mentoring relationship.
+            const mentor = await this.prisma.profile.findFirst({
+                where: {
+                    userId: { in: [callerId, recipientUserId] },
+                    isVolunteerMentorOptIn: true,
+                },
+                select: { userId: true },
             });
-            if (!callerProfile?.isVolunteerMentorOptIn) {
+            if (!mentor) {
                 throw new ForbiddenException(
-                    "Volunteer / mentor opt-in is required to start a mentorship call",
+                    "A mentorship call needs an opted-in volunteer mentor on one side",
                 );
             }
         }
@@ -243,6 +253,16 @@ export class CallService {
         }
 
         if (room.status !== "CALLING") {
+            // The client answers over both the socket and REST (the REST call is the
+            // fallback for a socket that is not connected yet), so a second accept
+            // for the same recipient is normal rather than exceptional. Rejecting it
+            // surfaced an `error` event on the recipient's socket, and the client
+            // treats an error while connecting as "the call failed" — so answering a
+            // call could tear it straight back down.
+            if (room.status === "ACTIVE") {
+                this.logger.log(`Call ${callId} already accepted — duplicate accept by ${userId}`);
+                return room;
+            }
             throw new BadRequestException(`Call is already ${room.status.toLowerCase()}`);
         }
 
@@ -272,8 +292,13 @@ export class CallService {
         const cacheKey = `${this.CALL_ROOM_PREFIX}${callId}`;
         const room: CallRoom | undefined = await this.cacheManager.get(cacheKey);
 
+        // The client declines over both the socket and REST. Whichever lands second
+        // finds the room already deleted, which is success — throwing there pushed an
+        // `error` event to the client and produced a bogus "Call not found" toast
+        // right after the user pressed Decline.
         if (!room) {
-            throw new NotFoundException("Call not found");
+            this.logger.log(`Call ${callId} already gone — decline by ${userId} is a no-op`);
+            return;
         }
 
         if (room.recipientUserId !== userId) {
@@ -298,8 +323,12 @@ export class CallService {
         const cacheKey = `${this.CALL_ROOM_PREFIX}${callId}`;
         const room: CallRoom | undefined = await this.cacheManager.get(cacheKey);
 
+        // Same double-delivery as declineCall: the client cancels over both the socket
+        // and REST, so the second cancel arrives after the room is already gone. That is
+        // the desired end state, not an error.
         if (!room) {
-            throw new NotFoundException("Call not found");
+            this.logger.log(`Call ${callId} already gone — cancel by ${userId} is a no-op`);
+            return;
         }
 
         if (room.hostUserId !== userId) {

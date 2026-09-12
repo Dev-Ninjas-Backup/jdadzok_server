@@ -113,7 +113,7 @@ export class CallController {
     }
 
     /**
-      Get active participants in a call room
+      Get active participants in a call room of mentorship call
      */
     @ValidateAuth()
     @ApiBearerAuth()
@@ -204,7 +204,22 @@ export class CallController {
 
         const room = await this.callService.getCallRoom(id);
         if (!room) {
-            throw new NotFoundException("Call not found");
+            // The client ends a call over both the socket and REST, so the second
+            // DELETE lands after the room is already torn down. Ending an ended call is
+            // the requested end state, not a failure — a 404 here made the app report
+            // "Call not found" right after a normal hang-up.
+            //
+            // The room cache can also expire while the call row survives, so fall back
+            // to the row to keep the membership check intact rather than letting any
+            // authenticated user close a stranger's call.
+            const call = await this.callService.getCallById(id);
+            if (call && call.hostUserId !== userId && call.recipientUserId !== userId) {
+                throw new ForbiddenException("You are not part of this call");
+            }
+            return {
+                success: true,
+                message: "Call already ended",
+            };
         }
 
         // Verify user is part of the call
