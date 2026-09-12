@@ -22,12 +22,12 @@ export class WithdrawController {
         return successPaginatedResponse(result.data, result.metadata, "Withdraw history retrieved");
     }
 
-    // @ApiBearerAuth()
-    // @UseGuards(JwtAuthGuard)
-    // @Post("request")
-    // async request(@GetVerifiedUser() user: VerifiedUser, @Body() dto: CreateWithdrawDto) {
-    //     return this.withdrawService.requestWithdraw(user.id, dto);
-    // }
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Post("request")
+    async request(@GetVerifiedUser() user: VerifiedUser, @Body() dto: CreateWithdrawDto) {
+        return this.withdrawService.requestWithdraw(user.id, dto);
+    }
 
     // Test withdraw with 1-minute delay
     @ApiBearerAuth()
