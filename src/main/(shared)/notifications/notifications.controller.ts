@@ -99,7 +99,20 @@ export class NotificaitonsController {
         return this.NotificationsService.markAllAsRead(userId);
     }
 
+    @ApiBearerAuth()
+    @ValidateAuth()
+    @ApiOperation({ summary: "Remove a registered device token" })
+    @Delete("device-token")
+    async unregisterDeviceToken(
+        @GetUser("userId") userId: string,
+        @Body() dto: UnregisterDeviceTokenDto,
+    ): Promise<TResponse<any>> {
+        return this.NotificationsService.unregisterDeviceToken(userId, dto);
+    }
+
     // ----------------Delete notification---------------
+    // NOTE: any literal @Delete(...) route in this controller must be declared
+    // above this :id route, or it will be shadowed (Nest matches in declaration order).
     @ApiBearerAuth()
     @ValidateAuth()
     @ApiOperation({ summary: "Delete a notification" })
@@ -231,16 +244,5 @@ export class NotificaitonsController {
         @Body() dto: RegisterDeviceTokenDto,
     ): Promise<TResponse<any>> {
         return this.NotificationsService.registerDeviceToken(userId, dto);
-    }
-
-    @ApiBearerAuth()
-    @ValidateAuth()
-    @ApiOperation({ summary: "Remove a registered device token" })
-    @Delete("device-token")
-    async unregisterDeviceToken(
-        @GetUser("userId") userId: string,
-        @Body() dto: UnregisterDeviceTokenDto,
-    ): Promise<TResponse<any>> {
-        return this.NotificationsService.unregisterDeviceToken(userId, dto);
     }
 }
