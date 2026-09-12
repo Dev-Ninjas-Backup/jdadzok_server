@@ -69,6 +69,10 @@ Two entries on purpose: UDP is faster, but many corporate and some mobile networ
 block it, and the TCP variant is what gets those calls through. Leave `TURN_URL`
 empty to keep the previous STUN-only behaviour — that is the rollback.
 
+A DNS name is not required: `turn:<vps-ip>:3478?transport=udp,...` is what the
+current deployment uses — see step 1. Swap in a hostname only once TLS is enabled
+below, since the certificate has to match it.
+
 ### 4. Firewall
 
 | Port | Proto | Why |
@@ -91,7 +95,26 @@ clients a relay address they cannot reach, and calls keep failing while the logs
 healthy. Check with `ip addr` — if the public address is not on the interface, you
 need this.
 
-### 5. Start it
+### 5. Get the relay range out of the ephemeral port range
+
+Linux draws the source port for every *outgoing* connection from
+`net.ipv4.ip_local_port_range`, which defaults to `32768 60999` — overlapping the
+`49152–65535` relay range above. Whenever the kernel takes a relay port for some
+unrelated outgoing connection, coturn cannot allocate it. The result is a relay that
+works most of the time and fails under load, with nothing obviously wrong in the logs.
+
+Give the relay range to coturn and keep the ephemeral ports below it:
+
+```bash
+echo 'net.ipv4.ip_local_port_range = 32768 49151' | sudo tee /etc/sysctl.d/99-turn-relay-ports.conf
+sudo sysctl --system
+sysctl net.ipv4.ip_local_port_range   # 32768	49151
+```
+
+16384 ephemeral ports is still far more than a busy host needs. The change applies to
+new connections immediately and survives reboots.
+
+### 6. Start it
 
 ```bash
 docker compose --profile prod up -d coturn
@@ -102,7 +125,7 @@ The service uses host networking deliberately: coturn must see real client addre
 and allocate relay ports on the host interface, so it cannot sit behind the compose
 bridge. That makes it Linux-only.
 
-### 6. Optional: TLS
+### 7. Optional: TLS
 
 TURN over TLS survives networks that block UDP *and* plain TCP. Uncomment
 `tls-listening-port`, `cert`, and `pkey` in `docker/coturn/turnserver.conf`, mount the

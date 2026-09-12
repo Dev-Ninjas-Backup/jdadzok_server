@@ -36,8 +36,12 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only. The app reaches Postgres as `db` over the compose network,
+        # so publishing it on 0.0.0.0 exposes it to the internet without adding
+        # anything the containers need — the password would be the only defence.
+        # Operators keep `psql` by tunnelling over SSH.
         ports:
-            - "${PG_PORT}:5432"
+            - "127.0.0.1:${PG_PORT}:5432"
         environment:
             POSTGRES_USER: ${PG_USERNAME}
             POSTGRES_PASSWORD: ${PG_PASSWORD}
@@ -54,8 +58,11 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only. This redis runs without `requirepass`, so a public 6379 was
+        # a remote-code-execution path (CONFIG SET dir + dbfilename). The app talks
+        # to it as `redis` over the compose network and needs no published port.
         ports:
-            - "${REDIS_PORT}:6379"
+            - "127.0.0.1:${REDIS_PORT}:6379"
         volumes:
             - redis:/data
         # Add health check for Redis
@@ -112,8 +119,11 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only — the app uses `http://typesense:8108`. The API key is the
+        # only thing gating this service, and an unauthenticated search index does
+        # not belong on the public internet.
         ports:
-            - "${TYPESENSE_PORT:-8108}:8108"
+            - "127.0.0.1:${TYPESENSE_PORT:-8108}:8108"
         environment:
             TYPESENSE_DATA_DIR: /data
             TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}
