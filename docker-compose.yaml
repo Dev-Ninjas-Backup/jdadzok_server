@@ -36,8 +36,12 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only. The app reaches Postgres as `db` over the compose network,
+        # so publishing it on 0.0.0.0 exposes it to the internet without adding
+        # anything the containers need — the password would be the only defence.
+        # Operators keep `psql` by tunnelling over SSH.
         ports:
-            - "${PG_PORT}:5432"
+            - "127.0.0.1:${PG_PORT}:5432"
         environment:
             POSTGRES_USER: ${PG_USERNAME}
             POSTGRES_PASSWORD: ${PG_PASSWORD}
@@ -54,8 +58,11 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only. This redis runs without `requirepass`, so a public 6379 was
+        # a remote-code-execution path (CONFIG SET dir + dbfilename). The app talks
+        # to it as `redis` over the compose network and needs no published port.
         ports:
-            - "${REDIS_PORT}:6379"
+            - "127.0.0.1:${REDIS_PORT}:6379"
         volumes:
             - redis:/data
         # Add health check for Redis
@@ -68,6 +75,42 @@ services:
         networks:
           - jdadzok_server
 
+    # TURN relay for calls (Issue #40). Needed because STUN alone only connects two
+    # peers that are directly reachable; on cellular/CGNAT the call hangs on
+    # "Connecting…". Host networking on purpose: coturn has to see the real client
+    # addresses and hand out relay ports straight on the host interface, so it
+    # cannot sit behind the compose bridge. Linux only — also note the firewall
+    # rules in docs/TURN_SETUP.md. Leave TURN_URL empty in .env to not run this.
+    coturn:
+        image: coturn/coturn:4.6-alpine
+        container_name: coturn
+        restart: unless-stopped
+        profiles:
+            - dev
+            - prod
+        network_mode: host
+        environment:
+            TURN_SECRET: ${TURN_SECRET}
+            TURN_REALM: ${TURN_REALM:-synqulan.com}
+        volumes:
+            - ./docker/coturn/turnserver.conf:/etc/coturn/turnserver.conf.template:ro
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - |
+              set -e
+              if [ -z "$$TURN_SECRET" ]; then
+                echo "TURN_SECRET is empty — set it in .env (see docs/TURN_SETUP.md)" >&2
+                exit 1
+              fi
+              # Rendered from the environment so the secret never lands in the
+              # compose file or in turnserver's argv, where `ps` would show it.
+              sed -e "s|__TURN_SECRET__|$$TURN_SECRET|" \
+                  -e "s|__TURN_REALM__|$$TURN_REALM|" \
+                  /etc/coturn/turnserver.conf.template > /tmp/turnserver.conf
+              chmod 600 /tmp/turnserver.conf
+              echo "Starting coturn on :3478 for realm $$TURN_REALM"
+              exec turnserver -c /tmp/turnserver.conf
+
     # AI search vendor (Issue #26) — NestJS app talks to this over the compose network
     typesense:
         image: typesense/typesense:27.1
@@ -76,8 +119,11 @@ services:
         profiles:
             - dev
             - prod
+        # Loopback only — the app uses `http://typesense:8108`. The API key is the
+        # only thing gating this service, and an unauthenticated search index does
+        # not belong on the public internet.
         ports:
-            - "${TYPESENSE_PORT:-8108}:8108"
+            - "127.0.0.1:${TYPESENSE_PORT:-8108}:8108"
         environment:
             TYPESENSE_DATA_DIR: /data
             TYPESENSE_API_KEY: ${TYPESENSE_API_KEY}

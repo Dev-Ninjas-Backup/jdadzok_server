@@ -152,32 +152,11 @@ export interface SocketCallEvents {
     };
 }
 
-// WebRTC Configuration
-export interface RTCConfig {
-    iceServers: RTCIceServer[];
-}
-
-export const DEFAULT_RTC_CONFIG: RTCConfig = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun3.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:19302" },
-    ],
-};
-
-// For production, you might want to add TURN servers:
-export const PRODUCTION_RTC_CONFIG: RTCConfig = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-            urls: "turn:your-turn-server.com:3478",
-            username: "username",
-            credential: "password",
-        },
-    ],
-};
+// WebRTC ICE configuration used to live here as two hardcoded constants, one of
+// which was a TURN placeholder with literal "username"/"password" values that no
+// caller ever referenced. It now comes from config — see
+// `@module/(shared)/calling/ice/ice.builder` — and is served on
+// GET /calls/:id/room as `iceServers` (Issue #40).
 
 // Cache keys
 export const CACHE_KEYS = {
