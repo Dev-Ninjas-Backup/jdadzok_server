@@ -658,16 +658,25 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 },
             });
 
-            // Auto-join caller to the call
-            callerSocket.join(callId);
-            await this.callService.joinCall(
-                callId,
-                callerSocketId,
-                callerId,
-                callerInfo?.profile?.name || callerName,
-                true,
-                true,
-            );
+            // Auto-join caller to the call.
+            //
+            // Skipped when the recipient was offline: startCallToUser tears the
+            // room down on that path, so joining would throw NotFoundException.
+            // This await sits before the emits below, so that throw would swallow
+            // both `callStarted` and `callMissed` — the caller would see only a
+            // bare error event and sit on "Connecting…" with no way to know the
+            // recipient was simply unreachable.
+            if (result.status !== "recipient_offline") {
+                callerSocket.join(callId);
+                await this.callService.joinCall(
+                    callId,
+                    callerSocketId,
+                    callerId,
+                    callerInfo?.profile?.name || callerName,
+                    mediaType === "video",
+                    true,
+                );
+            }
 
             // Send success to caller with BOTH socket IDs
             callerSocket.emit("callStarted", {
