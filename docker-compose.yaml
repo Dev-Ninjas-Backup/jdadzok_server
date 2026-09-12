@@ -68,6 +68,42 @@ services:
         networks:
           - jdadzok_server
 
+    # TURN relay for calls (Issue #40). Needed because STUN alone only connects two
+    # peers that are directly reachable; on cellular/CGNAT the call hangs on
+    # "Connecting…". Host networking on purpose: coturn has to see the real client
+    # addresses and hand out relay ports straight on the host interface, so it
+    # cannot sit behind the compose bridge. Linux only — also note the firewall
+    # rules in docs/TURN_SETUP.md. Leave TURN_URL empty in .env to not run this.
+    coturn:
+        image: coturn/coturn:4.6-alpine
+        container_name: coturn
+        restart: unless-stopped
+        profiles:
+            - dev
+            - prod
+        network_mode: host
+        environment:
+            TURN_SECRET: ${TURN_SECRET}
+            TURN_REALM: ${TURN_REALM:-synqulan.com}
+        volumes:
+            - ./docker/coturn/turnserver.conf:/etc/coturn/turnserver.conf.template:ro
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - |
+              set -e
+              if [ -z "$$TURN_SECRET" ]; then
+                echo "TURN_SECRET is empty — set it in .env (see docs/TURN_SETUP.md)" >&2
+                exit 1
+              fi
+              # Rendered from the environment so the secret never lands in the
+              # compose file or in turnserver's argv, where `ps` would show it.
+              sed -e "s|__TURN_SECRET__|$$TURN_SECRET|" \
+                  -e "s|__TURN_REALM__|$$TURN_REALM|" \
+                  /etc/coturn/turnserver.conf.template > /tmp/turnserver.conf
+              chmod 600 /tmp/turnserver.conf
+              echo "Starting coturn on :3478 for realm $$TURN_REALM"
+              exec turnserver -c /tmp/turnserver.conf
+
     # AI search vendor (Issue #26) — NestJS app talks to this over the compose network
     typesense:
         image: typesense/typesense:27.1

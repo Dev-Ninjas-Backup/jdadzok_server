@@ -19,6 +19,7 @@ import {
     DeclineCallDto,
     StartCallToUserDto,
 } from "../dto/calling.dto";
+import { IceService } from "../ice/ice.service";
 import { CallService } from "../service/calling.service";
 
 @Controller("calls")
@@ -27,6 +28,7 @@ export class CallController {
     constructor(
         private readonly callService: CallService,
         private readonly callGateway: CallGateway,
+        private readonly iceService: IceService,
     ) {}
 
     /**
@@ -123,6 +125,12 @@ export class CallController {
         const room = await this.callService.getCallRoom(id);
 
         if (!room) {
+            // Deliberately no iceServers here. This branch returns before the
+            // participant check below, so serving credentials would let any
+            // authenticated caller mint TURN allocations for an id they are not part
+            // of — i.e. free relay bandwidth. The app only reads ICE when it is about
+            // to open a peer connection on a live room, and falls back to STUN when
+            // the field is absent.
             return {
                 callId: id,
                 participants: [],
@@ -148,6 +156,11 @@ export class CallController {
                 hasAudio: p.hasAudio,
                 joinedAt: p.joinedAt,
             })),
+            // STUN + TURN, so a call can still connect when neither peer is directly
+            // reachable (cellular, CGNAT) — Issue #40. TURN credentials are minted
+            // per request and expire, and the identity is the caller's own userId so
+            // relay usage is traceable.
+            iceServers: this.iceService.getIceServers(userId),
             active: true,
             participantCount: room.participants.length,
         };

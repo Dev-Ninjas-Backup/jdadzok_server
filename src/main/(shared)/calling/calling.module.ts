@@ -11,6 +11,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { CallGateway } from "./calling.gateway";
 import { CallController } from "./controller/calling.controller";
+import { IceService } from "./ice/ice.service";
 import { CallService } from "./service/calling.service";
 import { MentorshipCallHoursService } from "./service/mentorship-call-hours.service";
 
@@ -26,7 +27,14 @@ import { MentorshipCallHoursService } from "./service/mentorship-call-hours.serv
             max: 1000,
         }),
     ],
-    providers: [CallGateway, CallService, MentorshipCallHoursService, JwtService, ConfigService],
+    providers: [
+        CallGateway,
+        CallService,
+        IceService,
+        MentorshipCallHoursService,
+        JwtService,
+        ConfigService,
+    ],
     controllers: [CallController],
     exports: [CallService, MentorshipCallHoursService],
 })
