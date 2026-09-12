@@ -371,6 +371,7 @@ export class CallService {
                     data: {
                         callId,
                         socketId,
+                        userId,
                         userName,
                         hasVideo,
                         hasAudio,

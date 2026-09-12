@@ -14,8 +14,9 @@ import {
     counterpartyConfirmationComplete,
     requiresCounterpartyConfirmation,
 } from "@common/utils/volunteer-hour.util";
-import { Prisma, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
+import { Prisma, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
 import { VolunteerHoursBankService } from "./volunteer-hours-bank.service";
+import { MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS } from "@module/(shared)/calling/mentorship-auto-verify.constants";
 
 @Injectable()
 export class VolunteerHourCounterpartyService {
@@ -145,6 +146,64 @@ export class VolunteerHourCounterpartyService {
                     "Mentee / recipient did not confirm this mentoring session.",
             },
         });
+    }
+
+    /**
+     * Clawback path for an already auto-verified mentorship hour (see MentorshipCallHoursService).
+     * Distinct from rejectHour because the preconditions and consequences differ: the hour is
+     * already VERIFIED and already counted in the mentor's lifetime bank, so reversing it means
+     * flipping status to REJECTED and re-syncing the bank, not just declining a pending request.
+     */
+    async disputeAutoVerifiedHour(
+        hourId: string,
+        requestingUserId: string,
+        requestingUserRole: Role,
+        dto: RejectCounterpartyHourDto,
+    ) {
+        const hour = await this.prisma.volunteerHour.findUnique({ where: { id: hourId } });
+        if (!hour) {
+            throw new NotFoundException("Volunteer hour entry not found");
+        }
+
+        const isAdmin = requestingUserRole === Role.ADMIN || requestingUserRole === Role.SUPER_ADMIN;
+        if (!isAdmin && hour.counterpartyUserId !== requestingUserId) {
+            throw new ForbiddenException(
+                "Only the mentee on this session or an admin can dispute it.",
+            );
+        }
+
+        if (
+            hour.source !== VolunteerHourSource.MENTORSHIP_CALL ||
+            hour.verificationStatus !== VolunteerHourVerificationStatus.VERIFIED ||
+            !hour.autoVerifiedAt
+        ) {
+            throw new BadRequestException("This hour entry was not auto-verified.");
+        }
+
+        const disputeDeadline = new Date(hour.autoVerifiedAt);
+        disputeDeadline.setDate(
+            disputeDeadline.getDate() + MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
+        );
+        if (!isAdmin && new Date() > disputeDeadline) {
+            throw new BadRequestException(
+                `The ${MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS}-day dispute window for this session has closed.`,
+            );
+        }
+
+        const updated = await this.prisma.volunteerHour.update({
+            where: { id: hourId },
+            data: {
+                verificationStatus: VolunteerHourVerificationStatus.REJECTED,
+                isVerified: false,
+                rejectionNote:
+                    dto.rejectionNote?.trim() ||
+                    "Auto-verified session disputed by mentee/admin and reversed.",
+            },
+        });
+
+        await this.hoursBankService.syncLifetimeBank(hour.loggedByUserId);
+
+        return updated;
     }
 
     private async loadAwaitingCounterpartyHour(hourId: string, counterpartyUserId: string) {

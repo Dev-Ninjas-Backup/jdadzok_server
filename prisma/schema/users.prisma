@@ -36,6 +36,7 @@ model User {
   // Calling relations
   hostedCalls   Calling[] @relation("HostedCalls")
   receivedCalls Calling[] @relation("ReceivedCalls") // ← ADD THIS
+  callParticipations CallParticipant[]
   // Marketplace
   products Product[]
   orders   Order[]    @relation("UserOrders")

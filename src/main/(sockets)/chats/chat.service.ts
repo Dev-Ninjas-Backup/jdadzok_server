@@ -1,4 +1,5 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
+import { MentorshipLinkService } from "@lib/mentorship-link/mentorship-link.service";
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 
 import { HandleError } from "@common/error/handle-error.decorator";
@@ -18,6 +19,7 @@ export class ChatService {
     constructor(
         private prisma: PrismaService,
         private readonly friendRequestService: FriendRequestService,
+        private readonly mentorshipLinkService: MentorshipLinkService,
     ) {}
 
     /** Find or create 1-to-1 support chat between member and platform support agent. */
@@ -282,46 +284,12 @@ export class ChatService {
 
     /** Active mentorship = accepted volunteer application or accepted Bridge mentorship booking. */
     private async assertMentorshipLink(userA: string, userB: string): Promise<void> {
-        const volunteerLink = await this.prisma.volunteerApplication.findFirst({
-            where: {
-                status: ApplicationStatus.ACCEPTED,
-                OR: [
-                    { volunteerId: userA, project: { createdById: userB } },
-                    { volunteerId: userB, project: { createdById: userA } },
-                ],
-            },
-            select: { id: true },
-        });
-
-        if (volunteerLink) {
-            return;
+        const link = await this.mentorshipLinkService.findLink(userA, userB);
+        if (!link) {
+            throw new ForbiddenException(
+                "Mentorship chat requires an accepted volunteer application or Bridge mentorship booking between these members.",
+            );
         }
-
-        const bridgeLink = await this.prisma.bridgeBooking.findFirst({
-            where: {
-                status: BridgeBookingStatus.ACCEPTED,
-                OR: [
-                    { clientId: userA, providerId: userB },
-                    { clientId: userB, providerId: userA },
-                ],
-                listing: {
-                    OR: [
-                        { type: "EXPERTISE" },
-                        { contributionType: ContributionType.MENTORING },
-                        { contributionType: ContributionType.ADVICE },
-                    ],
-                },
-            },
-            select: { id: true },
-        });
-
-        if (bridgeLink) {
-            return;
-        }
-
-        throw new ForbiddenException(
-            "Mentorship chat requires an accepted volunteer application or Bridge mentorship booking between these members.",
-        );
     }
 
     /** Get chat by ID with verification */
