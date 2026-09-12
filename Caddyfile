@@ -3,5 +3,5 @@ api.synqulan.com {
 }
 
 admin.synqulan.com {
-    reverse_proxy jdadzok_admin_panel-app-1:4173
+    reverse_proxy host.docker.internal:4173
 }
