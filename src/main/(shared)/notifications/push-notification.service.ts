@@ -3,6 +3,15 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable, Logger } from "@nestjs/common";
 import { CallPurpose, NotificationType } from "@prisma/client";
 
+export type PushSkipReason = "not_configured" | "notifications_disabled" | "no_devices";
+
+export interface PushSendOutcome {
+    sent: boolean;
+    successCount: number;
+    failureCount: number;
+    skipped?: PushSkipReason;
+}
+
 @Injectable()
 export class PushNotificationService {
     private readonly logger = new Logger(PushNotificationService.name);
@@ -21,20 +30,27 @@ export class PushNotificationService {
             entityId?: string | null;
             notificationId?: string;
         },
-    ): Promise<void> {
-        if (!this.firebase.isConfigured()) return;
+    ): Promise<PushSendOutcome> {
+        const notSent = (skipped: PushSkipReason): PushSendOutcome => ({
+            sent: false,
+            successCount: 0,
+            failureCount: 0,
+            skipped,
+        });
+
+        if (!this.firebase.isConfigured()) return notSent("not_configured");
 
         const toggle = await this.prisma.notificationToggle.findUnique({
             where: { userId },
         });
-        if (toggle && !toggle.communication) return;
+        if (toggle && !toggle.communication) return notSent("notifications_disabled");
 
         const devices = await this.prisma.deviceToken.findMany({
             where: { userId },
             select: { token: true },
         });
 
-        if (devices.length === 0) return;
+        if (devices.length === 0) return notSent("no_devices");
 
         const tokens = devices.map((d) => d.token);
         const data: Record<string, string> = {};
@@ -58,8 +74,15 @@ export class PushNotificationService {
             this.logger.debug(
                 `FCM to user ${userId}: ${result.successCount} sent, ${result.failureCount} failed`,
             );
+
+            return {
+                sent: result.successCount > 0,
+                successCount: result.successCount,
+                failureCount: result.failureCount,
+            };
         } catch (err) {
             this.logger.warn(`FCM send failed for user ${userId}: ${String(err)}`);
+            return { sent: false, successCount: 0, failureCount: tokens.length };
         }
     }
 

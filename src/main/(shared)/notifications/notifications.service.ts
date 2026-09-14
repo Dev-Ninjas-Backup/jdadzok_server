@@ -4,12 +4,17 @@ import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationToggleDto } from "./dto/notification-toggle";
 import { ReadNotificationDto } from "./dto/read.notification.dto";
-import { NotificationType } from "@prisma/client";
+import { CallPurpose, NotificationType } from "@prisma/client";
 import { RegisterDeviceTokenDto, UnregisterDeviceTokenDto } from "./dto/device-token.dto";
+import { TestPushType } from "./dto/test-push.dto";
+import { PushNotificationService } from "./push-notification.service";
 
 @Injectable()
 export class NotificationsService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly pushNotification: PushNotificationService,
+    ) {}
 
     // ---------Get all notifications (Admin use case)
     @HandleError("Failed to get all notifications")
@@ -413,5 +418,38 @@ export class NotificationsService {
         });
 
         return successResponse({ removed: true }, "Device token removed");
+    }
+
+    // ---------Send a synthetic FCM push to the caller's own devices, to verify delivery works---
+    @HandleError("Failed to send test push notification")
+    async sendTestPush(userId: string, type: TestPushType): Promise<TResponse<any>> {
+        const outcome =
+            type === TestPushType.CALL
+                ? await this.pushNotification.sendIncomingCallPush(userId, {
+                      callId: `test-${Date.now()}`,
+                      callerId: userId,
+                      callerName: "Test Caller",
+                      mediaType: "audio",
+                      callPurpose: CallPurpose.GENERAL,
+                  })
+                : await this.pushNotification.sendToUser(userId, {
+                      title: type === TestPushType.MESSAGE ? "Test message" : "Test notification",
+                      body:
+                          type === TestPushType.MESSAGE
+                              ? "This is a test message push notification."
+                              : "This is a test push notification.",
+                      type: NotificationType.SYSTEM,
+                  });
+
+        // sendIncomingCallPush returns a plain boolean; sendToUser returns a PushSendOutcome.
+        const sent = typeof outcome === "boolean" ? outcome : outcome.sent;
+        const diagnostics = typeof outcome === "boolean" ? { sent } : outcome;
+
+        return successResponse(
+            { type, ...diagnostics },
+            sent
+                ? "Test push sent"
+                : "Test push not sent (see diagnostics for why: not_configured, notifications_disabled, no_devices, or the FCM call failed)",
+        );
     }
 }

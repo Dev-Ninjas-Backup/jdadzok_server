@@ -20,6 +20,7 @@ import { NotificationToggleDto } from "./dto/notification-toggle";
 import { ReadNotificationDto } from "./dto/read.notification.dto";
 import { NotificationsService } from "./notifications.service";
 import { RegisterDeviceTokenDto, UnregisterDeviceTokenDto } from "./dto/device-token.dto";
+import { TestPushType } from "./dto/test-push.dto";
 
 @ApiTags("Notification Setting")
 @ValidateAuth()
@@ -244,5 +245,23 @@ export class NotificaitonsController {
         @Body() dto: RegisterDeviceTokenDto,
     ): Promise<TResponse<any>> {
         return this.NotificationsService.registerDeviceToken(userId, dto);
+    }
+
+    // --------------  Test push notification -----------------
+    @ApiBearerAuth()
+    @ValidateAuth()
+    @ApiOperation({
+        summary: "Send a test push notification",
+        description:
+            "Sends a synthetic FCM push to the caller's own registered device tokens, to verify " +
+            "push delivery is working end-to-end. Does not create a persisted Notification record.",
+    })
+    @ApiQuery({ name: "type", enum: TestPushType, required: false, example: TestPushType.GENERAL })
+    @Post("test-push")
+    async sendTestPush(
+        @GetUser("userId") userId: string,
+        @Query("type") type: TestPushType = TestPushType.GENERAL,
+    ): Promise<TResponse<any>> {
+        return this.NotificationsService.sendTestPush(userId, type);
     }
 }
