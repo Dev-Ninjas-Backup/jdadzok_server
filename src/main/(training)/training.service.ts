@@ -11,17 +11,21 @@ import {
     TrainingCourseStatus,
     TrainingEnrollmentStatus,
 } from "@prisma/client";
+import Stripe from "stripe";
 import {
     CreateTrainingCohortDto,
     CreateTrainingCourseDto,
-    EnrollTrainingCohortDto,
     TrainingCourseListQueryDto,
     UpdateTrainingCourseDto,
 } from "./dto/training.dto";
 
 @Injectable()
 export class TrainingService {
-    constructor(private readonly prisma: PrismaService) {}
+    private readonly stripe: Stripe;
+
+    constructor(private readonly prisma: PrismaService) {
+        this.stripe = new Stripe(process.env.STRIPE_SECRET!);
+    }
 
     async createCourse(instructorId: string, dto: CreateTrainingCourseDto) {
         return this.prisma.trainingCourse.create({
@@ -149,10 +153,14 @@ export class TrainingService {
         });
     }
 
-    async enroll(studentId: string, cohortId: string, dto: EnrollTrainingCohortDto) {
+    async enroll(studentId: string, cohortId: string) {
         const cohort = await this.prisma.trainingCohort.findUnique({
             where: { id: cohortId },
-            include: { course: true },
+            include: {
+                course: {
+                    include: { instructor: { select: { stripeAccountId: true } } },
+                },
+            },
         });
         if (!cohort) {
             throw new NotFoundException("Training cohort not found");
@@ -178,49 +186,131 @@ export class TrainingService {
                 cohortId_studentId: { cohortId, studentId },
             },
         });
-        if (existing && existing.status !== TrainingEnrollmentStatus.WITHDRAWN) {
+        const isReEnrollable =
+            !existing ||
+            existing.status === TrainingEnrollmentStatus.WITHDRAWN ||
+            existing.status === TrainingEnrollmentStatus.CANCELLED ||
+            existing.status === TrainingEnrollmentStatus.PENDING;
+        if (!isReEnrollable) {
             throw new BadRequestException("Already enrolled in this cohort");
         }
 
-        const pricePaid = dto.pricePaid ?? cohort.course.price;
+        // Price is always derived from the course record — never trusted from the client.
+        const pricePaid = cohort.course.price;
 
-        const enrollment = await this.prisma.$transaction(async (tx) => {
-            const created = existing
-                ? await tx.trainingEnrollment.update({
-                      where: { id: existing.id },
-                      data: {
-                          status: TrainingEnrollmentStatus.ENROLLED,
-                          pricePaid,
-                          enrolledAt: new Date(),
-                          completedAt: null,
-                      },
-                  })
-                : await tx.trainingEnrollment.create({
-                      data: {
-                          cohortId,
-                          studentId,
-                          status: TrainingEnrollmentStatus.ENROLLED,
-                          pricePaid,
-                          enrolledAt: new Date(),
-                      },
-                  });
+        if (pricePaid <= 0) {
+            const enrollment = await this.prisma.$transaction(async (tx) => {
+                const created = existing
+                    ? await tx.trainingEnrollment.update({
+                          where: { id: existing.id },
+                          data: {
+                              status: TrainingEnrollmentStatus.ENROLLED,
+                              pricePaid,
+                              enrolledAt: new Date(),
+                              completedAt: null,
+                              stripePaymentIntentId: null,
+                          },
+                      })
+                    : await tx.trainingEnrollment.create({
+                          data: {
+                              cohortId,
+                              studentId,
+                              status: TrainingEnrollmentStatus.ENROLLED,
+                              pricePaid,
+                              enrolledAt: new Date(),
+                          },
+                      });
 
-            const updatedCohort = await tx.trainingCohort.update({
-                where: { id: cohortId },
-                data: { enrolledCount: { increment: 1 } },
+                await this.incrementCohortEnrollment(tx, cohortId);
+                return created;
             });
 
-            if (updatedCohort.enrolledCount >= updatedCohort.capacity) {
-                await tx.trainingCohort.update({
-                    where: { id: cohortId },
-                    data: { status: TrainingCohortStatus.FULL },
-                });
-            }
+            return {
+                enrollment: await this.getEnrollment(enrollment.id, studentId),
+                clientSecret: null,
+            };
+        }
 
-            return created;
+        if (!cohort.course.instructor.stripeAccountId) {
+            throw new BadRequestException("Instructor is not ready to accept payments yet");
+        }
+
+        const enrollment = existing
+            ? await this.prisma.trainingEnrollment.update({
+                  where: { id: existing.id },
+                  data: {
+                      status: TrainingEnrollmentStatus.PENDING,
+                      pricePaid,
+                      enrolledAt: null,
+                      completedAt: null,
+                  },
+              })
+            : await this.prisma.trainingEnrollment.create({
+                  data: {
+                      cohortId,
+                      studentId,
+                      status: TrainingEnrollmentStatus.PENDING,
+                      pricePaid,
+                  },
+              });
+
+        const paymentIntent = await this.stripe.paymentIntents.create({
+            amount: Math.round(pricePaid * 100),
+            currency: cohort.course.currency.toLowerCase(),
+            automatic_payment_methods: { enabled: true },
+            metadata: { enrollmentId: enrollment.id, cohortId, studentId },
+            transfer_data: { destination: cohort.course.instructor.stripeAccountId },
         });
 
-        return this.getEnrollment(enrollment.id, studentId);
+        await this.prisma.trainingEnrollment.update({
+            where: { id: enrollment.id },
+            data: { stripePaymentIntentId: paymentIntent.id },
+        });
+
+        return {
+            enrollment: await this.getEnrollment(enrollment.id, studentId),
+            clientSecret: paymentIntent.client_secret,
+        };
+    }
+
+    /** Called from the Stripe webhook once payment_intent.succeeded for a training enrollment. */
+    async confirmEnrollmentPayment(enrollmentId: string) {
+        const enrollment = await this.prisma.trainingEnrollment.findUnique({
+            where: { id: enrollmentId },
+        });
+        if (!enrollment) {
+            throw new NotFoundException(`Training enrollment not found: ${enrollmentId}`);
+        }
+        // Idempotent: the webhook can be retried/delivered more than once.
+        if (enrollment.status === TrainingEnrollmentStatus.ENROLLED) {
+            return enrollment;
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            const updated = await tx.trainingEnrollment.update({
+                where: { id: enrollmentId },
+                data: {
+                    status: TrainingEnrollmentStatus.ENROLLED,
+                    enrolledAt: new Date(),
+                },
+            });
+            await this.incrementCohortEnrollment(tx, enrollment.cohortId);
+            return updated;
+        });
+    }
+
+    private async incrementCohortEnrollment(tx: Prisma.TransactionClient, cohortId: string) {
+        const updatedCohort = await tx.trainingCohort.update({
+            where: { id: cohortId },
+            data: { enrolledCount: { increment: 1 } },
+        });
+
+        if (updatedCohort.enrolledCount >= updatedCohort.capacity) {
+            await tx.trainingCohort.update({
+                where: { id: cohortId },
+                data: { status: TrainingCohortStatus.FULL },
+            });
+        }
     }
 
     async completeEnrollment(instructorId: string, enrollmentId: string) {

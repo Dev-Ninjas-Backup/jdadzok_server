@@ -293,7 +293,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         } catch (error) {
             this.logger.error(`Error declining call: ${error.message}`);
-            socket.emit("error", { message: error.message });
+            socket.emit("error", {
+                callId: data?.callId,
+                event: "declineCall",
+                message: error.message,
+            });
         }
     }
 
@@ -324,7 +328,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         } catch (error) {
             this.logger.error(`Error cancelling call: ${error.message}`);
-            socket.emit("error", { message: error.message });
+            socket.emit("error", {
+                callId: data?.callId,
+                event: "cancelCall",
+                message: error.message,
+            });
         }
     }
 
@@ -341,7 +349,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
             const call = await this.callService.getCallById(callId);
             if (!call || ["ENDED", "CANCELLED", "DECLINED"].includes(call.status)) {
-                return socket.emit("error", { message: "Call not available" });
+                return socket.emit("error", {
+                    callId,
+                    event: "joinCall",
+                    message: "Call not available",
+                });
             }
 
             // Join socket room
@@ -380,7 +392,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.logger.log(`User ${userId} joined call ${callId}`);
         } catch (error) {
             this.logger.error(`Error joining call: ${error.message}`);
-            socket.emit("error", { message: error.message });
+            socket.emit("error", {
+                callId: data?.callId,
+                event: "joinCall",
+                message: error.message,
+            });
         }
     }
 
@@ -642,16 +658,25 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 },
             });
 
-            // Auto-join caller to the call
-            callerSocket.join(callId);
-            await this.callService.joinCall(
-                callId,
-                callerSocketId,
-                callerId,
-                callerInfo?.profile?.name || callerName,
-                true,
-                true,
-            );
+            // Auto-join caller to the call.
+            //
+            // Skipped when the recipient was offline: startCallToUser tears the
+            // room down on that path, so joining would throw NotFoundException.
+            // This await sits before the emits below, so that throw would swallow
+            // both `callStarted` and `callMissed` — the caller would see only a
+            // bare error event and sit on "Connecting…" with no way to know the
+            // recipient was simply unreachable.
+            if (result.status !== "recipient_offline") {
+                callerSocket.join(callId);
+                await this.callService.joinCall(
+                    callId,
+                    callerSocketId,
+                    callerId,
+                    callerInfo?.profile?.name || callerName,
+                    mediaType === "video",
+                    true,
+                );
+            }
 
             // Send success to caller with BOTH socket IDs
             callerSocket.emit("callStarted", {
@@ -721,6 +746,8 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (!callerSocketId) {
                 this.logger.error(`Caller socket ID not found for call ${payload.callId}`);
                 return recipientSocket.emit("error", {
+                    callId: payload.callId,
+                    event: "acceptCall",
                     message: "Caller is no longer available",
                 });
             }
@@ -784,6 +811,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } catch (error) {
             this.logger.error(`Error accepting call ${payload.callId}: ${error.message}`);
             recipientSocket.emit("error", {
+                // Scope the failure to the call it belongs to. The client runs several
+                // calls' worth of state and a bare message forced it to guess whether a
+                // stray error was about the call it is currently setting up.
+                callId: payload.callId,
+                event: "acceptCall",
                 message: "Failed to accept call",
                 details: error.message,
             });

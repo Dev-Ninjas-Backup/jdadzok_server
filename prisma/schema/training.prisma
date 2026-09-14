@@ -83,11 +83,14 @@ model TrainingEnrollment {
   enrolledAt  DateTime?
   completedAt DateTime?
 
+  stripePaymentIntentId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([cohortId, studentId])
   @@index([studentId])
   @@index([status])
+  @@index([stripePaymentIntentId])
   @@map("training_enrollments")
 }

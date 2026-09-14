@@ -26,6 +26,7 @@ model CallParticipant {
   id        String    @id @default(uuid())
   callId    String
   socketId  String
+  userId    String?
   userName  String
   hasVideo  Boolean   @default(false)
   hasAudio  Boolean   @default(false)
@@ -35,9 +36,11 @@ model CallParticipant {
   updatedAt DateTime  @updatedAt
 
   call Calling @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([callId])
   @@index([socketId])
+  @@index([userId])
   @@map("call_participants")
 }
 

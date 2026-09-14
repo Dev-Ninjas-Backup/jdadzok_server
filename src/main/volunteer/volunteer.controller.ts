@@ -223,6 +223,21 @@ export class VolunteerController {
     }
 
     @ApiOperation({
+        summary: "Dispute/reverse an auto-verified mentorship session (mentee or admin)",
+    })
+    @Patch("hours/:hourId/dispute")
+    disputeAutoVerified(
+        @Param("hourId") hourId: string,
+        @Body() dto: RejectCounterpartyHourDto,
+        @GetVerifiedUser() user: VerifiedUser,
+    ) {
+        return handleRequest(
+            () => this.hourCounterpartyService.disputeAutoVerifiedHour(hourId, user.id, user.role, dto),
+            "Auto-verified session disputed and reversed",
+        );
+    }
+
+    @ApiOperation({
         summary:
             "Update a volunteer application's status (pending/accepted/rejected). Callable by the NGO owner who created the project, or a platform admin.",
     })

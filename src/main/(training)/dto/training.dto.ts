@@ -100,11 +100,3 @@ export class CreateTrainingCohortDto {
     @Min(1)
     capacity: number;
 }
-
-export class EnrollTrainingCohortDto {
-    @ApiPropertyOptional({ description: "Override price for admin/testing" })
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    pricePaid?: number;
-}

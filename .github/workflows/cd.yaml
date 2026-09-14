@@ -62,6 +62,15 @@ jobs:
         needs: build-and-push
         if: github.ref == 'refs/heads/main'
 
+        # One directory for both halves of the deploy. The stack runs as root out of
+        # /root/jdadzok_server — that is what the live compose project's working_dir
+        # reports — but the scp steps used to upload to /home/<user>/jdadzok_server
+        # while the ssh step ran `cd ~/jdadzok_server`. The two never met, so the
+        # compose file landed in a directory nothing reads and every deploy quietly
+        # kept running the old one. Both sides now use this variable.
+        env:
+            DEPLOY_DIR: /root/jdadzok_server
+
         steps:
             - uses: actions/checkout@v4
 
@@ -78,7 +87,7 @@ jobs:
                   username: ${{ secrets.VPS_USER }}
                   password: ${{ secrets.VPS_PASSWORD }}
                   source: "docker-compose.yaml"
-                  target: "/home/${{ secrets.VPS_USER }}/jdadzok_server"
+                  target: ${{ env.DEPLOY_DIR }}
                   overwrite: true
 
             - name: Copy Caddy File
@@ -88,7 +97,20 @@ jobs:
                   username: ${{ secrets.VPS_USER }}
                   password: ${{ secrets.VPS_PASSWORD }}
                   source: "Caddyfile"
-                  target: "/home/${{ secrets.VPS_USER }}/jdadzok_server"
+                  target: ${{ env.DEPLOY_DIR }}
+
+            # The compose file bind-mounts docker/coturn/turnserver.conf into the
+            # coturn service, so the config has to travel with the compose file.
+            # Without it coturn exits 1 and the relay is silently absent.
+            - name: Copy Docker Support Files
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ secrets.VPS_HOST }}
+                  username: ${{ secrets.VPS_USER }}
+                  password: ${{ secrets.VPS_PASSWORD }}
+                  source: "docker"
+                  target: ${{ env.DEPLOY_DIR }}
+                  overwrite: true
 
             - name: Deploy via SSH
               uses: appleboy/ssh-action@v1.0.3
@@ -97,7 +119,7 @@ jobs:
                 username: ${{ secrets.VPS_USER }}
                 password: ${{ secrets.VPS_PASSWORD }}
                 script: |
-                  cd ~/jdadzok_server
+                  cd ${{ env.DEPLOY_DIR }}
 
                   # Detect docker compose command
                   if docker compose version >/dev/null 2>&1; then
@@ -110,6 +132,14 @@ jobs:
                   fi
 
                   echo "Using compose command: $COMPOSE_CMD"
+
+                  # coturn refuses to start without its config, and the symptom is easy
+                  # to miss — calls simply stay STUN-only. Fail the deploy instead.
+                  if grep -qE '^ +coturn:' docker-compose.yaml \
+                     && [ ! -f docker/coturn/turnserver.conf ]; then
+                    echo "❌ ERROR: docker/coturn/turnserver.conf is missing — coturn cannot start"
+                    exit 1
+                  fi
 
                   # Pull latest images
                   $COMPOSE_CMD --profile prod pull

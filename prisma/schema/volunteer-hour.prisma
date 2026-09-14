@@ -20,6 +20,8 @@ model VolunteerHour {
   counterpartyUser   User?             @relation("VolunteerHourCounterparty", fields: [counterpartyUserId], references: [id], onDelete: SetNull)
   counterpartyConfirmedAt DateTime?
   counterpartyConfirmationNote String? @db.Text
+  /// Set only when auto-verify (not mentee confirmation) credited this hour; gates the dispute window.
+  autoVerifiedAt DateTime?
   /// Mentoring | advice | project | teaching | charity | Other (+ free-text)
   contributionType  ContributionType?
   contributionOther String?            @db.Text
@@ -34,4 +36,5 @@ model VolunteerHour {
   @@index([verificationStatus])
   @@index([endorsedByUserId])
   @@index([counterpartyUserId])
+  @@index([autoVerifiedAt])
 }

@@ -4,9 +4,10 @@ import { StripeService } from "./stripe.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import Stripe from "stripe";
 import { FraudModule } from "@module/(abuse)/fraud/fraud.module";
+import { TrainingModule } from "@module/(training)/training.module";
 
 @Module({
-    imports: [forwardRef(() => FraudModule)],
+    imports: [forwardRef(() => FraudModule), TrainingModule],
     controllers: [StripeController],
     providers: [
         StripeService,
