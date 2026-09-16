@@ -1,5 +1,6 @@
-import { Controller, ForbiddenException, Get, UseGuards } from "@nestjs/common";
+import { Controller, ForbiddenException, Get, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Response } from "express";
 import { IncomeAnalyticService } from "../service/incomeAnalytic.service";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
@@ -26,6 +27,20 @@ export class IncomeAnalyticController {
     async getRevenueGrowth(@GetVerifiedUser() user: VerifiedUser) {
         if (user.role !== "SUPER_ADMIN") throw new ForbiddenException("Forbidden access");
         return this.incomeAnalyticService.getRevenueGrowth();
+    }
+
+    @ApiOperation({ summary: "Super Admin: Export revenue growth (last 6 months) as CSV" })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get("revenue-growth/export")
+    async exportRevenueGrowth(@GetVerifiedUser() user: VerifiedUser, @Res() res: Response) {
+        if (user.role !== "SUPER_ADMIN") throw new ForbiddenException("Forbidden access");
+        const csv = await this.incomeAnalyticService.exportRevenueGrowth();
+        res.set({
+            "Content-Type": "text/csv",
+            "Content-Disposition": 'attachment; filename="revenue-growth.csv"',
+        });
+        res.send(csv);
     }
 
     @ApiOperation({ summary: "Super Admin: Get Income & Analytic Revenue Category" })

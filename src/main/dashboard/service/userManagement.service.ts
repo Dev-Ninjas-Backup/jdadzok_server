@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { startOfMonth, startOfWeek, subWeeks } from "date-fns";
+import { toCsv } from "@common/utils/csv.util";
 
 @Injectable()
 export class UserManagementService {
@@ -125,6 +126,57 @@ export class UserManagementService {
                 joinedAt: u.createdAt,
             })),
         };
+    }
+
+    async exportUsers({
+        search,
+        status,
+        role,
+    }: {
+        search?: string;
+        status?: "active" | "suspended";
+        role?: string;
+    }) {
+        const where: any = {};
+
+        if (search) {
+            where.OR = [
+                { email: { contains: search, mode: "insensitive" } },
+                { profile: { name: { contains: search, mode: "insensitive" } } },
+            ];
+        }
+
+        if (status === "active") where.bans = { none: {} };
+        if (status === "suspended") where.bans = { some: { isActive: true } };
+        if (role) where.role = role;
+
+        const users = await this.prisma.user.findMany({
+            where,
+            include: { profile: true, bans: true, metrics: true },
+            orderBy: { createdAt: "desc" },
+        });
+
+        const rows = users.map((u) => ({
+            id: u.id,
+            name: u.profile?.name || "",
+            email: u.email,
+            role: u.role,
+            status: u.bans?.length > 0 ? "suspended" : "active",
+            level: u.capLevel,
+            points: u.metrics?.activityScore || 0,
+            joinedAt: u.createdAt,
+        }));
+
+        return toCsv(rows, [
+            { key: "id", label: "ID" },
+            { key: "name", label: "Name" },
+            { key: "email", label: "Email" },
+            { key: "role", label: "Role" },
+            { key: "status", label: "Status" },
+            { key: "level", label: "Cap Level" },
+            { key: "points", label: "Activity Score" },
+            { key: "joinedAt", label: "Joined At" },
+        ]);
     }
 
     async suspendUser(id: string) {

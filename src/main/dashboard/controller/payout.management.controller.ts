@@ -1,6 +1,6 @@
 import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
-import { Controller, ForbiddenException, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, ForbiddenException, Get, Param, Patch, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { VerifiedUser } from "@type/shared.types";
 import { PayoutManagementService } from "../service/payout.management.service";
@@ -30,5 +30,14 @@ export class PayoutManagementController {
             throw new ForbiddenException("Forbidden access");
         }
         return this.payoutManagementService.searchPaidOrders(searchDto);
+    }
+
+    @ApiOperation({ summary: "Super Admin: mark a pending order/payout as paid" })
+    @Patch("orders/:id/mark-paid")
+    async markOrderPaid(@GetVerifiedUser() user: VerifiedUser, @Param("id") id: string) {
+        if (user.role !== "SUPER_ADMIN") {
+            throw new ForbiddenException("Forbidden access");
+        }
+        return this.payoutManagementService.markOrderPaid(id);
     }
 }

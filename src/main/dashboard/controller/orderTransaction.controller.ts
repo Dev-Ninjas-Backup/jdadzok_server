@@ -1,5 +1,6 @@
-import { Controller, Get, Query, UseGuards, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Query, Res, UseGuards, ForbiddenException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { Response } from "express";
 import { OrderTransactionService } from "../service/orderTransation.service";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
@@ -30,5 +31,25 @@ export class OrderTransactionController {
         }
 
         return this.service.listOrders(query);
+    }
+
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get("export")
+    @ApiOperation({ summary: "Export orders matching filters as CSV" })
+    async exportOrders(
+        @GetVerifiedUser() user: VerifiedUser,
+        @Query() query: OrderListQueryDto,
+        @Res() res: Response,
+    ) {
+        if (user.role !== "SUPER_ADMIN") {
+            throw new ForbiddenException("Forbidden access");
+        }
+        const csv = await this.service.exportOrders(query);
+        res.set({
+            "Content-Type": "text/csv",
+            "Content-Disposition": 'attachment; filename="orders.csv"',
+        });
+        res.send(csv);
     }
 }

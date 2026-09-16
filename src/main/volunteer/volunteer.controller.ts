@@ -140,6 +140,18 @@ export class VolunteerController {
 
     @ApiOperation({
         summary:
+            "Endorsement queue stats: pending self-reported hours, ready-to-endorse count, and total self-reported hours logged",
+    })
+    @Get("hours/stats")
+    getHourStats(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hourEndorsementService.getHourStats(user.id),
+            "Volunteer hour stats retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
             "Endorse pending self-reported hours (higher-Cap member or admin) — credits Cap metrics",
     })
     @Patch("hours/:hourId/endorse")

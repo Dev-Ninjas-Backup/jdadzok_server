@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { OrderStatus } from "@prisma/client";
 import { OrderListQueryDto } from "../dto/orderListQuery.dto";
+import { toCsv } from "@common/utils/csv.util";
 
 @Injectable()
 export class OrderTransactionService {
@@ -167,5 +168,63 @@ export class OrderTransactionService {
             totalPages: Math.ceil(total / limit),
             data,
         };
+    }
+
+    async exportOrders(query: Pick<OrderListQueryDto, "status" | "search">) {
+        const { status, search } = query;
+        const where: any = {};
+
+        if (status) where.status = status;
+
+        if (search) {
+            where.OR = [
+                { id: { contains: search, mode: "insensitive" } },
+                {
+                    buyer: {
+                        profile: {
+                            name: { contains: search, mode: "insensitive" },
+                        },
+                    },
+                },
+            ];
+        }
+
+        const orders = await this.prisma.order.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                totalPrice: true,
+                status: true,
+                createdAt: true,
+                buyer: { select: { profile: { select: { name: true } } } },
+                product: {
+                    select: {
+                        title: true,
+                        seller: { select: { profile: { select: { name: true } } } },
+                    },
+                },
+            },
+        });
+
+        const rows = orders.map((o) => ({
+            id: o.id,
+            buyer: o.buyer?.profile?.name || "",
+            product: o.product?.title || "",
+            seller: o.product?.seller?.profile?.name || "",
+            totalPrice: o.totalPrice,
+            status: o.status,
+            createdAt: o.createdAt,
+        }));
+
+        return toCsv(rows, [
+            { key: "id", label: "Order ID" },
+            { key: "buyer", label: "Buyer" },
+            { key: "product", label: "Product" },
+            { key: "seller", label: "Seller" },
+            { key: "totalPrice", label: "Total Price" },
+            { key: "status", label: "Status" },
+            { key: "createdAt", label: "Created At" },
+        ]);
     }
 }

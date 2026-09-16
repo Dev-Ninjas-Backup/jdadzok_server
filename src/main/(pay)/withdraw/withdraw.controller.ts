@@ -1,5 +1,5 @@
 import { successPaginatedResponse, successResponse } from "@common/utils/response.util";
-import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
+import { GetVerifiedUser, ValidateSuperAdmin } from "@common/jwt/jwt.decorator";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
 import { Controller, Get, Post, Query, UseGuards, Body } from "@nestjs/common";
 
@@ -37,6 +37,8 @@ export class WithdrawController {
         return this.withdrawService.requestWithdraw(user.id, dto, { delayMs: 60000 });
     }
 
+    @ApiBearerAuth()
+    @ValidateSuperAdmin()
     @Post("schedule")
     async runScheduler() {
         return this.withdrawService.enqueueMonthlyWithdraws();

@@ -6,6 +6,7 @@ import {
     Logger,
 } from "@nestjs/common";
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
+import { UpdateVolunteerProjectDto } from "./dto/update-volunteer-project.dto";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { ApplyVolunteerDto } from "./dto/apply-volunteer.dto";
 import { LogHoursDto } from "./dto/log-hours.dto";
@@ -40,7 +41,7 @@ export class VolunteerService {
         const ngo = await this.prisma.ngo.findUnique({ where: { id: dto.ngoId } });
         if (!ngo) throw new NotFoundException("NGO is not found");
 
-        if (user.id != ngo.ownerId)
+        if (user.id != ngo.ownerId && !isPlatformAdmin(user.role))
             throw new ForbiddenException("Only NGO owner can create projects");
 
         const project = await this.prisma.volunteerProject.create({
@@ -287,15 +288,36 @@ export class VolunteerService {
         if (!user) throw new BadRequestException("Unauthorized Access");
 
         const project = await this.prisma.volunteerProject.findUnique({
-            where: { id: projectId, createdById: userId },
+            where: { id: projectId },
         });
         if (!project) throw new NotFoundException("Project is not found");
 
-        await this.prisma.volunteerProject.delete({
-            where: { id: projectId, createdById: userId },
-        });
+        if (project.createdById !== userId && !isPlatformAdmin(user.role))
+            throw new ForbiddenException("You are not authorized to delete this project");
+
+        await this.prisma.volunteerProject.delete({ where: { id: projectId } });
         await this.safeSearchDelete(projectId);
         return "null";
+    }
+
+    async updateProject(projectId: string, dto: UpdateVolunteerProjectDto, userId: string) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new BadRequestException("Unauthorized Access");
+
+        const project = await this.prisma.volunteerProject.findUnique({
+            where: { id: projectId },
+        });
+        if (!project) throw new NotFoundException("Project is not found");
+
+        if (project.createdById !== userId && !isPlatformAdmin(user.role))
+            throw new ForbiddenException("You are not authorized to update this project");
+
+        const updated = await this.prisma.volunteerProject.update({
+            where: { id: projectId },
+            data: dto,
+        });
+        await this.safeSearchUpsert(updated.id);
+        return updated;
     }
 
     private async safeSearchUpsert(projectId: string) {

@@ -1,6 +1,7 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
+import { toCsv } from "@common/utils/csv.util";
 
 import { OrderStatus } from "@prisma/client";
 
@@ -105,6 +106,14 @@ export class IncomeAnalyticService {
         }
 
         return { revenueTrends: data };
+    }
+
+    async exportRevenueGrowth() {
+        const { revenueTrends } = await this.getRevenueGrowth();
+        return toCsv(revenueTrends, [
+            { key: "month", label: "Month" },
+            { key: "total", label: "Revenue" },
+        ]);
     }
 
     async getRevenueCategory() {
