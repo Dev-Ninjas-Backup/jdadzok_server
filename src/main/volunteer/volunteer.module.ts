@@ -19,6 +19,7 @@ import { SearchModule } from "@module/(search)/search.module";
         PrismaService,
     ],
     exports: [
+        VolunteerService,
         VolunteerHourEndorsementService,
         VolunteerHourCounterpartyService,
         VolunteerHoursBankService,

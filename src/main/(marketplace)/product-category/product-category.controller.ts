@@ -1,9 +1,13 @@
 import { handleRequest } from "@common/utils/handle.request.util";
+import { ValidateSuperAdmin } from "@common/jwt/jwt.decorator";
 import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { ApiBearerAuth } from "@nestjs/swagger";
 import { CreateProductCategoryDto } from "./dto/create-product-category.dto";
 import { UpdateProductCategoryDto } from "./dto/update-product-category.dto";
 import { ProductCategoryService } from "./product-category.service";
 
+@ApiBearerAuth()
+@ValidateSuperAdmin()
 @Controller("product-category")
 export class ProductCategoryController {
     constructor(private readonly service: ProductCategoryService) {}

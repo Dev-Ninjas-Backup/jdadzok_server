@@ -90,6 +90,47 @@ export class VolunteerHourEndorsementService {
         );
     }
 
+    async getHourStats(endorserUserId: string) {
+        const endorser = await this.prisma.user.findUnique({
+            where: { id: endorserUserId },
+            select: { id: true, capLevel: true, role: true },
+        });
+        if (!endorser) {
+            throw new NotFoundException("User not found");
+        }
+
+        const pendingSelfReport = await this.prisma.volunteerHour.findMany({
+            where: {
+                verificationStatus: VolunteerHourVerificationStatus.PENDING,
+                source: "SELF_REPORT",
+                loggedByUserId: { not: endorserUserId },
+            },
+            select: {
+                contributionType: true,
+                counterpartyConfirmedAt: true,
+                loggedByUser: { select: { capLevel: true } },
+            },
+        });
+
+        const readyToEndorse = isPlatformAdmin(endorser.role)
+            ? pendingSelfReport.filter((hour) => counterpartyConfirmationComplete(hour))
+            : pendingSelfReport.filter(
+                  (hour) =>
+                      counterpartyConfirmationComplete(hour) &&
+                      isCapLevelHigher(endorser.capLevel, hour.loggedByUser.capLevel),
+              );
+
+        const selfReportedTotalCount = await this.prisma.volunteerHour.count({
+            where: { source: "SELF_REPORT" },
+        });
+
+        return {
+            pendingEndorsementCount: pendingSelfReport.length,
+            readyToEndorseCount: readyToEndorse.length,
+            selfReportedTotalCount,
+        };
+    }
+
     async endorseHour(hourId: string, endorserUserId: string, dto: EndorseVolunteerHourDto) {
         const hour = await this.loadPendingSelfReportHour(hourId);
         await this.assertCanEndorse(endorserUserId, hour.loggedByUserId, hour.loggedByUser);

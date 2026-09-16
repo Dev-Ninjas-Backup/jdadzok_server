@@ -1,5 +1,5 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { ProductOrderDto, ProductOrderSearchDto } from "../dto/productOrder.dto";
 import { OrderStatus } from "@prisma/client";
 
@@ -43,12 +43,12 @@ export class PayoutManagementService {
     }
 
     async searchPaidOrders(searchDto: ProductOrderSearchDto): Promise<ProductOrderDto[]> {
-        const { sellerName } = searchDto;
+        const { sellerName, status = OrderStatus.PAID } = searchDto;
 
-        // Fetch paid orders with optional seller name search
+        // Fetch orders (paid by default) with optional seller name search
         const orders = await this.prisma.order.findMany({
             where: {
-                status: OrderStatus.PAID,
+                status,
                 product: {
                     seller: {
                         profile: {
@@ -93,9 +93,20 @@ export class PayoutManagementService {
                 orderAmount: order.totalPrice,
                 orderDate: order.createdAt,
                 totalEarnedBySeller: totalEarned._sum?.totalPrice || 0,
+                status: order.status,
             });
         }
 
         return result;
+    }
+
+    async markOrderPaid(orderId: string) {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+        if (!order) throw new NotFoundException("Order not found");
+
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data: { status: OrderStatus.PAID },
+        });
     }
 }

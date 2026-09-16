@@ -38,6 +38,8 @@ export class AdminNotificationController {
     }
 
     // ----------LATEST 6 notications----------
+    @ApiBearerAuth()
+    @ValidateSuperAdmin()
     @ApiOperation({ summary: "Get latest  notifications" })
     @Get("latest")
     async getLatestNotifications() {
