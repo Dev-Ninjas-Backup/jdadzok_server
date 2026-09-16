@@ -43,9 +43,6 @@ export class AuthService {
     ) {}
 
     async login(input: LoginDto) {
-        if (!input.email.endsWith("@gmail.com"))
-            throw new BadRequestException("Email must end with @gmail.com");
-
         const user = await this.userRepository.findByEmail(input.email);
         if (!user) throw new NotFoundException("User not found, Please sign up first");
         if (!user.isVerified) throw new UnauthorizedException("Please verify your account first");
@@ -310,10 +307,6 @@ export class AuthService {
     }
 
     async forgetPassword(input: ForgetPasswordDto) {
-        // email must need to be end with @gmail.com
-        if (!input.email.endsWith("@gmail.com"))
-            throw new BadRequestException("Email must end with @gmail.com");
-
         const user = await this.userRepository.findByEmail(input.email);
         if (!user) throw new NotFoundException("User not found");
 
@@ -337,10 +330,6 @@ export class AuthService {
     }
 
     async resnetOtp(input: ResentOtpDto) {
-        // email must need to be end with @gmail.com
-        if (!input.email.endsWith("@gmail.com"))
-            throw new BadRequestException("Email must end with @gmail.com");
-
         const user = await this.userRepository.findByEmail(input.email);
         if (!user) throw new NotFoundException("User not found with that email");
 
