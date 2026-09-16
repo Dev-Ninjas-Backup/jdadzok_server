@@ -45,10 +45,6 @@ export class UserService {
     ) {}
 
     async register(body: CreateUserDto) {
-        // email must need to be end with @gmail.com
-        if (!body.email.endsWith("@gmail.com"))
-            throw new BadRequestException("Email must end with @gmail.com");
-
         // has password if provider is email
         if (body.authProvider === "EMAIL") {
             if (!body.password)
@@ -203,9 +199,6 @@ export class UserService {
     }
 
     async sendOtpMail(user: Omit<TUser, "role">) {
-        // make same innital email validation for send email
-        if (!user.email.endsWith("@gmail.com"))
-            throw new BadRequestException("Email must end with @gmail.com");
         const otp = await this.otpService.generateOtp({
             userId: user.userId,
             email: user.email,
