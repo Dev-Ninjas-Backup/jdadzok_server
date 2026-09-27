@@ -8,9 +8,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "nest:m": "npx nest g resource",
-    "start": "nest start",
-    "build": "npx prisma generate && nest build",
-    "dev": "npx prisma generate && npx prisma migrate deploy && nest start --watch",
+    "start": "node api.js && nest start",
+    "build": "node api.js && npx prisma generate && nest build",
+    "dev": "node api.js && npx prisma generate && npx prisma migrate deploy && nest start --watch",
     "start:prod": "npx prisma generate && npx prisma migrate deploy && npm run db:seed && node dist/main",
     "start:docker": "npx prisma generate && npx prisma migrate deploy && npm run db:seed && node dist/main",
     "start:debug": "nest start --debug --watch",
