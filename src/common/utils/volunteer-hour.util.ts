@@ -33,3 +33,15 @@ export function effectiveVolunteerHours(metrics: {
     }
     return metrics.volunteerHours ?? 0;
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Last moment a mentee can dispute an auto-verified hour. */
+export function getAutoVerifyDisputeDeadline(autoVerifiedAt: Date, windowDays: number): Date {
+    return new Date(autoVerifiedAt.getTime() + windowDays * MS_PER_DAY);
+}
+
+/** Oldest `autoVerifiedAt` that is still inside the dispute window at `now`. */
+export function getAutoVerifyDisputeCutoff(now: Date, windowDays: number): Date {
+    return new Date(now.getTime() - windowDays * MS_PER_DAY);
+}
