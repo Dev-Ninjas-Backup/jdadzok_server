@@ -4,7 +4,6 @@ import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from "cla
 
 // Export additional comprehensive DTOs
 export * from "./revenue-share.dto";
-export * from "./user-metrics.dto";
 export * from "./volunteer-tracking.dto";
 
 class CapLevelDto {
