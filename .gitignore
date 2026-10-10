@@ -38,6 +38,7 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
+temp_auto_push.bat
 # temp directory
 .temp
 .tmp
@@ -79,3 +80,5 @@ jdadzok_server.pem
 *.pem
 *.key
 .env
+.gitignore
+branch_structure.json
