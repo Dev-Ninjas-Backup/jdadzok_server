@@ -12,6 +12,8 @@ model User {
   // User role and progression
   role      Role     @default(USER)
   capLevel  CapLevel @default(NONE)
+  /// When capLevel last changed. Null for members who never changed level; fall back to createdAt.
+  capLevelChangedAt DateTime?
   /// Ad revenue is opt-in at every cap level; nothing accrues while this is false.
   adRevenueOptIn Boolean @default(false)
   // Timestamps

@@ -6,6 +6,8 @@ interface CapLevelConfig {
     capLevel: CapLevel;
     minActivityScore?: number;
     minVolunteerHours?: number;
+    /** Placeholder windows until the client sends final figures; stored in the DB so they stay configurable. */
+    minDaysAtPreviousLevel?: number;
     requiresVerification: boolean;
     requiresNomination: boolean;
     adSharePercentage: number;
@@ -35,6 +37,7 @@ export class CapRequirementsSeedService {
         {
             capLevel: "YELLOW",
             minActivityScore: 50,
+            minDaysAtPreviousLevel: 14,
             adSharePercentage: 10,
             canAccessMarketplace: true,
             canAccessVolunteerHub: false,
@@ -47,6 +50,7 @@ export class CapRequirementsSeedService {
         {
             capLevel: "RED",
             minActivityScore: 100,
+            minDaysAtPreviousLevel: 30,
             adSharePercentage: 20,
             canAccessMarketplace: true,
             canAccessVolunteerHub: true,

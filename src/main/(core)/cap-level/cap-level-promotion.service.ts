@@ -7,7 +7,13 @@ import {
 import { CapLevelRepository } from "./cap-lavel.repository";
 import { CapLevelService } from "./cap-lavel.service";
 import { PromoteUserDto } from "./dto/cap-leve.dto";
-import { CAP_LADDER_ORDER, getNextLadderLevel } from "@common/utils/cap-level.util";
+import {
+    CAP_LADDER_ORDER,
+    capLevelIndex,
+    getNextLadderLevel,
+    missingMinimumTimeAtLevel,
+    resolveLevelSince,
+} from "@common/utils/cap-level.util";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { EVENT_TYPES } from "@common/interface/events-name";
 import { CapLevelEvent } from "@common/interface/events-payload";
@@ -148,6 +154,9 @@ export class CapLevelPromotionService {
                 { ...metrics, volunteerHours: bankHours },
                 requirements,
                 targetLevel,
+                capLevelIndex(targetLevel) > capLevelIndex(fromLevel)
+                    ? resolveLevelSince(user)
+                    : null,
             );
 
             if (requirements.requiresVerification && !this.isAdminRole(actorRole)) {
@@ -232,7 +241,7 @@ export class CapLevelPromotionService {
         const updatedUser = await this.prisma.$transaction(async (tx) => {
             const user = await tx.user.update({
                 where: { id: input.userId },
-                data: { capLevel: input.toLevel },
+                data: { capLevel: input.toLevel, capLevelChangedAt: new Date() },
             });
 
             await tx.capPromotionAudit.create({
@@ -305,10 +314,21 @@ export class CapLevelPromotionService {
 
     private assertMeetsRequirements(
         metrics: { volunteerHours: number; activityScore: number; missingRequirements: string[] },
-        requirements: { minActivityScore: number | null; minVolunteerHours: number | null },
+        requirements: {
+            minActivityScore: number | null;
+            minVolunteerHours: number | null;
+            minDaysAtPreviousLevel: number | null;
+        },
         targetLevel: CapLevel,
+        levelSince: Date | null,
     ) {
         const missing: string[] = [];
+
+        // Only upward moves wait: levelSince is null for a downgrade
+        const waitMessage = levelSince
+            ? missingMinimumTimeAtLevel(requirements.minDaysAtPreviousLevel, levelSince)
+            : null;
+        if (waitMessage) missing.push(waitMessage);
 
         if (
             requirements.minActivityScore != null &&
