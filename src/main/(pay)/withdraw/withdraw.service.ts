@@ -6,6 +6,11 @@ import { BadRequestException, ForbiddenException, Injectable, Optional } from "@
 import { ConfigService } from "@nestjs/config";
 import { Queue } from "bullmq";
 import Stripe from "stripe";
+import {
+    COMMITTED_WITHDRAW_STATUSES,
+    assertWithdrawEligible,
+    resolveMinWithdrawAmount,
+} from "./withdraw-eligibility.util";
 
 @Injectable()
 export class WithdrawService {
@@ -106,23 +111,37 @@ export class WithdrawService {
             }
         }
 
-        // // Check minimum balance
-        // if (!user.profile || user.profile.balance < 100) {
-        //     throw new BadRequestException("Insufficient balance. Minimum balance required: $100");
-        // }
+        if (!user.profile) {
+            throw new BadRequestException("User has no profile balance");
+        }
 
-        // // Optional: Check if requested amount is more than balance
-        // if (dto.amount > user.profile.balance) {
-        //     throw new BadRequestException("Requested amount exceeds available balance");
-        // }
+        const minAmount = resolveMinWithdrawAmount(this.config.get("WITHDRAW_MIN_AMOUNT"));
 
-        // Save withdraw request
-        const withdraw = await this.prisma.withdraw.create({
-            data: {
-                userId,
+        // Lock the profile row so concurrent requests cannot both pass the balance check
+        const withdraw = await this.prisma.$transaction(async (tx) => {
+            const [locked] = await tx.$queryRaw<{ balance: number }[]>`
+                SELECT "balance" FROM "profiles" WHERE "userId" = ${userId} FOR UPDATE
+            `;
+
+            const committed = await tx.withdraw.aggregate({
+                where: { userId, status: { in: [...COMMITTED_WITHDRAW_STATUSES] } },
+                _sum: { amount: true },
+            });
+
+            assertWithdrawEligible({
                 amount: dto.amount,
-                status: "PENDING",
-            },
+                balance: locked?.balance ?? 0,
+                committed: committed._sum.amount ?? 0,
+                minAmount,
+            });
+
+            return tx.withdraw.create({
+                data: {
+                    userId,
+                    amount: dto.amount,
+                    status: "PENDING",
+                },
+            });
         });
 
         // Add job to queue with optional delay
