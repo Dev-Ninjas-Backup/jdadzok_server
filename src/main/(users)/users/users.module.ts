@@ -2,6 +2,8 @@ import { MailService } from "@lib/mail/mail.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { OptService } from "@lib/utils/otp.service";
 import { AuthModule } from "@module/(started)/auth/auth.module";
+import { BotChallengeModule } from "@module/(abuse)/bot-challenge/bot-challenge.module";
+import { EmailQualityModule } from "@module/(abuse)/email-quality/email-quality.module";
 import { SearchModule } from "@module/(search)/search.module";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
@@ -22,6 +24,8 @@ import { UserService } from "./users.service";
         FollowModule,
         AuthModule,
         SearchModule,
+        EmailQualityModule,
+        BotChallengeModule,
     ],
     controllers: [UserController],
     providers: [

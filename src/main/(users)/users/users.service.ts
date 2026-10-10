@@ -1,4 +1,6 @@
 import { MailService } from "@lib/mail/mail.service";
+import { BotChallengeService } from "@module/(abuse)/bot-challenge/bot-challenge.service";
+import { EmailQualityService } from "@module/(abuse)/email-quality/email-quality.service";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { OptService } from "@lib/utils/otp.service";
 import { UtilsService } from "@lib/utils/utils.service";
@@ -41,10 +43,19 @@ export class UserService {
         private readonly mailService: MailService,
         private readonly followService: FollowService,
         private readonly authService: AuthService,
+        private readonly emailQuality: EmailQualityService,
+        private readonly botChallenge: BotChallengeService,
         @Optional() private readonly searchSync?: SearchSyncService,
     ) {}
 
-    async register(body: CreateUserDto) {
+    /** authProvider is client-supplied, so these abuse checks run for every provider. */
+    async assertRegistrationAllowed(input: CreateUserDto) {
+        await this.botChallenge.assertHuman(input.captchaToken);
+        await this.emailQuality.assertEmailAllowed(input.email);
+    }
+
+    async register(input: CreateUserDto) {
+        const body = omit(input, ["captchaToken"]);
         // has password if provider is email
         if (body.authProvider === "EMAIL") {
             if (!body.password)
