@@ -107,17 +107,11 @@ The switch is enforced in all three places that credit ad money: the monthly dis
 ### User Metrics
 
 ```http
-GET    /user-metrics/:userId          # Get user metrics
-PUT    /user-metrics/:userId          # Update user metrics
-POST   /user-metrics/:userId/recalculate-score # Recalculate activity score
-GET    /user-metrics/:userId/analytics # Detailed activity analytics
-GET    /user-metrics/:userId/rank     # User activity rank
-GET    /user-metrics/leaderboard      # Activity leaderboard
-GET    /user-metrics/platform/stats   # Platform activity statistics
-POST   /user-metrics/batch-recalculate # Batch recalculation (admin)
-GET    /user-metrics/config/weights   # Get scoring weights
-PUT    /user-metrics/config/weights   # Update scoring weights (admin)
+GET    /user-metrics           # My metrics (optional filter)
+GET    /user-metrics/:userId   # A member's metrics (fields are limited for other viewers)
 ```
+
+The activity score is recalculated by `UserMetricsService` on status checks, eligibility checks and the monthly job. Its weights are edited with `POST /settings` (admin only), see "Impact Score" above. There are no endpoints to set a score or the weights directly.
 
 ## Services Documentation
 
