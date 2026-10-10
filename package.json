@@ -39,6 +39,7 @@
         "test:fraud": "tsx \"src/main/(abuse)/fraud/__tests__/fraud.issue-28.test.ts\"",
         "test:turn": "tsx \"src/main/(shared)/calling/ice/__tests__/ice.issue-40.test.ts\"",
         "test:withdraw": "tsx \"src/main/(pay)/withdraw/__tests__/withdraw.issue-42.test.ts\"",
+        "test:volunteer": "tsx \"src/main/volunteer/__tests__/volunteer.issue-43.test.ts\"",
         "security:check": "bash scripts/check-supply-chain-malware.sh",
         "postinstall": "npx prisma generate"
     },
