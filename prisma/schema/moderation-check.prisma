@@ -1,0 +1,33 @@
+/// Content-moderation vendor verdicts (OpenAI Moderation / Perspective / Hive plug-in).
+/// Only QUEUE and REJECT outcomes are stored. Post text itself is never stored here.
+model ModerationCheck {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subjectType ModerationSubjectType
+  /// Set once the held post exists; null for REJECT (the post was never created).
+  subjectId   String?
+
+  provider String
+  /// Normalized 0–100 risk (higher = riskier). Vendor raw scores are mapped in adapters.
+  score    Float
+  decision ModerationDecision
+
+  vendorRef String?
+  /// Non-PII vendor category labels only.
+  labels    Json?
+
+  /// Admin review (approve publishes the held post, reject keeps it hidden).
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([decision])
+  @@index([subjectType, subjectId])
+  @@index([createdAt])
+  @@map("moderation_checks")
+}

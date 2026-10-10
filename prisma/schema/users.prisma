@@ -145,6 +145,7 @@ model User {
 
   // Account-fraud vendor checks (Sift / SEON / Castle — optional P3)
   fraudChecks FraudCheck[]
+  moderationChecks ModerationCheck[]
 
   deviceTokens DeviceToken[]
 

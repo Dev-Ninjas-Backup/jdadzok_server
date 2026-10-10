@@ -38,7 +38,7 @@ export class PostRepository {
         },
     };
 
-    async store(input: CreatePostDto) {
+    async store(input: CreatePostDto & { isHidden?: boolean }) {
         const { metadata, taggedUserIds, ...postData } = input;
 
         return await this.prisma.$transaction(async (tx) => {
@@ -85,7 +85,8 @@ export class PostRepository {
                 update: { totalPosts: { increment: 1 }, lastUpdated: new Date() },
             });
 
-            if (taggedUserIds && taggedUserIds.length > 0) {
+            // A held post must not notify tagged users before an admin approves it
+            if (taggedUserIds && taggedUserIds.length > 0 && !input.isHidden) {
                 await this.handleTaggedUsers(
                     tx,
                     taggedUserIds,

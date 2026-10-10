@@ -293,3 +293,14 @@ enum FraudEventType {
 }
 
 // ENUMS_END
+
+/// Outcome of a content-moderation vendor check (Issue #25).
+enum ModerationDecision {
+  ALLOW
+  QUEUE
+  REJECT
+}
+
+enum ModerationSubjectType {
+  POST
+}
