@@ -47,6 +47,13 @@ interface ActivityScore {
 3. **RED → BLACK**: 8-week volunteer service completion (200+ hours, 3+ projects)
 4. **Sky Blue**: Parallel invitation track only — never auto-promoted after Black. Use `/cap-level/sky-blue/*` nomination APIs.
 
+#### Minimum time at each level
+
+Promotions need sustained consistency, so nobody can race Green → Yellow → Red in a day. Each level in `cap_requirements` has `minDaysAtPreviousLevel` (days the member must have held the previous level; empty = no wait). It applies to auto-promotion, eligibility and admin promotion without a bypass. An admin override with a recorded reason still bypasses it, and downgrades are never blocked.
+
+- The clock starts at `users.capLevelChangedAt`, which is set whenever a level changes. Members who never changed level count from signup.
+- Placeholder values (until the client sends final figures), set in `cap-requirements.seed.service.ts`: Yellow 14 days, Red 30 days. They are database values, so they stay configurable.
+
 ## API Endpoints
 
 ### Cap Level Management

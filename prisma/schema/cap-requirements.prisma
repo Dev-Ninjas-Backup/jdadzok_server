@@ -8,6 +8,7 @@ model CapRequirements {
   minVolunteerHours    Int? // Minimum volunteer hours needed
   requiresVerification Boolean @default(false) // Need admin verification
   requiresNomination   Boolean @default(false) // Invitation/nomination track (Sky Blue)
+  minDaysAtPreviousLevel Int? // Minimum days at the previous level before promotion to this one (null = no wait)
 
   // Benefits of this cap level
   adSharePercentage     Float // Percentage of ad revenue user gets (Sky Blue: full rate after Black-level hours)

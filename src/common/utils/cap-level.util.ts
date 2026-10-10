@@ -41,3 +41,25 @@ export function isCapLevelHigher(
 export function isPlatformAdmin(role: Role): boolean {
     return role === Role.ADMIN || role === Role.SUPER_ADMIN || role === Role.MODERATOR;
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** When the member reached their current level; members who never changed level count from signup. */
+export function resolveLevelSince(user: { capLevelChangedAt: Date | null; createdAt: Date }): Date {
+    return user.capLevelChangedAt ?? user.createdAt;
+}
+
+export function daysAtCapLevel(since: Date, now: Date = new Date()): number {
+    return Math.max(0, Math.floor((now.getTime() - since.getTime()) / MS_PER_DAY));
+}
+
+/** Returns a "missing requirement" message when the minimum time at the current level is not met. */
+export function missingMinimumTimeAtLevel(
+    minDays: number | null | undefined,
+    since: Date,
+    now: Date = new Date(),
+): string | null {
+    if (minDays == null || minDays <= 0) return null;
+    const days = daysAtCapLevel(since, now);
+    return days >= minDays ? null : `Minimum time at current level: ${days}/${minDays} days`;
+}

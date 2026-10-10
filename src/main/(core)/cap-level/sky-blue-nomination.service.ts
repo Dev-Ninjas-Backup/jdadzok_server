@@ -149,7 +149,7 @@ export class SkyBlueNominationService {
 
             await tx.user.update({
                 where: { id: nomination.nomineeId },
-                data: { capLevel: CapLevel.SKY_BLUE },
+                data: { capLevel: CapLevel.SKY_BLUE, capLevelChangedAt: new Date() },
             });
 
             await tx.skyBlueNominationEvent.create({
@@ -233,7 +233,7 @@ export class SkyBlueNominationService {
             if (user?.capLevel === CapLevel.SKY_BLUE) {
                 await tx.user.update({
                     where: { id: nomination.nomineeId },
-                    data: { capLevel: CapLevel.BLACK },
+                    data: { capLevel: CapLevel.BLACK, capLevelChangedAt: new Date() },
                 });
             }
 
