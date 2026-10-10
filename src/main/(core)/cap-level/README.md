@@ -76,6 +76,17 @@ GET    /revenue/analytics             # Revenue analytics
 GET    /revenue/forecast              # Revenue forecasting
 ```
 
+### Ad revenue opt-in
+
+Ad revenue is **opt-in and off by default for every member, at every cap level** (Green, Yellow, Red, Black and Sky Blue). Nothing accrues while a member is opted out.
+
+```http
+PUT    /cap-level/ad-revenue/me        # body: { "optIn": true | false }
+GET    /cap-level/status/me            # includes adRevenueOptIn
+```
+
+The switch is enforced in all three places that credit ad money: the monthly distribution (`AdRevenueService`), ad attachment to posts (`HelperService.attachProductToEligiblePosts`) and the Stripe payment handler. Admin manual revenue entries (`POST /revenue/create-share`) are explicit and are not gated.
+
 ### User Metrics
 
 ```http

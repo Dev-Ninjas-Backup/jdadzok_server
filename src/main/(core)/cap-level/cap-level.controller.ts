@@ -12,6 +12,7 @@ import { AdRevenueService } from "../ad-revenue/ad-revenue.service";
 import { CapLevelPromotionService } from "./cap-level-promotion.service";
 import { CapLevelService } from "./cap-lavel.service";
 import { PromoteUserDto } from "./dto/cap-leve.dto";
+import { SetAdRevenueOptInDto } from "./dto/ad-revenue-opt-in.dto";
 
 @ApiBearerAuth()
 @ApiTags("Cap Level Management")
@@ -45,6 +46,19 @@ export class CapLevelController {
     async getMyEarnings(@GetUser("userId") userId: string) {
         const data = await this.adRevenueService.getUserRevenueSummary(userId);
         return successResponse(data, "Personal earnings retrieved");
+    }
+
+    @Put("ad-revenue/me")
+    @ValidateAuth()
+    @ApiOperation({
+        summary: "Opt in or out of ad revenue (off by default, applies to every cap level)",
+    })
+    async setMyAdRevenueOptIn(
+        @GetUser("userId") userId: string,
+        @Body() dto: SetAdRevenueOptInDto,
+    ) {
+        const data = await this.adRevenueService.setAdRevenueOptIn(userId, dto.optIn);
+        return successResponse(data, dto.optIn ? "Ad revenue enabled" : "Ad revenue disabled");
     }
 
     @Get("status/:userId")
