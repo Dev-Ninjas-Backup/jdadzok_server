@@ -1,5 +1,7 @@
 import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
+import { RateLimit } from "@common/decorators/rate-limit.decorator";
+import { RateLimitGuard } from "@common/guards/rate-limit.guard";
 import {
     Body,
     Controller,
@@ -25,7 +27,8 @@ export class CommentController {
 
     @ApiOperation({ summary: "Create a comment or reply (parentCommentId for replies)" })
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit("COMMENT")
     async create(@GetVerifiedUser() user: VerifiedUser, @Body() dto: CreateCommentDto) {
         return this.commentService.createComment({
             ...dto,

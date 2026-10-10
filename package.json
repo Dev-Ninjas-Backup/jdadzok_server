@@ -46,6 +46,7 @@
         "test:ad-optin": "tsx \"src/main/(core)/ad-revenue/__tests__/ad-revenue-opt-in.test.ts\"",
         "test:cap-window": "tsx \"src/main/(core)/cap-level/__tests__/cap-level-time-window.test.ts\"",
         "test:impact-score": "tsx \"src/main/(users)/profile-metrics/__tests__/impact-score.test.ts\"",
+        "test:rate-limit": "tsx \"src/common/guards/__tests__/rate-limit.test.ts\"",
         "security:check": "bash scripts/check-supply-chain-malware.sh",
         "postinstall": "npx prisma generate"
     },

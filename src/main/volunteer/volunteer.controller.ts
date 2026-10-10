@@ -2,6 +2,8 @@ import { Controller, Post, Body, UseGuards, Get, Patch, Param, Delete, Query } f
 import { VolunteerService } from "./volunteer.service";
 import { CreateVolunteerProjectDto } from "./dto/create-volunteer-project.dto";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
+import { RateLimit } from "@common/decorators/rate-limit.decorator";
+import { RateLimitGuard } from "@common/guards/rate-limit.guard";
 import { GetVerifiedUser } from "@common/jwt/jwt.decorator";
 import { VerifiedUser } from "@type/shared.types";
 import { handleRequest } from "@common/utils/handle.request.util";
@@ -94,6 +96,8 @@ export class VolunteerController {
 
     @ApiOperation({ summary: "Log working hours for a volunteer application" })
     @Patch("log-hours/:applicationId")
+    @UseGuards(RateLimitGuard)
+    @RateLimit("HOUR_LOG")
     logHours(
         @Param("applicationId") id: string,
         @Body() dto: LogHoursDto,
@@ -155,6 +159,8 @@ export class VolunteerController {
             "Endorse pending self-reported hours (higher-Cap member or admin) — credits Cap metrics",
     })
     @Patch("hours/:hourId/endorse")
+    @UseGuards(RateLimitGuard)
+    @RateLimit("ENDORSEMENT")
     endorseHours(
         @Param("hourId") hourId: string,
         @Body() dto: EndorseVolunteerHourDto,
