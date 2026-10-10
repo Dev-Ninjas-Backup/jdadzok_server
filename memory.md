@@ -19,9 +19,11 @@ contribution, not follower counts).
 **Merged to main:** #42 withdraw guards (PR #50), #43 disputable hours (PR #51), #25 abuse P0 adapters
 (PR #52), client item 6 ad opt-in (PR #53), client item 7 time windows (PR #54), client item 2 impact
 score (PR #55).
-**Open PR, waiting for user review/merge:** PR #56 `feat/submission-rate-limit` (client item 7 rate
-limiting). With it, all four engineering items from John's 2026-10-07 message are built.
+Rate limiting (client item 7) is merged too (PR #56): all four engineering items from John's 2026-10-07
+message are in `main`. **No PR is open.**
 **Next:** nothing is queued. Waiting on John's final numbers (see below) and on client vendor keys.
+Possible follow-ups the user has not asked for: delete the dead `(core)/user-metrics/` folder, deploy
+the new migrations to staging and run the score recompute, try the rate limits on a real Redis.
 **GitHub issues still open:** #25 (abuse P0, code merged, waits for client keys and joint test) and
 #29 (client vendor decisions, summary comment posted). Both are blocked on the client.
 
@@ -32,7 +34,7 @@ limiting). With it, all four engineering items from John's 2026-10-07 message ar
 4. Sky Blue: leave as built (Red rate until Black hours, then top rate). Nothing to do.
 5. Percentage table, Black ceiling ~70%: NOT built, waiting for numbers; percentages must stay backend-only.
 6. Ad opt-in: DONE (PR #53). `users.adRevenueOptIn`, off by default for everyone, gates all 3 money paths.
-7. Time windows: DONE (PR #54). Rate limiting: DONE in PR #56 (not merged yet).
+7. Time windows: DONE (PR #54). Rate limiting: DONE (PR #56).
 
 ### How the scoring works now (PR #55)
 `score = min(popularity, popularityCap) + distinct endorsers x endorsement weight x endorser level
@@ -43,7 +45,7 @@ post 1, comment 0.5, share 0.5, like 0, follower 0, popularityCap 30, endorsemen
 endorsements ignored, moderation-held posts earn nothing. Stored score refreshes on status check,
 eligibility check and the monthly job (not instantly on a new endorsement).
 
-### Rate limiting (PR #56)
+### Rate limiting (merged, PR #56)
 `RateLimitGuard` + `@RateLimit("POST"|"COMMENT"|"ENDORSEMENT"|"HOUR_LOG")` after `JwtAuthGuard`, per member,
 fixed-window Redis counters via `RedisService.checkRateLimit`. Placeholders: posts 20/h, comments 60/h,
 endorsements 10/day, hour logs 20/day; env `RATE_LIMIT_<RULE>_MAX` / `_WINDOW_SECONDS`, `RATE_LIMIT_ENABLED`,
@@ -90,7 +92,7 @@ on this machine, rotate reachable secrets. Never restore or run those files.
 - Prettier cannot match paths with parentheses via globs; pass explicit file lists.
 - Migrations: generate with `prisma migrate diff --from-schema-datamodel <old> --to-schema-datamodel
   prisma/schema --script`, write a new folder, never edit applied ones, never apply to prod without the user.
-- The only leftover worktree is `../jdadzok_server-wt` (merged abuse branch). Its
+- The only leftover worktree is `../jdadzok_server-wt` (merged abuse branch `feat/abuse-p0-adapters`, kept because of the cd.yaml edit). Its
   `.github/workflows/cd.yaml` holds an uncommitted comment cleanup made by the user; leave it.
 
 ## Setup and run
@@ -101,4 +103,4 @@ on this machine, rotate reachable secrets. Never restore or run those files.
 - Not verified from this environment: booting the full app (needs Postgres and Redis) and real vendor calls.
 
 ## Last updated
-2026-10-10: PR #55 merged; PR #56 (rate limiting) opened. Waiting on user review of #56 and on the client's numbers.
+2026-10-10: PRs #50 to #56 all merged; local branches cleaned. Waiting on the client's numbers and vendor keys.
