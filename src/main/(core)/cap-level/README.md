@@ -25,20 +25,30 @@ The Cap Level System is a comprehensive gamified progression and revenue-sharing
 
 \*Sky Blue earns at **Red** rate until Black-level volunteering hours are completed.
 
-## Activity Scoring Algorithm
+## Impact Score (activity score)
 
-The system uses a weighted scoring algorithm to calculate user engagement:
+Reputation, not popularity: endorsements and verified contribution carry the score. Posts, comments, likes, shares and followers are low-weight and capped in total, so popularity alone can never reach a promotion threshold.
 
-```typescript
-interface ActivityScore {
-  posts: number * 5;        // 5 points per post
-  comments: number * 2;     // 2 points per comment
-  likes: number * 1;        // 1 point per like given
-  shares: number * 3;       // 3 points per share
-  followers: number * 0.5;  // 0.5 points per follower
-  volunteerHours: number * 10; // 10 points per volunteer hour
-}
 ```
+score = min(popularity points, popularityCap)
+      + distinct endorsers x endorsement weight x endorser level multiplier
+      + verified volunteer hours x verifiedVolunteerHour weight
+```
+
+All weights live in the admin-editable `activity-score` table (`POST /settings`, admin only) and are the only source; defaults apply until a row exists. Placeholder defaults until the client sends final figures:
+
+| Weight | Default | Notes |
+| --- | --- | --- |
+| `post` / `comment` / `share` | 1 / 0.5 / 0.5 | popularity, counted toward `popularityCap` |
+| `like` / `follower` | 0 / 0 | popularity, off by default |
+| `popularityCap` | 30 | most points popularity can add in total |
+| `endorsement` | 10 | per distinct endorser |
+| `endorserLevelBonus` | 0.5 | multiplier = 1 + bonus x rung (Green 1.0, Yellow 1.5, Red 2.0, Black 2.5) |
+| `verifiedVolunteerHour` | 2 | per verified hour (lifetime verified bank) |
+
+Anti-gaming rules: each endorser counts once, self-endorsements and endorsers without a Cap level count for nothing, and endorsements that the member returned are ignored. Posts held by moderation earn nothing until approved.
+
+The stored score is recomputed on status checks, eligibility checks and the monthly job. Nothing adds to it directly any more.
 
 ### Promotion Logic
 

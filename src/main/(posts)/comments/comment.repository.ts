@@ -28,14 +28,6 @@ export class CommentRepository {
                     create: { userId: data.authorId, totalComments: 1 },
                     update: { totalComments: { increment: 1 }, lastUpdated: new Date() },
                 });
-                const post = await tx.post.findUnique({ where: { id: data.postId } });
-                const adminScore = await tx.activityScore.findFirst();
-                if (post && adminScore) {
-                    await tx.userMetrics.update({
-                        where: { userId: post.authorId },
-                        data: { activityScore: { increment: adminScore.comment } },
-                    });
-                }
                 return {
                     commentId: comment.id,
                     postId: comment.postId,
