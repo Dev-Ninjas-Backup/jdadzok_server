@@ -29,7 +29,7 @@ export class CapLevelRepository {
     async updateUserCapLevel(userId: string, newCapLevel: CapLevel): Promise<User> {
         return await this.prisma.user.update({
             where: { id: userId },
-            data: { capLevel: newCapLevel },
+            data: { capLevel: newCapLevel, capLevelChangedAt: new Date() },
         });
     }
 

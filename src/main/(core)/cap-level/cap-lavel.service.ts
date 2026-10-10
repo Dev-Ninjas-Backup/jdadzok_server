@@ -4,6 +4,7 @@ import { UserMetricsService } from "../../(users)/profile-metrics/user-metrics.s
 import { CapLevel } from "../../../constants/enums";
 import { CapLevelRepository } from "./cap-lavel.repository";
 import { effectiveVolunteerHours } from "@common/utils/volunteer-hour.util";
+import { missingMinimumTimeAtLevel, resolveLevelSince } from "@common/utils/cap-level.util";
 
 interface CapEligibilityResult {
     currentLevel: CapLevel;
@@ -138,6 +139,7 @@ export class CapLevelService {
                     metrics,
                     levelRequirements,
                     missingRequirements,
+                    resolveLevelSince(userWithMetrics),
                 );
 
                 if (meetsQuantitative) {
@@ -171,8 +173,19 @@ export class CapLevelService {
         metrics: UserMetrics,
         requirements: CapRequirements,
         missingRequirements: string[],
+        levelSince: Date,
     ): boolean {
         let meetsAll = true;
+
+        // Promotions are "sustained... consistency": nobody races up the ladder in a day
+        const waitMessage = missingMinimumTimeAtLevel(
+            requirements.minDaysAtPreviousLevel,
+            levelSince,
+        );
+        if (waitMessage) {
+            missingRequirements.push(waitMessage);
+            meetsAll = false;
+        }
         const bankHours = effectiveVolunteerHours(metrics);
 
         // Check activity score requirement
