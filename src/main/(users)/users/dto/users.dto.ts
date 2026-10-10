@@ -37,6 +37,13 @@ class UserCreate {
     @IsEnum(AuthProvider)
     authProvider?: AuthProvider;
 
+    @ApiPropertyOptional({
+        description: "Bot challenge token (required when ABUSE_BOT_PROVIDER is enabled)",
+    })
+    @IsOptional()
+    @IsString()
+    captchaToken?: string;
+
     @ApiHideProperty()
     @IsBoolean()
     @IsOptional()
