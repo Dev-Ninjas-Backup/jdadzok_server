@@ -17,11 +17,11 @@ contribution, not follower counts).
 
 ## Current state (2026-10-10)
 **Merged to main:** #42 withdraw guards (PR #50), #43 disputable hours (PR #51), #25 abuse P0 adapters
-(PR #52), client item 6 ad opt-in (PR #53), client item 7 time windows (PR #54).
-**Open PR, waiting for user review/merge:** PR #55 `feat/impact-score` (client item 2).
-**Next to build:** PR 4 = submission rate limiting (Redis-based guard reusing
-`RedisService.checkRateLimit`; placeholders: posts 20/h, comments 60/h, endorsements 10/day, hour
-logs TBD). Needs a short plan first.
+(PR #52), client item 6 ad opt-in (PR #53), client item 7 time windows (PR #54), client item 2 impact
+score (PR #55).
+**Open PR, waiting for user review/merge:** PR #56 `feat/submission-rate-limit` (client item 7 rate
+limiting). With it, all four engineering items from John's 2026-10-07 message are built.
+**Next:** nothing is queued. Waiting on John's final numbers (see below) and on client vendor keys.
 **GitHub issues still open:** #25 (abuse P0, code merged, waits for client keys and joint test) and
 #29 (client vendor decisions, summary comment posted). Both are blocked on the client.
 
@@ -32,7 +32,7 @@ logs TBD). Needs a short plan first.
 4. Sky Blue: leave as built (Red rate until Black hours, then top rate). Nothing to do.
 5. Percentage table, Black ceiling ~70%: NOT built, waiting for numbers; percentages must stay backend-only.
 6. Ad opt-in: DONE (PR #53). `users.adRevenueOptIn`, off by default for everyone, gates all 3 money paths.
-7. Time windows: DONE (PR #54). Rate limiting: PR 4, not started.
+7. Time windows: DONE (PR #54). Rate limiting: DONE in PR #56 (not merged yet).
 
 ### How the scoring works now (PR #55)
 `score = min(popularity, popularityCap) + distinct endorsers x endorsement weight x endorser level
@@ -42,6 +42,13 @@ post 1, comment 0.5, share 0.5, like 0, follower 0, popularityCap 30, endorsemen
 0.5, verifiedHour 2. Anti-gaming: one count per endorser, no self or no-level endorsers, returned
 endorsements ignored, moderation-held posts earn nothing. Stored score refreshes on status check,
 eligibility check and the monthly job (not instantly on a new endorsement).
+
+### Rate limiting (PR #56)
+`RateLimitGuard` + `@RateLimit("POST"|"COMMENT"|"ENDORSEMENT"|"HOUR_LOG")` after `JwtAuthGuard`, per member,
+fixed-window Redis counters via `RedisService.checkRateLimit`. Placeholders: posts 20/h, comments 60/h,
+endorsements 10/day, hour logs 20/day; env `RATE_LIMIT_<RULE>_MAX` / `_WINDOW_SECONDS`, `RATE_LIMIT_ENABLED`,
+`RATE_LIMIT_FAIL_CLOSED` (default fail open). To protect a route add a name in `rate-limit.util.ts`.
+Not covered: volunteer apply, likes, shares, chat. Never tested against a real Redis.
 
 ## Key decisions
 - Work in this folder on feature branches off `origin/main`; one logical change per PR/commit.
@@ -87,11 +94,11 @@ on this machine, rotate reachable secrets. Never restore or run those files.
   `.github/workflows/cd.yaml` holds an uncommitted comment cleanup made by the user; leave it.
 
 ## Setup and run
-- Tests (each prints PASS/FAIL): `npm run test:impact-score | test:cap-window | test:ad-optin |
+- Tests (each prints PASS/FAIL): `npm run test:rate-limit | test:impact-score | test:cap-window | test:ad-optin |
   test:abuse-email | test:abuse-bot | test:abuse-moderation | test:withdraw | test:volunteer | test:fraud`.
 - Typecheck `npx tsc --noEmit -p tsconfig.json`; lint `npx eslint <files>`; format `npx prettier --check <files>`.
 - Prisma client: `npx prisma generate`. Other scripts (`dev`, `build`, `start:prod`, `db:seed`) are in `package.json`.
 - Not verified from this environment: booting the full app (needs Postgres and Redis) and real vendor calls.
 
 ## Last updated
-2026-10-10: PR #55 (impact score) opened; memory.md rewritten as a hand-off. Waiting on user review of #55 and on the client's numbers.
+2026-10-10: PR #55 merged; PR #56 (rate limiting) opened. Waiting on user review of #56 and on the client's numbers.
