@@ -1,27 +1,18 @@
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
+import {
+    DEFAULT_IMPACT_SCORE_WEIGHTS,
+    ImpactScoreBreakdown,
+    ImpactScoreWeights,
+    calculateImpactScore,
+    sumEndorsementPoints,
+} from "@common/utils/impact-score.util";
+import { effectiveVolunteerHours } from "@common/utils/volunteer-hour.util";
 import { UserMetrics } from "@prisma/client";
-
-interface ActivityScoreWeights {
-    posts: number;
-    comments: number;
-    likes: number;
-    shares: number;
-    followers: number;
-}
 
 @Injectable()
 export class UserMetricsService {
     constructor(private readonly prisma: PrismaService) {}
-
-    // Activity score calculation weights
-    private readonly scoreWeights: ActivityScoreWeights = {
-        posts: 5, // 5 points per post
-        comments: 2, // 2 points per comment
-        likes: 1, // 1 point per like given
-        shares: 3, // 3 points per share
-        followers: 0.5, // 0.5 points per follower
-    };
 
     async createUserMetrics(userId: string, input: UserMetrics): Promise<UserMetrics> {
         return await this.prisma.userMetrics.create({
@@ -52,27 +43,64 @@ export class UserMetricsService {
         });
     }
 
+    /** Admin-editable weights from the activity-score table; defaults apply until a row exists. */
+    async getImpactScoreWeights(): Promise<ImpactScoreWeights> {
+        const row = await this.prisma.activityScore.findFirst();
+        if (!row) return DEFAULT_IMPACT_SCORE_WEIGHTS;
+        return {
+            post: row.post,
+            comment: row.comment,
+            like: row.like,
+            share: row.share,
+            follower: row.follower,
+            endorsement: row.endorsement,
+            verifiedVolunteerHour: row.verifiedVolunteerHour,
+            popularityCap: row.popularityCap,
+            endorserLevelBonus: row.endorserLevelBonus,
+        };
+    }
+
+    /**
+     * Impact score: endorsements and verified contribution carry the score. Posts, comments,
+     * likes, shares and followers are low-weight and capped in total (popularityCap).
+     */
+    async calculateImpactScoreBreakdown(userId: string): Promise<ImpactScoreBreakdown> {
+        const engagement = await this.getUserEngagementData(userId);
+        return this.scoreFromEngagement(engagement);
+    }
+
     async calculateActivityScore(userId: string): Promise<number> {
-        // Get current engagement data from the database
-        const engagementData = await this.getUserEngagementData(userId);
+        return (await this.calculateImpactScoreBreakdown(userId)).total;
+    }
 
-        // Calculate activity score using weights
-        const activityScore =
-            engagementData.postsCount * this.scoreWeights.posts +
-            engagementData.commentsCount * this.scoreWeights.comments +
-            engagementData.likesGivenCount * this.scoreWeights.likes +
-            engagementData.sharesCount * this.scoreWeights.shares +
-            engagementData.followersCount * this.scoreWeights.followers;
-
-        return Math.round(activityScore * 100) / 100; // Round to 2 decimal places
+    private async scoreFromEngagement(
+        engagement: Awaited<ReturnType<UserMetricsService["getUserEngagementData"]>>,
+    ): Promise<ImpactScoreBreakdown> {
+        const weights = await this.getImpactScoreWeights();
+        return calculateImpactScore(
+            {
+                posts: engagement.postsCount,
+                comments: engagement.commentsCount,
+                likesGiven: engagement.likesGivenCount,
+                shares: engagement.sharesCount,
+                followers: engagement.followersCount,
+                endorsementPoints: sumEndorsementPoints(
+                    engagement.endorsers,
+                    engagement.reciprocalEndorserIds,
+                    weights.endorserLevelBonus,
+                ),
+                verifiedHours: engagement.verifiedHours,
+            },
+            weights,
+        );
     }
 
     async recalculateAndUpdateActivityScore(userId: string): Promise<UserMetrics> {
-        const newActivityScore = await this.calculateActivityScore(userId);
         const engagementData = await this.getUserEngagementData(userId);
+        const { total } = await this.scoreFromEngagement(engagementData);
 
         return await this.updateUserMetrics(userId, {
-            activityScore: newActivityScore,
+            activityScore: total,
             totalPosts: engagementData.postsCount,
             totalComments: engagementData.commentsCount,
             totalLikes: engagementData.likesGivenCount,
@@ -82,9 +110,9 @@ export class UserMetricsService {
     }
 
     private async getUserEngagementData(userId: string) {
-        // Get posts count
+        // Get posts count (posts held by moderation earn nothing until approved)
         const postsCount = await this.prisma.post.count({
-            where: { authorId: userId },
+            where: { authorId: userId, isHidden: false },
         });
 
         // Get comments count
@@ -107,6 +135,27 @@ export class UserMetricsService {
             where: { followingId: userId },
         });
 
+        // Endorsements received from other members; self-endorsements never count
+        const received = await this.prisma.endorsement.findMany({
+            where: { toUserId: userId, fromUserId: { not: userId } },
+            select: { fromUserId: true, fromUser: { select: { capLevel: true } } },
+        });
+        const endorsers = received.map((e) => ({
+            fromUserId: e.fromUserId,
+            level: e.fromUser.capLevel,
+        }));
+
+        // Endorsers this member endorsed back: reciprocal pairs are ignored
+        const endorserIds = [...new Set(endorsers.map((e) => e.fromUserId))];
+        const returned =
+            endorserIds.length > 0
+                ? await this.prisma.endorsement.findMany({
+                      where: { fromUserId: userId, toUserId: { in: endorserIds } },
+                      select: { toUserId: true },
+                  })
+                : [];
+        const reciprocalEndorserIds = new Set(returned.map((e) => e.toUserId));
+
         const userMetrics = await this.getUserMetrics(userId);
 
         return {
@@ -115,6 +164,9 @@ export class UserMetricsService {
             likesGivenCount,
             sharesCount,
             followersCount,
+            endorsers,
+            reciprocalEndorserIds,
+            verifiedHours: userMetrics ? effectiveVolunteerHours(userMetrics) : 0,
             ...userMetrics,
         };
     }

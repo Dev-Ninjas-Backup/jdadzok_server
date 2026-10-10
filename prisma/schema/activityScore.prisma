@@ -15,6 +15,15 @@ model ActivityScore {
   yeallowCapPromtionFee      Float?
   productSpentPercentage     Float    @default(0.0)
   productPromotionPercentage Float    @default(0.0)
+  /// Impact score weights (placeholders until the client sends final figures).
+  /// Endorsements and verified contribution carry the score; popularity is low-weight and capped.
+  endorsement           Float @default(10)
+  verifiedVolunteerHour Float @default(2)
+  follower              Float @default(0)
+  /// Most points that post / comment / like / share / follower activity can add in total
+  popularityCap         Float @default(30)
+  /// Extra endorsement multiplier per ladder rung of the endorser (Green 0 ... Black 3)
+  endorserLevelBonus    Float @default(0.5)
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 
