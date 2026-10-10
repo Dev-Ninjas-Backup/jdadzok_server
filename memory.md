@@ -23,8 +23,7 @@ Rate limiting (client item 7) is merged too (PR #56): all four engineering items
 message are in `main`. **No PR is open.**
 **Next:** nothing is queued. Waiting on John's final numbers (see below) and on client vendor keys.
 Possible follow-ups the user has not asked for: deploy the new migrations to staging and run the score
-recompute, try the rate limits on a real Redis, delete the 7 now-unused DTOs in
-`cap-level/dto/user-metrics.dto.ts` (see concerns).
+recompute, try the rate limits on a real Redis.
 **GitHub issues still open:** #25 (abuse P0, code merged, waits for client keys and joint test) and
 #29 (client vendor decisions, summary comment posted). Both are blocked on the client.
 
@@ -63,12 +62,12 @@ Not covered: volunteer apply, likes, shares, chat. Never tested against a real R
 
 ## Open concerns (raise with the user / client, not yet changed)
 - The dead `src/main/(core)/user-metrics/` folder (unguarded score-write routes, fake `config/weights`)
-  was deleted in PR `chore/remove-dead-user-metrics-module`; the live module is `src/main/(metrics)/user-metrics/`
-  (only `GET /user-metrics` and `GET /user-metrics/:userId`). Never recreate score-write routes without
-  `@ValidateAdmin()`. Seven DTOs in `cap-level/dto/user-metrics.dto.ts` (ActivityLeaderboardDto,
-  ActivityScoreWeightsDto, BatchMetricsRecalculationDto, ManualActivityScoreUpdateDto, MetricsQueryDto,
-  PlatformActivityStatsDto, UserActivityAnalyticsDto) are now unused and could be removed. The rest of the
-  cap-level README (Cap Level Management and Revenue Sharing endpoint lists) was not verified against the code.
+  and its 9 unused DTOs (`cap-level/dto/user-metrics.dto.ts`, plus its barrel re-export) were deleted in PR
+  `chore/remove-dead-user-metrics-module`. The live module is `src/main/(metrics)/user-metrics/` (only
+  `GET /user-metrics` and `GET /user-metrics/:userId`; it has its own `UpdateUserMetricsDto` and
+  `UserMetricsResponseDto`, same names, different classes). Never recreate score-write routes without
+  `@ValidateAdmin()`. The rest of the cap-level README (Cap Level Management and Revenue Sharing endpoint
+  lists) was not verified against the code and may be stale.
 - `SocketAuthGuard` is the only APP_GUARD and returns 500 for HTTP in a bare test harness, so it is
   unclear what protects HTTP routes without decorators. Always add `@ValidateAdmin()` explicitly. Check
   prod logs for unexpected `POST /settings` calls from before PR #55.
