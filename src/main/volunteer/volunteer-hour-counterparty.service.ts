@@ -12,6 +12,8 @@ import {
 import { ListCounterpartyUsersDto } from "./dto/list-counterparty-users.dto";
 import {
     counterpartyConfirmationComplete,
+    getAutoVerifyDisputeCutoff,
+    getAutoVerifyDisputeDeadline,
     requiresCounterpartyConfirmation,
 } from "@common/utils/volunteer-hour.util";
 import { Prisma, Role, VolunteerHourSource, VolunteerHourVerificationStatus } from "@prisma/client";
@@ -104,6 +106,53 @@ export class VolunteerHourCounterpartyService {
         });
     }
 
+    /**
+     * Auto-verified mentorship hours the mentee can still dispute via
+     * PATCH /volunteer/hours/:hourId/dispute (the mirror image of the pending queue above).
+     */
+    async listDisputableHours(counterpartyUserId: string) {
+        const cutoff = getAutoVerifyDisputeCutoff(
+            new Date(),
+            MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
+        );
+
+        const hours = await this.prisma.volunteerHour.findMany({
+            where: {
+                counterpartyUserId,
+                source: VolunteerHourSource.MENTORSHIP_CALL,
+                verificationStatus: VolunteerHourVerificationStatus.VERIFIED,
+                autoVerifiedAt: { not: null, gte: cutoff },
+            },
+            orderBy: { autoVerifiedAt: "desc" },
+            include: {
+                loggedByUser: {
+                    select: {
+                        id: true,
+                        capLevel: true,
+                        profile: { select: { name: true } },
+                    },
+                },
+                call: {
+                    select: {
+                        id: true,
+                        callPurpose: true,
+                        startedAt: true,
+                        endedAt: true,
+                    },
+                },
+            },
+        });
+
+        return hours.map((hour) => ({
+            ...hour,
+            disputeWindowDays: MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
+            disputeDeadline: getAutoVerifyDisputeDeadline(
+                hour.autoVerifiedAt!,
+                MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
+            ),
+        }));
+    }
+
     async confirmHour(hourId: string, counterpartyUserId: string, dto: ConfirmCounterpartyHourDto) {
         const hour = await this.loadAwaitingCounterpartyHour(hourId, counterpartyUserId);
 
@@ -180,9 +229,9 @@ export class VolunteerHourCounterpartyService {
             throw new BadRequestException("This hour entry was not auto-verified.");
         }
 
-        const disputeDeadline = new Date(hour.autoVerifiedAt);
-        disputeDeadline.setDate(
-            disputeDeadline.getDate() + MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
+        const disputeDeadline = getAutoVerifyDisputeDeadline(
+            hour.autoVerifiedAt,
+            MENTORSHIP_AUTO_VERIFY_DISPUTE_WINDOW_DAYS,
         );
         if (!isAdmin && new Date() > disputeDeadline) {
             throw new BadRequestException(
