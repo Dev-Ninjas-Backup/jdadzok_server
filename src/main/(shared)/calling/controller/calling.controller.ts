@@ -204,6 +204,36 @@ export class CallController {
     }
 
     /**
+     * Delete a single call history entry
+     */
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @Delete("history/:id")
+    @ApiOperation({ summary: "Delete a call history entry" })
+    async deleteCallHistoryEntry(@Param("id") id: string, @GetUser("userId") userId: string) {
+        if (!userId) {
+            throw new UnauthorizedException("User ID is required");
+        }
+        return await this.callService.deleteCallHistoryEntry(userId, id);
+    }
+
+    /**
+     * Clear all call history for the authenticated user.
+     * Declared before @Delete(":id") so the literal "history" path is not
+     * captured by the parameterized route.
+     */
+    @ValidateAuth()
+    @ApiBearerAuth()
+    @Delete("history")
+    @ApiOperation({ summary: "Clear all call history" })
+    async clearCallHistory(@GetUser("userId") userId: string) {
+        if (!userId) {
+            throw new UnauthorizedException("User ID is required");
+        }
+        return await this.callService.clearCallHistory(userId);
+    }
+
+    /**
       End a call (host or participant can end)
      */
     @ValidateAuth()

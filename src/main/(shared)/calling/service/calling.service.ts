@@ -1,6 +1,7 @@
 // src/call/service/call.service.ts
 
 import { PrismaService } from "@lib/prisma/prisma.service";
+import { successResponse, TResponse } from "@common/utils/response.util";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import {
     BadRequestException,
@@ -632,6 +633,53 @@ export class CallService {
             });
         } catch (error) {
             this.logger.error(`Error getting call history: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a single call history entry. Only a participant (host or recipient)
+     * of the call may delete it.
+     */
+    async deleteCallHistoryEntry(userId: string, callId: string): Promise<TResponse<any>> {
+        try {
+            const call = await this.prisma.calling.findFirst({
+                where: {
+                    id: callId,
+                    OR: [{ hostUserId: userId }, { recipientUserId: userId }],
+                },
+            });
+
+            if (!call) {
+                throw new NotFoundException("Call history not found");
+            }
+
+            await this.prisma.calling.delete({ where: { id: callId } });
+
+            return successResponse(null, "Call history deleted successfully");
+        } catch (error) {
+            this.logger.error(`Error deleting call history entry: ${error.message}`);
+            throw error;
+        }
+    }
+
+    /**
+     * Clear the entire call history for the authenticated user (host or recipient).
+     */
+    async clearCallHistory(userId: string): Promise<TResponse<any>> {
+        try {
+            const result = await this.prisma.calling.deleteMany({
+                where: {
+                    OR: [{ hostUserId: userId }, { recipientUserId: userId }],
+                },
+            });
+
+            return successResponse(
+                { count: result.count },
+                "Call history cleared successfully",
+            );
+        } catch (error) {
+            this.logger.error(`Error clearing call history: ${error.message}`);
             throw error;
         }
     }
