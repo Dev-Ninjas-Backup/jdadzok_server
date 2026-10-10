@@ -9,7 +9,7 @@ interface CapEarningSnapshot {
 }
 
 interface CapStatusForSoftMapping {
-    user: { id: string };
+    user: { id: string; adRevenueOptIn: boolean };
     currentLevel: CapLevel;
     nextLevel: CapLevel | null;
     progressPercentage: number;
@@ -65,6 +65,7 @@ export function toPrivateEarningsBlock(
 export function mapCapStatusForPersonalDashboard(status: CapStatusForSoftMapping) {
     return {
         userId: status.user.id,
+        adRevenueOptIn: status.user.adRevenueOptIn,
         currentLevel: status.currentLevel,
         nextLevel: status.nextLevel,
         progressPercentage: status.progressPercentage,
