@@ -214,10 +214,10 @@ Engineering notes (2026-08-25): see `updates/2026-08-25-search-vendor-issue-26.m
 
 ### Spam / fake accounts
 
-- [ ] Disposable / known-bad emails rejected or challenged at signup  
-- [ ] Bot/automated signup fails challenge or is flagged  
-- [ ] Spam-like post/message is blocked or queued per policy  
-- [ ] Admin can see risk score / moderation labels and ban  
+- [x] Disposable / known-bad emails rejected or challenged at signup — AbstractAPI / Kickbox adapters on `POST /users/register` (`ABUSE_EMAIL_PROVIDER`); joint acceptance with real keys still pending  
+- [x] Bot/automated signup fails challenge or is flagged — Turnstile adapter verifies `captchaToken` on `POST /users/register` (`ABUSE_BOT_PROVIDER`); the app must send the token once enabled; joint acceptance with real keys still pending  
+- [x] Spam-like post is blocked or queued per policy — OpenAI Moderation adapter on post create (`ABUSE_CONTENT_PROVIDER`): score >= queue threshold holds the post hidden for admin review, >= reject threshold blocks it. Messages and volunteer applications are not covered yet  
+- [x] Admin can see risk score / moderation labels and ban — `GET /abuse/moderation/checks`, approve / reject held posts; banning uses existing admin tooling  
 - [ ] Mutual Connect requirement unchanged (still enforced server-side when that backlog item ships)
 
 ### Account fraud (P3 — optional)
@@ -255,6 +255,7 @@ Until (1)–(3) are chosen, engineering can only stub feature-flagged adapters.
 
 | Date | Change |
 | --- | --- |
+| 2026-10-10 | P0 engineering (Issue #25): feature-flagged email-quality (AbstractAPI/Kickbox), bot-challenge (Turnstile) and content-moderation (OpenAI) adapters, all default off; `ModerationCheck` + admin review APIs; held posts stay hidden until approved. Vendor choice and keys still client-owned (Issue #29) |
 | 2026-08-25 | P3 engineering: Sift/SEON/Castle/memory/off fraud adapters; Stripe onboarding + withdraw hooks; `FraudCheck` + admin APIs (Issue #28) |
 | 2026-08-25 | Unified search expanded: Bridge + NGOs + communities + public posts (all entity types by default) |
 | 2026-08-25 | P1 engineering: Typesense/Algolia/memory/off adapters; member + opportunity sync; `GET /search` + admin reindex (Issue #26) |

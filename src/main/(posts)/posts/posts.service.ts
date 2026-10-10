@@ -12,6 +12,8 @@ import {
 } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { SearchSyncService } from "@module/(search)/search-sync.service";
+import { ModerationService } from "@module/(abuse)/moderation/moderation.service";
+import { ModerationDecision } from "@prisma/client";
 import { CreatePostDto, UpdatePostDto } from "./dto/create.post.dto";
 import { PostRepository } from "./posts.repository";
 import { PostQueryDto } from "./dto/posts.query.dto";
@@ -27,11 +29,24 @@ export class PostService {
         private prisma: PrismaService,
         private readonly eventEmitter: EventEmitter2,
         private readonly searchSync: SearchSyncService,
+        private readonly moderation: ModerationService,
     ) {}
 
     async create(input: CreatePostDto) {
-        const post = await this.repository.store(input); // call store (DB transaction)
+        // REJECT throws here; QUEUE stores the post hidden until an admin approves it
+        const verdict = await this.moderation.evaluatePost({
+            userId: input.authorId!,
+            text: input.text,
+        });
+        const held = verdict.decision === ModerationDecision.QUEUE;
+
+        const post = await this.repository.store({ ...input, ...(held ? { isHidden: true } : {}) }); // call store (DB transaction)
         if (!post) throw new BadRequestException("Fail to create post");
+
+        if (held) {
+            if (verdict.checkId) await this.moderation.linkPost(verdict.checkId, post.id);
+            return { ...enrichPostWithMetrics(post), moderationStatus: "UNDER_REVIEW" as const };
+        }
 
         await this.safeSearchUpsert(post.id);
         const authorId = post.authorId;
