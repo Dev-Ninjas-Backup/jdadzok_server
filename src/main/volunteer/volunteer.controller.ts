@@ -207,6 +207,18 @@ export class VolunteerController {
 
     @ApiOperation({
         summary:
+            "List auto-verified mentorship sessions you (as mentee) can still dispute, with each deadline",
+    })
+    @Get("hours/disputable")
+    listDisputable(@GetVerifiedUser() user: VerifiedUser) {
+        return handleRequest(
+            () => this.hourCounterpartyService.listDisputableHours(user.id),
+            "Disputable auto-verified sessions retrieved",
+        );
+    }
+
+    @ApiOperation({
+        summary:
             "Confirm a mentoring/advice session as mentee — unlocks Cap credit (calls) or endorsement queue (self-report)",
     })
     @Patch("hours/:hourId/confirm-counterparty")
