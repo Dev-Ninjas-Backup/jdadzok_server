@@ -38,6 +38,8 @@ export class UserController {
     @Post("register")
     @UsePipes(ValidationPipe)
     async register(@Body() body: CreateUserDto) {
+        // Outside the try/catch below, which returns errors as 200 responses.
+        await this.service.assertRegistrationAllowed(body);
         try {
             const result = await this.service.register(body);
 

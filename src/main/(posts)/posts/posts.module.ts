@@ -18,9 +18,10 @@ import { PostService } from "./posts.service";
 import { PostUtils } from "./utils";
 import { FollowModule } from "@module/(users)/follow/follow.module";
 import { SearchModule } from "@module/(search)/search.module";
+import { ModerationModule } from "@module/(abuse)/moderation/moderation.module";
 
 @Module({
-    imports: [FollowModule, SearchModule],
+    imports: [FollowModule, SearchModule, ModerationModule],
     controllers: [PostController],
     providers: [
         JwtService,
