@@ -1,6 +1,8 @@
 import { GetUser, GetVerifiedUser, MakePublic } from "@common/jwt/jwt.decorator";
 import { successResponse } from "@common/utils/response.util";
 import { JwtAuthGuard } from "@module/(started)/auth/guards/jwt-auth";
+import { RateLimit } from "@common/decorators/rate-limit.decorator";
+import { RateLimitGuard } from "@common/guards/rate-limit.guard";
 import {
     Body,
     Controller,
@@ -39,7 +41,8 @@ export class PostController {
 
     @Post()
     @ApiOperation({ summary: "Create a new post via JSON" })
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit("POST")
     @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
     async store(@GetVerifiedUser() user: any, @Body() req: CreatePostDto) {
         try {
