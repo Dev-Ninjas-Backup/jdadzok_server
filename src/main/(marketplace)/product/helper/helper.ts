@@ -19,11 +19,11 @@ export class HelperService {
             return;
         }
 
-        // Step 1: Find eligible posts (no ad yet, author capLevel not NONE)
+        // Step 1: Find eligible posts (no ad yet, author has a cap level and opted in to ad revenue)
         const eligiblePosts = await this.prisma.post.findMany({
             where: {
                 dedicatedAd: { none: {} }, // posts with no ad
-                author: { capLevel: { not: "NONE" } },
+                author: { capLevel: { not: "NONE" }, adRevenueOptIn: true },
             },
             orderBy: { createdAt: "desc" },
             take: 5, // attach product to 5 posts max

@@ -1,7 +1,7 @@
 import { CapLevel } from "@constants/enums";
 import { PrismaService } from "@lib/prisma/prisma.service";
 import { UserMetricsService } from "@module/(users)/profile-metrics/user-metrics.service";
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { CapLevel as PrismaCapLevel, User, UserMetrics } from "@prisma/client";
 import { CapLevelRepository } from "../cap-level/cap-lavel.repository";
 import {
@@ -381,6 +381,21 @@ export class AdRevenueService {
         return usersWithHigherEarnings.length + 1;
     }
 
+    /** Opt in or out of ad revenue. Applies to every cap level and is off by default. */
+    async setAdRevenueOptIn(userId: string, optIn: boolean): Promise<{ adRevenueOptIn: boolean }> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+        });
+        if (!user) throw new NotFoundException("User not found");
+
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { adRevenueOptIn: optIn },
+            select: { adRevenueOptIn: true },
+        });
+    }
+
     /**
      * Gets all eligible users for revenue distribution
      * @returns List of users with their metrics and cap levels
@@ -391,6 +406,7 @@ export class AdRevenueService {
         return await this.prisma.user.findMany({
             where: {
                 capLevel: { not: "NONE" }, // Only users with cap levels get revenue
+                adRevenueOptIn: true, // Ad revenue is opt-in at every level
                 metrics: { isNot: null }, // Must have metrics
             },
             include: { metrics: true },

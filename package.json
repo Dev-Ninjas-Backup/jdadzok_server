@@ -43,6 +43,7 @@
         "test:abuse-bot": "tsx \"src/main/(abuse)/bot-challenge/__tests__/bot-challenge.issue-25.test.ts\"",
         "test:abuse-moderation": "tsx \"src/main/(abuse)/moderation/__tests__/moderation.issue-25.test.ts\"",
         "test:volunteer": "tsx \"src/main/volunteer/__tests__/volunteer.issue-43.test.ts\"",
+        "test:ad-optin": "tsx \"src/main/(core)/ad-revenue/__tests__/ad-revenue-opt-in.test.ts\"",
         "security:check": "bash scripts/check-supply-chain-malware.sh",
         "postinstall": "npx prisma generate"
     },

@@ -187,6 +187,7 @@ export class StripeService {
                                         select: {
                                             id: true,
                                             capLevel: true,
+                                            adRevenueOptIn: true,
                                         },
                                     },
                                 },
@@ -201,6 +202,9 @@ export class StripeService {
 
                     for (const user of dedicatedUsers) {
                         const author = user.post.author;
+
+                        // Ad revenue is opt-in; an author who opted out after the ad was attached earns nothing
+                        if (!author.adRevenueOptIn) continue;
 
                         let percentage = 0;
 
