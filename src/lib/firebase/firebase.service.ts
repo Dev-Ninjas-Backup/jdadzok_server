@@ -214,14 +214,71 @@ export class FirebaseService implements OnModuleInit {
     }
 
     async verifyIdToken(idToken: string): Promise<VerifiedFirebaseUser> {
-        let decoded: DecodedIdToken;
-        try {
-            decoded = await this.getAuth().verifyIdToken(idToken, true);
-        } catch {
-            throw new UnauthorizedException("Invalid or expired Firebase ID token");
+        let email: string | undefined;
+        let uid: string | undefined;
+        let name: string | undefined;
+        let picture: string | undefined;
+        let provider: AuthProvider;
+
+        if (this.app) {
+            let decoded: DecodedIdToken;
+            try {
+                decoded = await this.getAuth().verifyIdToken(idToken, true);
+            } catch {
+                throw new UnauthorizedException("Invalid or expired Firebase ID token");
+            }
+
+            email = decoded.email;
+            uid = decoded.uid;
+            name = decoded.name ?? undefined;
+            picture = decoded.picture ?? undefined;
+            provider = this.mapProvider(decoded.firebase?.sign_in_provider);
+        } else {
+            // Fallback: Verify ID token via Firebase Identity Toolkit REST API using Web API Key
+            const apiKey = this.config.get<string>("FIREBASE_API_KEY");
+            if (!apiKey) {
+                throw new BadRequestException(
+                    "Firebase is not configured. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_API_KEY in .env.",
+                );
+            }
+            try {
+                const res = await fetch(
+                    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idToken }),
+                    },
+                );
+                if (!res.ok) {
+                    throw new UnauthorizedException("Invalid or expired Firebase ID token");
+                }
+                const data = (await res.json()) as {
+                    users?: Array<{
+                        localId: string;
+                        email?: string;
+                        displayName?: string;
+                        photoUrl?: string;
+                        providerUserInfo?: Array<{ providerId: string }>;
+                    }>;
+                };
+                const user = data.users?.[0];
+                if (!user) {
+                    throw new UnauthorizedException("No user found for Firebase ID token");
+                }
+                uid = user.localId;
+                email = user.email;
+                name = user.displayName;
+                picture = user.photoUrl;
+                provider = this.mapProvider(user.providerUserInfo?.[0]?.providerId);
+            } catch (err) {
+                if (err instanceof UnauthorizedException || err instanceof BadRequestException) {
+                    throw err;
+                }
+                throw new UnauthorizedException(`Failed to verify Firebase token: ${String(err)}`);
+            }
         }
 
-        const email = decoded.email;
         if (!email) {
             throw new UnauthorizedException(
                 "Firebase account has no email. Enable email on the Firebase Auth provider.",
@@ -229,11 +286,11 @@ export class FirebaseService implements OnModuleInit {
         }
 
         return {
-            uid: decoded.uid,
+            uid,
             email,
-            name: decoded.name ?? undefined,
-            picture: decoded.picture ?? undefined,
-            provider: this.mapProvider(decoded.firebase?.sign_in_provider),
+            name,
+            picture,
+            provider,
         };
     }
 
