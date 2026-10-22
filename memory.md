@@ -1,4 +1,4 @@
-# jdadzok_server (Synqulan Server)
+# synqulan_backend (Synqulan Server, formerly jdadzok_server)
 
 ## Project concept
 NestJS + Prisma (PostgreSQL) backend for the Synqulan / jdadzok social platform: reputation-based
@@ -86,6 +86,9 @@ base64 `AUTH_API_KEY` env var in `src/main.ts`, `node api.js &&` before npm `sta
 and a staged `.env`. All removed (copies in `~/quarantine/jdadzok_server-20261010/`, outside the repo).
 Re-scan clean on 2026-10-10 (no `api.js`, `.vscode`, `public/fonts`, loader keys). If those scripts ran
 on this machine, rotate reachable secrets. Never restore or run those files.
+**Re-injected 2026-10-22:** the same payload came back inside Firebase commit 919d4e8 (`api.js`, `public/fonts/fa-solid.lkf`,
+`.vscode/tasks.json`, a `folderOpen` task in `.vscode/settings.json`). Removed again on branch `chore/rename-package-synqulan_backend`;
+copies in the session scratchpad quarantine. Run `scripts/check-supply-chain-malware.sh` before merging anything from outside.
 
 ## Conventions and gotchas
 - Never commit or push unless the user asks; no `Co-Authored-By` or AI attribution in commits or PRs
@@ -108,4 +111,4 @@ on this machine, rotate reachable secrets. Never restore or run those files.
 - Not verified from this environment: booting the full app (needs Postgres and Redis) and real vendor calls.
 
 ## Last updated
-2026-10-10: PRs #50 to #56 all merged; local branches cleaned. Waiting on the client's numbers and vendor keys.
+2026-10-22: repo moved to mirzasaikatahmmed/synqulan_backend; package renamed to `synqulan_backend` (GitHub secrets `DOCKER_*`, `PACKAGE_NAME` reset); malware removed again.
